@@ -31,7 +31,8 @@ import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.R
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
-import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.toFormattedTime
+import com.hifnawy.alquran.shared.utils.ExoPlayerEx
+import com.hifnawy.alquran.shared.utils.ExoPlayerEx.asString
 import com.hifnawy.alquran.shared.utils.ImageUtil.drawTextOn
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import com.hifnawy.alquran.shared.utils.NumberExt.sp
@@ -61,18 +62,6 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         EXTRA_RECITER,
         EXTRA_SURAH,
         EXTRA_SEEK_POSITION
-    }
-
-    private enum class PlayerState(val state: Int) {
-        BUFFERING(Player.STATE_BUFFERING),
-        READY(Player.STATE_READY),
-        ENDED(Player.STATE_ENDED),
-        IDLE(Player.STATE_IDLE);
-
-        companion object {
-
-            fun fromState(value: Int): PlayerState = entries.first { it.state == value }
-        }
     }
 
     private enum class MediaSessionState(val state: Int) {
@@ -323,126 +312,6 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         }
     }
 
-    private fun createNotificationChannel() {
-        val name = "Quran Player"
-        val descriptionText = "Shows controls for current Quran playback"
-        val importance = NotificationManager.IMPORTANCE_LOW
-        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply { description = descriptionText }
-        val notificationManager: NotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-        notificationManager.createNotificationChannel(channel)
-    }
-
-    private fun buildNotification(reciter: Reciter?, surah: Surah?): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.quran))
-            .setContentText(surah?.name)
-            .setSubText(reciter?.name)
-            .setSmallIcon(R.drawable.play_arrow_24px)
-            .setStyle(MediaStyle().setMediaSession(mediaSession.sessionToken).setShowActionsInCompactView(0))
-            .build()
-    }
-
-    private fun updateNotification(reciter: Reciter?, surah: Surah?) {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        val notification = buildNotification(reciter, surah)
-        notificationManager.notify(NOTIFICATION_ID, notification)
-    }
-
-    @SuppressLint("DiscouragedApi")
-    private fun updateMetadata(surah: Surah, surahDrawable: Drawable? = null) {
-        val surahDrawableId = resources.getIdentifier("surah_${currentSurah!!.id.toString().padStart(3, '0')}", "drawable", packageName)
-        val surahDrawableBitmap = when (surahDrawable) {
-            null -> (AppCompatResources.getDrawable(this, surahDrawableId) as BitmapDrawable).bitmap
-            else -> (surahDrawable as BitmapDrawable).bitmap
-        }
-
-        val metadata = MediaMetadataCompat.Builder()
-            .putText(
-                    MediaMetadataCompat.METADATA_KEY_TITLE,
-                    when (player.playbackState) {
-                        Player.STATE_IDLE,
-                        Player.STATE_BUFFERING -> getString(R.string.loading_surah, surah.name)
-
-                        else                   -> surah.name
-                    }
-            )
-            .putText(MediaMetadataCompat.METADATA_KEY_ARTIST, currentReciter?.name)
-            .putText(MediaMetadataCompat.METADATA_KEY_GENRE, getString(R.string.quran))
-            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, surahDrawableBitmap)
-            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, player.duration)
-            .build()
-
-        mediaSession.setMetadata(metadata)
-    }
-
-    private fun updateMediaSession(
-            reciter: Reciter,
-            surah: Surah,
-            surahUri: Uri? = null,
-            surahDrawable: Drawable? = null
-    ) {
-        currentReciter = reciter
-        currentSurah = surah
-
-        updateNotification(reciter, surah)
-        updateMetadata(surah, surahDrawable)
-
-        if (surahUri != null) playMedia(surah, surahUri)
-    }
-
-    private fun setMediaSessionState(state: MediaSessionState) {
-        if (state == MediaSessionState.BUFFERING &&
-            (mediaSession.controller?.playbackState?.state == PlaybackStateCompat.STATE_BUFFERING ||
-             mediaSession.controller?.playbackState?.state == PlaybackStateCompat.STATE_STOPPED)
-        ) return
-
-        Timber.debug("state: ${state.name}")
-
-        val playbackStateBuilder = when (state) {
-            MediaSessionState.PLAYING              -> PlaybackStateCompat.Builder().setActions(
-                    PlaybackStateCompat.ACTION_PAUSE or
-                            PlaybackStateCompat.ACTION_PLAY or
-                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-                            PlaybackStateCompat.ACTION_SEEK_TO
-            )
-
-            MediaSessionState.PAUSED               -> PlaybackStateCompat.Builder().setActions(
-                    PlaybackStateCompat.ACTION_PAUSE or
-                            PlaybackStateCompat.ACTION_PLAY or
-                            PlaybackStateCompat.ACTION_SEEK_TO
-            )
-
-            MediaSessionState.SKIPPING_TO_NEXT,
-            MediaSessionState.SKIPPING_TO_PREVIOUS -> PlaybackStateCompat.Builder().setActions(PlaybackStateCompat.ACTION_STOP)
-
-            MediaSessionState.BUFFERING,
-            MediaSessionState.CONNECTING           -> PlaybackStateCompat.Builder().setActions(
-                    PlaybackStateCompat.ACTION_STOP or
-                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-            )
-
-            MediaSessionState.STOPPED              -> PlaybackStateCompat.Builder().setActions(PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID)
-        }
-
-        if (state != MediaSessionState.STOPPED) playbackStateBuilder.setBufferedPosition(player.bufferedPosition)
-
-        playbackStateBuilder.setState(
-                state.state,
-                when (state) {
-                    MediaSessionState.PLAYING,
-                    MediaSessionState.PAUSED -> player.currentPosition
-
-                    else                     -> 0
-                },
-                1f
-        )
-
-        mediaSession.setPlaybackState(playbackStateBuilder.build())
-    }
-
     private fun createBrowsableMediaItem(
             mediaId: String,
             reciterIndex: Int,
@@ -509,56 +378,172 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         return MediaBrowserCompat.MediaItem(mediaDescriptionBuilder.build(), MediaBrowserCompat.MediaItem.FLAG_PLAYABLE)
     }
 
+    private fun createNotificationChannel() {
+        val name = "Quran Player"
+        val descriptionText = "Shows controls for current Quran playback"
+        val importance = NotificationManager.IMPORTANCE_LOW
+        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply { description = descriptionText }
+        val notificationManager: NotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+        notificationManager.createNotificationChannel(channel)
+    }
+
+    private fun buildNotification(reciter: Reciter?, surah: Surah?): Notification {
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.quran))
+            .setContentText(surah?.name)
+            .setSubText(reciter?.name)
+            .setSmallIcon(R.drawable.play_arrow_24px)
+            .setStyle(MediaStyle().setMediaSession(mediaSession.sessionToken).setShowActionsInCompactView(0))
+            .build()
+    }
+
+    private fun updateNotification(reciter: Reciter?, surah: Surah?) {
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val notification = buildNotification(reciter, surah)
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun updateMediaSession(
+            reciter: Reciter,
+            surah: Surah,
+            surahUri: Uri? = null,
+            surahDrawable: Drawable? = null
+    ) {
+        currentReciter = reciter
+        currentSurah = surah
+
+        updateNotification(reciter, surah)
+        updateMetadata(surah, surahDrawable)
+
+        if (surahUri != null) playMedia(surah, surahUri)
+    }
+
+    @SuppressLint("DiscouragedApi")
+    private fun updateMetadata(surah: Surah, surahDrawable: Drawable? = null) {
+        val surahDrawableId = resources.getIdentifier("surah_${currentSurah!!.id.toString().padStart(3, '0')}", "drawable", packageName)
+        val surahDrawableBitmap = when (surahDrawable) {
+            null -> (AppCompatResources.getDrawable(this, surahDrawableId) as BitmapDrawable).bitmap
+            else -> (surahDrawable as BitmapDrawable).bitmap
+        }
+
+        val metadata = MediaMetadataCompat.Builder()
+            .putText(
+                    MediaMetadataCompat.METADATA_KEY_TITLE,
+                    when (player.playbackState) {
+                        Player.STATE_IDLE,
+                        Player.STATE_BUFFERING -> getString(R.string.loading_surah, surah.name)
+
+                        else                   -> surah.name
+                    }
+            )
+            .putText(MediaMetadataCompat.METADATA_KEY_ARTIST, currentReciter?.name)
+            .putText(MediaMetadataCompat.METADATA_KEY_GENRE, getString(R.string.quran))
+            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, surahDrawableBitmap)
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, player.duration)
+            .build()
+
+        mediaSession.setMetadata(metadata)
+    }
+
+    private fun setMediaSessionState(mediaSessionState: MediaSessionState) {
+        if (mediaSessionState == MediaSessionState.BUFFERING &&
+            (mediaSession.controller?.playbackState?.state == PlaybackStateCompat.STATE_BUFFERING ||
+             mediaSession.controller?.playbackState?.state == PlaybackStateCompat.STATE_STOPPED)
+        ) return
+
+        Timber.debug("mediaSessionState: ${mediaSessionState.name}")
+
+        val playbackStateBuilder = when (mediaSessionState) {
+            MediaSessionState.PLAYING              -> PlaybackStateCompat.Builder().setActions(
+                    PlaybackStateCompat.ACTION_PAUSE or
+                            PlaybackStateCompat.ACTION_PLAY or
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                            PlaybackStateCompat.ACTION_SEEK_TO
+            )
+
+            MediaSessionState.PAUSED               -> PlaybackStateCompat.Builder().setActions(
+                    PlaybackStateCompat.ACTION_PAUSE or
+                            PlaybackStateCompat.ACTION_PLAY or
+                            PlaybackStateCompat.ACTION_SEEK_TO
+            )
+
+            MediaSessionState.SKIPPING_TO_NEXT,
+            MediaSessionState.SKIPPING_TO_PREVIOUS -> PlaybackStateCompat.Builder().setActions(PlaybackStateCompat.ACTION_STOP)
+
+            MediaSessionState.CONNECTING,
+            MediaSessionState.BUFFERING            -> PlaybackStateCompat.Builder().setActions(
+                    PlaybackStateCompat.ACTION_STOP or
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+            )
+
+            MediaSessionState.STOPPED              -> PlaybackStateCompat.Builder().setActions(PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID)
+        }
+
+        if (mediaSessionState != MediaSessionState.STOPPED) playbackStateBuilder.setBufferedPosition(player.bufferedPosition)
+
+        playbackStateBuilder.setState(
+                mediaSessionState.state,
+                when (mediaSessionState) {
+                    MediaSessionState.PLAYING,
+                    MediaSessionState.PAUSED -> player.currentPosition
+
+                    else                     -> 0
+                },
+                1f
+        )
+
+        mediaSession.setPlaybackState(playbackStateBuilder.build())
+    }
+
     private fun processSurah(reciter: Reciter, surah: Surah) {
         if (player.isPlaying) player.stop()
 
         MediaManager.processSurah(this@QuranMediaService, reciter, surah)
     }
 
-    fun prepareMedia(reciter: Reciter? = null, surah: Surah? = null, surahPosition: Long = 0L) {
-        if ((reciter == null) || (surah == null)) return
-
-        currentSurahPosition = surahPosition
-
-        if ((currentReciter == null) || (currentSurah == null)) {
-            currentReciter = reciter
-            currentSurah = surah
-
-            processSurah(reciter, surah)
-            return
-        }
-
-        if ((reciter.id != currentReciter?.id) || (surah.id != currentSurah?.id)) {
-            currentReciter = reciter
-            currentSurah = surah
-
-            processSurah(reciter, surah)
-            return
-        }
-
-        if (!isMediaReady) {
-            processSurah(reciter, surah)
-            return
-        }
-
-        isMediaReady = true
-
-        if (!player.isPlaying) player.play()
-    }
-
     private fun playMedia(surah: Surah, surahUri: Uri) {
-        isMediaReady = true
-
+        Timber.debug("playing ${surah.id}: ${surah.name}")
         updateNotification(currentReciter, surah)
 
         if (player.isPlaying || (currentSurahPosition == 0L)) player.stop()
 
         player.apply {
-            setMediaItem(MediaItem.fromUri(surahUri))
-            prepare()
+            isMediaReady = true
             playWhenReady = true
 
+            setMediaItem(MediaItem.fromUri(surahUri))
+
+            prepare()
+
             seekTo(currentSurahPosition)
+
+
+            if (!isPlaying) {
+                play()
+
+                setMediaSessionState(
+                        when (player.playbackState) {
+                            ExoPlayerEx.PlayerState.BUFFERING.state -> MediaSessionState.BUFFERING
+                            else                                    -> MediaSessionState.PLAYING
+                        }
+                )
+
+                if (player.playbackState != ExoPlayerEx.PlayerState.BUFFERING.state) {
+                    val reciter = currentReciter ?: return
+
+                    updateMediaSession(reciter, surah)
+                    quranApplication.lastStatusUpdate = ServiceStatus.Playing(
+                            reciter = reciter,
+                            surah = surah,
+                            durationMs = player.duration,
+                            currentPositionMs = player.currentPosition,
+                            bufferedPositionMs = player.bufferedPosition
+                    )
+                }
+            }
         }
 
         val reciter = currentReciter ?: return
@@ -574,6 +559,84 @@ class QuranMediaService : MediaBrowserServiceCompat() {
                     bufferedPositionMs = player.bufferedPosition
             )
         }
+    }
+
+    private fun toggleMedia() = when {
+        player.isPlaying -> pauseMedia()
+        else             -> resumeMedia()
+    }
+
+    private fun restartMedia() {
+        player.stop()
+        player.seekTo(0)
+
+        setMediaSessionState(MediaSessionState.STOPPED)
+        quranApplication.lastStatusUpdate = ServiceStatus.Stopped
+
+        player.prepare()
+        player.play()
+
+        val reciter = currentReciter ?: return
+        val surah = currentSurah ?: return
+
+        updateMediaSession(reciter, surah)
+        setMediaSessionState(MediaSessionState.PLAYING)
+        quranApplication.lastStatusUpdate = ServiceStatus.Playing(
+                reciter = reciter,
+                surah = surah,
+                durationMs = player.duration,
+                currentPositionMs = player.currentPosition,
+                bufferedPositionMs = player.bufferedPosition
+        )
+    }
+
+    fun prepareMedia(reciter: Reciter? = null, surah: Surah? = null, surahPosition: Long = 0L) {
+        Timber.debug("preparing (${reciter?.id}: ${reciter?.name})[${surah?.id}: ${surah?.name}]")
+        if ((reciter == null) || (surah == null)) return
+
+        currentSurahPosition = surahPosition
+
+        if ((currentReciter == null) || (currentSurah == null)) {
+            Timber.debug("processing new media (${reciter.id}: ${reciter.name})[${surah.id}: ${surah.name}]")
+            currentReciter = reciter
+            currentSurah = surah
+
+            processSurah(reciter, surah)
+            return
+        }
+
+        if ((reciter.id != currentReciter?.id) || (surah.id != currentSurah?.id)) {
+            Timber.debug("processing updated media (${reciter.id}: ${reciter.name})[${surah.id}: ${surah.name}]")
+            currentReciter = reciter
+            currentSurah = surah
+
+            processSurah(reciter, surah)
+            return
+        }
+
+        if (!isMediaReady) {
+            Timber.debug("media not ready, processing (${reciter.id}: ${reciter.name})[${surah.id}: ${surah.name}]")
+            processSurah(reciter, surah)
+            return
+        }
+    }
+
+    fun pauseMedia() {
+        player.pause()
+        setMediaSessionState(MediaSessionState.PAUSED)
+
+        val reciter = currentReciter ?: return
+        val surah = currentSurah ?: return
+
+        updateMediaSession(reciter, surah)
+        setMediaSessionState(MediaSessionState.PAUSED)
+        quranApplication.lastStatusUpdate = ServiceStatus.Paused(
+                reciter = reciter,
+                surah = surah,
+                durationMs = player.duration,
+                currentPositionMs = player.currentPosition,
+                bufferedPositionMs = player.bufferedPosition
+        )
     }
 
     fun resumeMedia() = when {
@@ -595,48 +658,6 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         }
 
         else         -> prepareMedia(currentReciter, currentSurah, currentSurahPosition)
-    }
-
-    fun pauseMedia() {
-        player.pause()
-        setMediaSessionState(MediaSessionState.PAUSED)
-
-        val reciter = currentReciter ?: return
-        val surah = currentSurah ?: return
-
-        updateMediaSession(reciter, surah)
-        setMediaSessionState(MediaSessionState.PAUSED)
-        quranApplication.lastStatusUpdate = ServiceStatus.Paused(
-                reciter = reciter,
-                surah = surah,
-                durationMs = player.duration,
-                currentPositionMs = player.currentPosition,
-                bufferedPositionMs = player.bufferedPosition
-        )
-    }
-
-    fun stopMedia() {
-        val reciter = currentReciter ?: return
-        val surah = currentSurah ?: return
-
-        setMediaSessionState(MediaSessionState.STOPPED)
-        quranApplication.lastStatusUpdate = ServiceStatus.Stopped
-
-        if (player.isPlaying) player.stop()
-        isMediaReady = false
-
-        if (player.playbackState != Player.STATE_BUFFERING) positionUpdateJob?.cancel()
-
-        updateMediaSession(reciter, surah)
-        setMediaSessionState(MediaSessionState.STOPPED)
-
-        currentReciter = null
-        currentSurah = null
-    }
-
-    private fun toggleMedia() = when {
-        player.isPlaying -> pauseMedia()
-        else             -> resumeMedia()
     }
 
     fun seekTo(position: Long) {
@@ -688,28 +709,22 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         MediaManager.processPreviousSurah(this@QuranMediaService)
     }
 
-    private fun restartMedia() {
-        player.stop()
-        player.seekTo(0)
+    fun stopMedia() {
+        val reciter = currentReciter ?: return
+        val surah = currentSurah ?: return
 
         setMediaSessionState(MediaSessionState.STOPPED)
         quranApplication.lastStatusUpdate = ServiceStatus.Stopped
 
-        player.prepare()
-        player.play()
+        if (player.isPlaying) player.stop()
+        isMediaReady = false
 
-        val reciter = currentReciter ?: return
-        val surah = currentSurah ?: return
+        if (player.playbackState != Player.STATE_BUFFERING) positionUpdateJob?.cancel()
 
         updateMediaSession(reciter, surah)
-        setMediaSessionState(MediaSessionState.PLAYING)
-        quranApplication.lastStatusUpdate = ServiceStatus.Playing(
-                reciter = reciter,
-                surah = surah,
-                durationMs = player.duration,
-                currentPositionMs = player.currentPosition,
-                bufferedPositionMs = player.bufferedPosition
-        )
+        setMediaSessionState(MediaSessionState.STOPPED)
+
+        Timber.debug("playback stopped")
     }
 
     private fun listenForPlayerPosition() {
@@ -717,14 +732,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
 
         positionUpdateJob = serviceScope.launch {
             while (player.playbackState == Player.STATE_READY || player.playbackState == Player.STATE_BUFFERING) {
-                val playbackState = PlayerState.fromState(player.playbackState)
-
-                Timber.debug(
-                        "player.playbackState: ${playbackState.name}, " +
-                        "duration: ${player.duration.milliseconds.toFormattedTime()}, " +
-                        "currentPosition: ${player.currentPosition.milliseconds.toFormattedTime()}, " +
-                        "bufferedPosition: ${player.bufferedPosition.milliseconds.toFormattedTime()}"
-                )
+                Timber.debug(player.asString)
 
                 val reciter = currentReciter ?: break
                 val surah = currentSurah ?: break
@@ -761,7 +769,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
                     else                      -> quranApplication.lastStatusUpdate
                 }
 
-                delay(500.milliseconds)
+                delay(1_000.milliseconds)
             }
         }
     }
