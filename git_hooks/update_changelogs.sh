@@ -59,7 +59,7 @@ do
   fi
 
   echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  versionCode=$(git show "$tag:app/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
+  versionCode=$(git show "$tag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
   commitMessage="$(git show "$tag" -s --format='%s%n%n%b' | sed -e 's/Change-Id:\s*\w\+//' | sed -e 's/Signed-off-by:\s*.*//')"
 
   commitHashesBetweenTags=$(git log "$previousTag".."$tag" --pretty=format:"%h")
@@ -125,9 +125,9 @@ do
   done
 
   if [[ -n "$previousTag" ]]; then
-    fullChangelog="**Full Changelog**: https://github.com/abdalmoniem/Caffeinate/compare/$previousTag...$tag"
+    fullChangelog="**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/$previousTag...$tag"
   else
-    fullChangelog="**Full Changelog**: https://github.com/abdalmoniem/Caffeinate/commits/$tag"
+    fullChangelog="**Full Changelog**: https://github.com/abdalmoniem/AlQuran/commits/$tag"
   fi
 
   echo

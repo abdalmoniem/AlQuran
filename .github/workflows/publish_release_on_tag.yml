@@ -23,7 +23,7 @@ jobs:
         run: |
           gitTopLevel="$(git rev-parse --show-toplevel)"
           versionCodeFilter="\(versionCode\s\+=\s\+\)\([[:digit:]]\+\)"
-          versionCode=$(git show "$tag:app/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
+          versionCode=$(git show "$tag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
 
           cat "$gitTopLevel/fastlane/metadata/android/en-US/changelogs/$versionCode.txt"
 

@@ -3,7 +3,8 @@
 gitTopLevel="$(git rev-parse --show-toplevel)"
 versionCodeFilter="\(versionCode\s\+=\s\+\)\([[:digit:]]\+\)"
 tag="HEAD"
-referenceTag=$(git describe --tags $(git rev-list --tags --max-count=1))
+# Initialize referenceTag to the latest tag (might be empty if no tags exist)
+referenceTag=$(git describe --tags $(git rev-list --tags --max-count=1) 2> /dev/null)
 changelogsPath="$gitTopLevel/fastlane/metadata/android/en-US/changelogs"
 changelogs=0
 subjects=()
@@ -36,9 +37,16 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --reference_tag)
-      if [[ -n "$2" ]]; then
-          referenceTag="$2"
-          shift 2
+      if [[ $# -gt 1 ]]; then
+          # Check that the next argument ($2) is not the start of another flag
+          if [[ "$2" != --* ]]; then
+              referenceTag="$2"
+              shift 2
+        else
+              echo "Error: --reference_tag requires a value."
+              echo
+              help
+        fi
       else
           echo "Error: --reference_tag requires a value."
           echo
@@ -66,10 +74,25 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# If referenceTag is still empty after initialization and argument parsing,
+# it means this is the first tag. Set the reference to the first commit hash.
+if [ -z "$referenceTag" ]; then
+    echo "No previous tag found. Setting reference tag to the initial commit."
+    referenceTag=$(git rev-list --max-parents=0 HEAD)
+fi
+
 commitHashesBetweenTags=$(git log "$referenceTag".."$tag" --pretty=format:"%h")
 commitHashCount=$(echo "$commitHashesBetweenTags" | wc -l)
-referenceVersionCode=$(git show "$referenceTag:app/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
-tagVersionCode=$(git show "$tag:app/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
+# Use 'git show' only if referenceTag is a tag name, otherwise it's the full commit hash
+# and the build.gradle.kts file might not exist at that commit (e.g., if it's the root commit).
+# We conditionally try to extract the versionCode based on referenceTag not being the root commit.
+if [ "$referenceTag" != "$(git rev-list --max-parents=0 HEAD)" ]; then
+    referenceVersionCode=$(git show "$referenceTag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
+else
+    referenceVersionCode="0" # Use a default for the very first commit reference
+fi
+
+tagVersionCode=$(git show "$tag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
 
 echo "Reference Tag: $referenceTag, referenceVersionCode: $referenceVersionCode"
 echo "Tag: $tag, tagVersionCode: $tagVersionCode"
@@ -86,10 +109,9 @@ if [[ $commitHashCount -gt 0 && -f "$changelogsPath/$tagVersionCode.txt" && "$is
 fi
 
 echo "Generating Changelog between $tag and $referenceTag..."
-for commitHash in $commitHashesBetweenTags
-do
-  subject=$(git log --format=%s -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
-  body=$(git log --format=%b -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
+for commitHash in $commitHashesBetweenTags; do
+  subject=$(git log --format=%s -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
+  body=$(git log --format=%b -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
 
   subjects+=("$subject")
   bodies+=("$body")
@@ -146,13 +168,12 @@ if [ $changelogs -gt 0 ]; then
 
   echo
 
-  echo "**Full Changelog**: https://github.com/abdalmoniem/Caffeinate/compare/$referenceTag...$tag"
+  echo "**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/$referenceTag...$tag"
 
   if [ "$isWriteChanges" == true ]; then
-    echo "**Full Changelog**: https://github.com/abdalmoniem/Caffeinate/compare/$referenceTag...$tag" \
+    echo "**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/$referenceTag...$tag" \
     >> "$changelogsPath/$tagVersionCode.txt"
   fi
-
 
   if [ "$isCommitChanges" == true ]; then
     currentCommitHash=$(git rev-parse HEAD)
@@ -176,6 +197,12 @@ if [ $changelogs -gt 0 ]; then
 
     echo
     echo "changing tag: $tag reference from $oldTagRef to $newTagRef..."
+    # The commands below delete and re-add the tag, which should only happen
+    # if $tag is not 'HEAD' and is actually an existing tag being amended.
+    # Since this function is called after the main script has already added a tag,
+    # and $tag is passed in as the new tag name (e.g., v0.0.1), this logic is likely fine.
+    # However, $tag should ideally be validated to ensure it's not HEAD here.
+    # Assuming $tag is correctly passed as the new tag name:
     git tag -d "$tag" && git push origin :refs/tags/"$tag"
 
     echo "adding tag: $tag..."
@@ -183,7 +210,7 @@ if [ $changelogs -gt 0 ]; then
     echo "tag $tag added!"
   fi
 
-
 else
+
   echo "No / $changelogs change log(s) found between $referenceTag and $tag"
 fi

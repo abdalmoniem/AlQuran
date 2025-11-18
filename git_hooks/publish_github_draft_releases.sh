@@ -3,7 +3,7 @@
 # Replace with your repository owner
 OWNER="abdalmoniem"
 # Replace with your repository name
-REPO="Caffeinate"
+REPO="AlQuran"
 
 # List all draft releases and store their tags in a temporary variable
 draft_tags=$(gh release list --repo "$OWNER/$REPO" --json tagName,isDraft | jq -r '.[] | select(.isDraft == true) | .tagName')

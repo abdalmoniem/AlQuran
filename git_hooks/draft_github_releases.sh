@@ -3,7 +3,7 @@
 # Replace with your repository owner
 OWNER="abdalmoniem"
 # Replace with your repository name
-REPO="Caffeinate"
+REPO="AlQuran"
 
 # List all published releases and store their tags in a temporary variable
 published_tags=$(gh release list --repo "$OWNER/$REPO" --json tagName,isDraft | jq -r '.[] | select(.isDraft == false) | .tagName')

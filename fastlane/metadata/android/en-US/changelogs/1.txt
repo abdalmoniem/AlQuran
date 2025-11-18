@@ -1,0 +1,12 @@
+* Update README.md
+   >
+* Added GitHub Workflows
+   >
+* Fix QuranMediaService Buffering Issues
+   > - Refactored buffering logic in QuranMediaService to improve media playback stability.
+   > - Added ExoPlayerEx utility for enhanced ExoPlayer functionalities.
+   > - Created a script to generate sample data for testing purposes.
+* initial commit
+   >
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/68bec9541fb920307aaf819183b334465374cf07...v0.0.1

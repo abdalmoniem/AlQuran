@@ -7,7 +7,7 @@ currentBranch=$(git rev-parse --abbrev-ref HEAD)
 # shellcheck disable=SC2207
 tags=($(git tag))
 
-filename=./app/build.gradle.kts
+filename=./mobile/build.gradle.kts
 filter="\(versionCode\s\+=\s\+\)\([[:digit:]]\+\)"
 
 echo "HEAD is at $currentBranch -> $HEAD"
