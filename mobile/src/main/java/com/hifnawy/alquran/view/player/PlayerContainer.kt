@@ -1,5 +1,6 @@
-package com.hifnawy.alquran.view.composables
+package com.hifnawy.alquran.view.player
 
+import android.graphics.Color
 import android.os.Build
 import android.view.View
 import android.view.Window
@@ -157,8 +158,8 @@ private fun handleSystemBars(window: Window?, isExpanded: Boolean) {
                                           )
 
     // Clear any previous color settings for a consistent edge-to-edge look
-    window.statusBarColor = android.graphics.Color.TRANSPARENT
-    window.navigationBarColor = android.graphics.Color.TRANSPARENT
+    window.statusBarColor = Color.TRANSPARENT
+    window.navigationBarColor = Color.TRANSPARENT
 
     when {
         // MAKE BARS TRANSPARENT / EDGE-TO-EDGE

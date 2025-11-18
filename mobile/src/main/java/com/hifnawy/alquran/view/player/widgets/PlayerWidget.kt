@@ -1,4 +1,4 @@
-package com.hifnawy.alquran.view.widgets
+package com.hifnawy.alquran.view.player.widgets
 
 import android.content.Context
 import android.content.Intent

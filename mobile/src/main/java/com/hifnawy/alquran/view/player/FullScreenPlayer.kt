@@ -1,4 +1,4 @@
-package com.hifnawy.alquran.view.composables
+package com.hifnawy.alquran.view.player
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image

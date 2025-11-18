@@ -1,4 +1,4 @@
-package com.hifnawy.alquran.view.composables
+package com.hifnawy.alquran.view.gridItems.skeleton
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -47,7 +47,7 @@ fun SkeletonReciterCard(modifier: Modifier, brush: Brush) {
                         .padding(vertical = 10.dp)
             ) {
 
-                // Placeholder for the Reciter Name
+                // placeholder for reciter name
                 Spacer(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -57,8 +57,7 @@ fun SkeletonReciterCard(modifier: Modifier, brush: Brush) {
                             .background(brush)
                 )
 
-                // Placeholder for the moshaf count text
-                // Spacer(modifier = Modifier.height(10.dp))
+                // placeholder for moshaf count text
                 Spacer(
                         modifier = Modifier
                             .fillMaxWidth(0.35f)

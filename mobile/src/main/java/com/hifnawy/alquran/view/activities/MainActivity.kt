@@ -12,7 +12,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.lifecycleScope
 import com.hifnawy.alquran.view.NavigationStack
 import com.hifnawy.alquran.view.theme.AppTheme
-import com.hifnawy.alquran.view.widgets.PlayerWidget
+import com.hifnawy.alquran.view.player.widgets.PlayerWidget
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {

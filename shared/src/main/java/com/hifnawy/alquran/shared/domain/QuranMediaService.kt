@@ -256,7 +256,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
 
                 when (mediaState) {
                     MediaState.RECITER_BROWSE -> {
-                        mediaManager.whenRecitersReady(this@QuranMediaService) { recitersResult ->
+                        mediaManager.whenRecitersReady { recitersResult ->
                             when (recitersResult) {
                                 is Result.Success -> {
                                     val reciters = recitersResult.data
@@ -296,7 +296,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
 
                     MediaState.SURAH_BROWSE   -> {
                         val reciterID = parentId.replace("reciter_", "").toInt()
-                        mediaManager.whenReady(this@QuranMediaService, reciterID) { reciters, surahs, surahsUri ->
+                        mediaManager.whenReady(reciterID) { reciters, surahs, surahsUri ->
                             reciters.find { reciter -> reciter.id == reciterID }?.let { reciter ->
                                 val surahsUriMap = surahsUri.mapIndexed { index, uri ->
                                     Pair(surahs[index].id, uri)

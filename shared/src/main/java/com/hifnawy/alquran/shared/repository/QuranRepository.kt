@@ -6,19 +6,15 @@ import com.google.gson.reflect.TypeToken
 import com.hifnawy.alquran.shared.R
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
-import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
-import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.warn
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.json.JSONObject
-import timber.log.Timber
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
-import kotlin.reflect.KClass
 
 class QuranRepository(private val context: Context) {
 
@@ -64,47 +60,7 @@ class QuranRepository(private val context: Context) {
                 }
             } else {
                 // Error: Map HTTP status code to specific NetworkError enum
-                val errorType = when (response.code) {
-                    401 -> DataError.NetworkError.Unauthorized(
-                            errorCode = response.code,
-                            errorMessage = "${DataError.NetworkError.Unauthorized::class.simpleName}: ${response.message}"
-                    )
-
-                    403 -> DataError.NetworkError.Forbidden(
-                            errorCode = response.code,
-                            errorMessage = "${DataError.NetworkError.Forbidden::class.simpleName}: ${response.message}"
-                    )
-
-                    404 -> DataError.NetworkError.NotFound(
-                            errorCode = response.code,
-                            errorMessage = "${DataError.NetworkError.NotFound::class.simpleName}: ${response.message}"
-                    )
-
-                    408 -> DataError.NetworkError.RequestTimeout(
-                            errorCode = response.code,
-                            errorMessage = "${DataError.NetworkError.RequestTimeout::class.simpleName}: ${response.message}"
-                    )
-
-                    413 -> DataError.NetworkError.PayloadTooLarge(
-                            errorCode = response.code,
-                            errorMessage = "${DataError.NetworkError.PayloadTooLarge::class.simpleName}: ${response.message}"
-                    )
-
-                    429 -> DataError.NetworkError.TooManyRequests(
-                            errorCode = response.code,
-                            errorMessage = "${DataError.NetworkError.TooManyRequests::class.simpleName}: ${response.message}"
-                    )
-
-                    in 500..599 -> DataError.NetworkError.ServerError(
-                            errorCode = response.code,
-                            errorMessage = "${DataError.NetworkError.ServerError::class.simpleName}: ${response.message}"
-                    )
-
-                    else -> DataError.NetworkError.Unknown(
-                            errorCode = response.code,
-                            errorMessage = "${DataError.NetworkError.Unknown::class.simpleName}: ${response.message}"
-                    )
-                }
+                val errorType = getErrorType(response)
                 Result.Error(errorType)
             }
         } catch (ex: IOException) {
@@ -133,53 +89,57 @@ class QuranRepository(private val context: Context) {
         }
     }
 
-    private suspend fun sendRESTRequest(
-            url: String,
-            responseHandler: ((error: Boolean, errorType: KClass<out Exception>?, responseMessage: String) -> Unit)?
-    ) {
-        val client: OkHttpClient = OkHttpClient().newBuilder()
-            .connectTimeout(3, TimeUnit.SECONDS)
-            // .retryOnConnectionFailure(true)
-            .build()
-        val request: Request = Request.Builder()
-            .url(url)
-            .method("GET", null)
-            .addHeader("Accept", "application/json")
-            .build()
+    private fun getErrorType(response: Response): DataError.NetworkError = when (response.code) {
+        401         -> DataError.NetworkError.Unauthorized(
+                errorCode = response.code,
+                errorMessage = "${DataError.NetworkError.Unauthorized::class.simpleName}: ${response.message}"
+        )
 
-        withContext(Dispatchers.IO) {
-            try {
-                async { client.newCall(request).execute() }.await().apply {
-                    responseHandler?.invoke(false, null, body.string())
-                }
-            } catch (ex: Exception) {
-                Timber.warn(ex.message, ex)
-                responseHandler?.invoke(true, ex::class, "Connection failed with error: $ex")
-            }
-        }
+        403         -> DataError.NetworkError.Forbidden(
+                errorCode = response.code,
+                errorMessage = "${DataError.NetworkError.Forbidden::class.simpleName}: ${response.message}"
+        )
+
+        404         -> DataError.NetworkError.NotFound(
+                errorCode = response.code,
+                errorMessage = "${DataError.NetworkError.NotFound::class.simpleName}: ${response.message}"
+        )
+
+        408         -> DataError.NetworkError.RequestTimeout(
+                errorCode = response.code,
+                errorMessage = "${DataError.NetworkError.RequestTimeout::class.simpleName}: ${response.message}"
+        )
+
+        413         -> DataError.NetworkError.PayloadTooLarge(
+                errorCode = response.code,
+                errorMessage = "${DataError.NetworkError.PayloadTooLarge::class.simpleName}: ${response.message}"
+        )
+
+        429         -> DataError.NetworkError.TooManyRequests(
+                errorCode = response.code,
+                errorMessage = "${DataError.NetworkError.TooManyRequests::class.simpleName}: ${response.message}"
+        )
+
+        in 500..599 -> DataError.NetworkError.ServerError(
+                errorCode = response.code,
+                errorMessage = "${DataError.NetworkError.ServerError::class.simpleName}: ${response.message}"
+        )
+
+        else        -> DataError.NetworkError.Unknown(
+                errorCode = response.code,
+                errorMessage = "${DataError.NetworkError.Unknown::class.simpleName}: ${response.message}"
+        )
     }
 
-    suspend fun getRecitersList(context: Context): Result<List<Reciter>, DataError> = sendRESTRequest<List<Reciter>>(recitersURL) { jsonResponse ->
+    suspend fun getRecitersList(): Result<List<Reciter>, DataError> = sendRESTRequest<List<Reciter>>(recitersURL) { jsonResponse ->
         val recitersJsonArray = JSONObject(jsonResponse).getJSONArray(context.getString(R.string.API_RECITERS)).toString()
 
         Gson().fromJson(recitersJsonArray, object : TypeToken<List<Reciter>>() {}.type)
     }
 
-    suspend fun getSurahs(context: Context): List<Surah> {
-        var surahs = emptyList<Surah>()
+    suspend fun getSurahs(): Result<List<Surah>, DataError> = sendRESTRequest(surahsURL) { jsonResponse ->
+        val surahsJsonArray = JSONObject(jsonResponse).getJSONArray(context.getString(R.string.API_SURAHS)).toString()
 
-        sendRESTRequest(surahsURL) { error, _, responseMessage ->
-            if (error) {
-                Timber.warn(responseMessage)
-                return@sendRESTRequest
-            }
-            val surahsJsonArray = JSONObject(responseMessage).getJSONArray(context.getString(R.string.API_SURAHS)).toString()
-
-            surahs = Gson().fromJson(surahsJsonArray, object : TypeToken<List<Surah>>() {}.type)
-        }
-
-        Timber.debug(surahs.joinToString(separator = "\n") { it.toString() })
-
-        return surahs
+        Gson().fromJson(surahsJsonArray, object : TypeToken<List<Surah>>() {}.type)
     }
 }

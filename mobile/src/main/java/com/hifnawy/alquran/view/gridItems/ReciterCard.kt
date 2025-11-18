@@ -1,6 +1,7 @@
-package com.hifnawy.alquran.view.composables
+package com.hifnawy.alquran.view.gridItems
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,12 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.glance.LocalContext
 import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
@@ -74,6 +73,7 @@ fun ReciterCard(
                             .padding(vertical = 10.dp)
                 ) {
                     Text(
+                            modifier = Modifier.basicMarquee(),
                             text = highlightMatchingText(
                                     fullText = reciter.name,
                                     query = searchQuery,
@@ -86,6 +86,7 @@ fun ReciterCard(
                             )
 
                     Text(
+                            modifier = Modifier.basicMarquee(),
                             text = pluralStringResource(R.plurals.moshaf_count, reciter.moshaf.size, reciter.moshaf.size),
                             fontSize = 30.sp,
                             fontFamily = FontFamily(Font(Rs.font.diwany_1))

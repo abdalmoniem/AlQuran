@@ -1,3 +1,12 @@
+* UI/UX Polish
+   > - Updated RecitersScreen and SurahsScreen to reflect changes in data fetching logic.
+   > - Added pull-to-refresh and shimmer loading animations to SurahsScreen for better UX.
+   > - Added skeleton loaders for surah cards while data is being fetched.
+   > - Changed RecitersScreen to load reciters in a grid when space is available
+   > - Refactored composable structures and packages
+* Fix GitHub Actions workflows
+   > - Updated workflow files to use the mobile:assemble task
+   > - Updated README.md to reflect changes in build process
 * Refactored QuranRepository
    > - QuranRepository now handles all API interactions, replacing QuranAPI.
    > - Improved error handling with a Result wrapper for success and erro cases.

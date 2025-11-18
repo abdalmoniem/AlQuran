@@ -1,4 +1,4 @@
-package com.hifnawy.alquran.view.composables
+package com.hifnawy.alquran.view.gridItems
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.utils.TextUtil.highlightMatchingText
-import com.hifnawy.alquran.viewModel.MediaViewModel
 import com.hifnawy.alquran.shared.R as Rs
 
 @Composable
@@ -28,15 +27,13 @@ fun SurahCard(
         modifier: Modifier = Modifier,
         surah: Surah,
         searchQuery: String = "",
-        mediaViewModel: MediaViewModel
+        onClick: (surah: Surah) -> Unit
 ) {
     Card(
             modifier = modifier.aspectRatio(1f),
             shape = RoundedCornerShape(20.dp),
             elevation = CardDefaults.elevatedCardElevation(20.dp),
-            onClick = {
-                mediaViewModel.playMedia(surah)
-            },
+            onClick = { onClick(surah) },
     ) {
         Column(
                 modifier = Modifier.fillMaxSize(),

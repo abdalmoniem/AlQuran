@@ -1,4 +1,4 @@
-package com.hifnawy.alquran.view.widgets
+package com.hifnawy.alquran.view.player.widgets
 
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver

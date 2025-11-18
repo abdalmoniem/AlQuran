@@ -1,4 +1,4 @@
-package com.hifnawy.alquran.view.composables
+package com.hifnawy.alquran.view
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode

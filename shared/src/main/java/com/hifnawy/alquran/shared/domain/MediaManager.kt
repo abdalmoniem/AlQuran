@@ -18,7 +18,6 @@ import com.hifnawy.alquran.shared.repository.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MediaManager(private val context: Context) : LifecycleOwner {
 
@@ -43,50 +42,40 @@ class MediaManager(private val context: Context) : LifecycleOwner {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
     }
 
-    fun whenRecitersReady(context: Context, onReady: (result: Result<List<Reciter>, DataError>) -> Unit) {
+    fun whenRecitersReady(onReady: (result: Result<List<Reciter>, DataError>) -> Unit) {
         when {
-            reciters.isEmpty() -> lifecycleScope.launch(Dispatchers.IO) { onReady(async { quranRepository.getRecitersList(context) }.await()) }
+            reciters.isEmpty() -> lifecycleScope.launch(Dispatchers.IO) { onReady(async { quranRepository.getRecitersList() }.await()) }
 
             else               -> onReady(Result.Success(reciters))
         }
     }
 
-    fun whenSurahsReady(context: Context, onReady: (surahs: List<Surah>) -> Unit): Boolean = when {
-        surahs.isEmpty() -> {
-            lifecycleScope.launch(Dispatchers.IO) {
-                surahs = async { quranRepository.getSurahs(context) }.await().sortedBy { surah -> surah.id }
-                withContext(Dispatchers.Main) {
-                    onReady(surahs)
-                }
-            }
+    fun whenSurahsReady(onReady: (result: Result<List<Surah>, DataError>) -> Unit) {
+        when {
+            surahs.isEmpty() -> lifecycleScope.launch(Dispatchers.IO) { onReady(async { quranRepository.getSurahs() }.await()) }
 
-            false
-        }
-
-        else             -> {
-            onReady(surahs)
-
-            true
+            else             -> onReady(Result.Success(surahs))
         }
     }
 
-    fun whenReady(context: Context, reciterID: Int, onReady: (reciters: List<Reciter>, surahs: List<Surah>, surahsUri: List<Uri>) -> Unit) = when {
+    fun whenReady(reciterID: Int, onReady: (reciters: List<Reciter>, surahs: List<Surah>, surahsUri: List<Uri>) -> Unit) = when {
         reciters.isEmpty() || surahs.isEmpty() -> {
-            whenRecitersReady(context) { result ->
+            whenRecitersReady { result ->
                 if (result is Result.Success) reciters = result.data
 
-                whenSurahsReady(context) {
+                whenSurahsReady { result ->
                     val reciter = reciters.first { it.id == reciterID }
                     val moshaf = reciter.moshaf.first()
                     val moshafSurahs = moshaf.surah_list.split(",").map { it.toInt() }
 
-                    surahs = it.filter { it.id in moshafSurahs }.sortedBy { surah -> surah.id }
+                    if (result !is Result.Success) return@whenSurahsReady
+                    surahs = result.data.filter { it.id in moshafSurahs }.sortedBy { surah -> surah.id }
 
                     surahsUri = getReciterSurahUris(reciterID, surahs)
+
+                    onReady(reciters, surahs, surahsUri)
                 }
             }
-
-            onReady(reciters, surahs, surahsUri)
         }
 
         else                                   -> {

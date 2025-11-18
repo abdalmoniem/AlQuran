@@ -1,15 +1,12 @@
 package com.hifnawy.alquran.view.screens
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,22 +15,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.shared.domain.MediaManager
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
-import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
-import com.hifnawy.alquran.view.composables.PlayerContainer
-import com.hifnawy.alquran.view.composables.SurahsGrid
+import com.hifnawy.alquran.shared.repository.DataError
+import com.hifnawy.alquran.shared.repository.Result
+import com.hifnawy.alquran.view.DataErrorScreen
+import com.hifnawy.alquran.view.PullToRefreshIndicator
+import com.hifnawy.alquran.view.grids.SurahsGrid
+import com.hifnawy.alquran.view.grids.skeleton.SkeletonSurahsGrid
+import com.hifnawy.alquran.view.player.PlayerContainer
 import com.hifnawy.alquran.viewModel.MediaViewModel
-import timber.log.Timber
-import com.hifnawy.alquran.shared.R as Rs
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -44,54 +40,95 @@ fun SurahsScreen(
 ) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         val context = LocalContext.current
+        val pullToRefreshState = rememberPullToRefreshState()
         val mediaManager = remember { MediaManager(context) }
+        var isLoading by remember { mutableStateOf(true) }
+        var dataError: DataError? by remember { mutableStateOf(null) }
         var surahs by remember { mutableStateOf(listOf<Surah>()) }
         var reciterSurahs by remember { mutableStateOf(listOf<Surah>()) }
-        var isLoading by remember { mutableStateOf(true) }
 
-        LaunchedEffect(Unit) {
-            mediaManager.whenSurahsReady(context) {
-                surahs = it
+        LaunchedEffect(isLoading, surahs) {
+            if (isLoading) {
+                if (dataError != null) delay(3.seconds) // for testing
+                mediaManager.whenSurahsReady { result ->
+                    when (result) {
+                        is Result.Success -> {
+                            surahs = result.data
+                            dataError = null
+                        }
 
-                val moshafSurahs = moshaf.surah_list.split(",").map { surahIdStr -> surahIdStr.toInt() }
-                reciterSurahs = surahs.filter { surah -> surah.id in moshafSurahs }
-                isLoading = false
+                        is Result.Error   -> {
+                            dataError = result.error
+                            surahs = emptyList()
+                        }
+                    }
 
-                mediaViewModel.playerState = mediaViewModel.playerState.copy(
-                        reciter = reciter,
-                        surahsServer = moshaf.server
-                )
+                    val moshafSurahs = moshaf.surah_list.split(",").map { surahIdStr -> surahIdStr.toInt() }
+                    reciterSurahs = surahs.filter { surah -> surah.id in moshafSurahs }
+
+                    mediaViewModel.playerState = mediaViewModel.playerState.copy(reciter = reciter, surahsServer = moshaf.server)
+
+                    isLoading = false
+                }
             }
+            // delay(3.seconds)
+            // mediaManager.whenSurahsReady { result ->
+            //     surahs = it
+            //
+            //     val moshafSurahs = moshaf.surah_list.split(",").map { surahIdStr -> surahIdStr.toInt() }
+            //     reciterSurahs = surahs.filter { surah -> surah.id in moshafSurahs }
+            //     isLoading = false
+            //
+            //     mediaViewModel.playerState = mediaViewModel.playerState.copy(
+            //             reciter = reciter,
+            //             surahsServer = moshaf.server
+            //     )
+            // }
         }
 
-        Box(
+        PullToRefreshBox(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentAlignment = Alignment.Center
+                state = pullToRefreshState,
+                indicator = { PullToRefreshIndicator(isLoading, pullToRefreshState) },
+                contentAlignment = Alignment.Center,
+                isRefreshing = isLoading,
+                onRefresh = { isLoading = true }
         ) {
-            when {
-                isLoading -> CircularWavyProgressIndicator(
-                        modifier = Modifier.size(100.dp),
-                        stroke = Stroke(width = 10f)
-                )
-
-                else      -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Text(
-                                text = reciter.name,
-                                fontSize = 50.sp,
-                                fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2))
-                        )
-
-                        Spacer(modifier = Modifier.size(5.dp))
-
-                        SurahsGrid(surahs = reciterSurahs, mediaViewModel = mediaViewModel)
-                    }
-
-                    PlayerContainer(mediaViewModel = mediaViewModel)
-                }
-            }
+            Content(
+                    isLoading = isLoading,
+                    dataError = dataError,
+                    reciter = reciter,
+                    reciterSurahs = reciterSurahs,
+                    mediaViewModel = mediaViewModel
+            )
         }
     }
+}
+
+@Composable
+private fun BoxScope.Content(
+        isLoading: Boolean,
+        dataError: DataError?,
+        reciter: Reciter,
+        reciterSurahs: List<Surah>,
+        mediaViewModel: MediaViewModel
+) {
+    if (isLoading) {
+        SkeletonSurahsGrid()
+        return
+    }
+
+    if (dataError != null) {
+        val error = dataError
+        DataErrorScreen(dataError = error)
+        return
+    }
+
+    SurahsGrid(reciter = reciter, surahs = reciterSurahs) { surah ->
+        mediaViewModel.playMedia(surah)
+    }
+
+    PlayerContainer(mediaViewModel = mediaViewModel)
 }

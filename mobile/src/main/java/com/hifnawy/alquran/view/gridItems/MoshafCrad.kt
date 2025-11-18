@@ -1,5 +1,6 @@
-package com.hifnawy.alquran.view.composables
+package com.hifnawy.alquran.view.gridItems
 
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,10 +45,11 @@ fun MoshafCard(
             )
 
             Text(
-                    text = "${moshaf.name} - ${pluralStringResource(R.plurals.surah_count, moshaf.surah_total, moshaf.surah_total)}",
                     modifier = Modifier
                         .weight(1f)
                         .padding(vertical = 10.dp)
+                        .basicMarquee(),
+                    text = "${moshaf.name} - ${pluralStringResource(R.plurals.surah_count, moshaf.surah_total, moshaf.surah_total)}",
             )
         }
     }
