@@ -44,12 +44,13 @@ fun SurahsScreen(
 ) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         val context = LocalContext.current
+        val mediaManager = remember { MediaManager(context) }
         var surahs by remember { mutableStateOf(listOf<Surah>()) }
         var reciterSurahs by remember { mutableStateOf(listOf<Surah>()) }
         var isLoading by remember { mutableStateOf(true) }
 
         LaunchedEffect(Unit) {
-            MediaManager.whenSurahsReady(context) {
+            mediaManager.whenSurahsReady(context) {
                 surahs = it
 
                 val moshafSurahs = moshaf.surah_list.split(",").map { surahIdStr -> surahIdStr.toInt() }

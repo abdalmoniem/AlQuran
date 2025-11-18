@@ -12,26 +12,24 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.lifecycleScope
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
-import com.hifnawy.alquran.shared.repository.QuranAPI
+import com.hifnawy.alquran.shared.repository.DataError
+import com.hifnawy.alquran.shared.repository.QuranRepository
+import com.hifnawy.alquran.shared.repository.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-object MediaManager : LifecycleOwner {
+class MediaManager(private val context: Context) : LifecycleOwner {
 
-    var onMediaReady: ((
-            reciter: Reciter,
-            surah: Surah,
-            surahUri: Uri,
-            surahDrawable: Drawable?
-    ) -> Unit)? = null
+    var onMediaReady: ((reciter: Reciter, surah: Surah, surahUri: Uri, surahDrawable: Drawable?) -> Unit)? = null
 
     private var reciters: List<Reciter> = emptyList()
     private var surahs: List<Surah> = emptyList()
     private var surahsUri: List<Uri> = emptyList()
     private var currentReciter: Reciter? = null
     private var currentSurah: Surah? = null
+    private val quranRepository by lazy { QuranRepository(context) }
     private val lifecycleRegistry: LifecycleRegistry by lazy { LifecycleRegistry(this) }
 
     override val lifecycle: Lifecycle
@@ -45,30 +43,18 @@ object MediaManager : LifecycleOwner {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
     }
 
-    fun whenRecitersReady(context: Context, onReady: (reciters: List<Reciter>) -> Unit) = when {
-        reciters.isEmpty() -> {
-            lifecycleScope.launch(Dispatchers.IO) {
-                reciters =
-                        async { QuranAPI.getRecitersList(context) }.await().sortedBy { reciter -> reciter.id }
-                withContext(Dispatchers.Main) {
-                    onReady(reciters)
-                }
-            }
+    fun whenRecitersReady(context: Context, onReady: (result: Result<List<Reciter>, DataError>) -> Unit) {
+        when {
+            reciters.isEmpty() -> lifecycleScope.launch(Dispatchers.IO) { onReady(async { quranRepository.getRecitersList(context) }.await()) }
 
-            false
-        }
-
-        else               -> {
-            onReady(reciters)
-
-            true
+            else               -> onReady(Result.Success(reciters))
         }
     }
 
     fun whenSurahsReady(context: Context, onReady: (surahs: List<Surah>) -> Unit): Boolean = when {
         surahs.isEmpty() -> {
             lifecycleScope.launch(Dispatchers.IO) {
-                surahs = async { QuranAPI.getSurahs(context) }.await().sortedBy { surah -> surah.id }
+                surahs = async { quranRepository.getSurahs(context) }.await().sortedBy { surah -> surah.id }
                 withContext(Dispatchers.Main) {
                     onReady(surahs)
                 }
@@ -84,55 +70,29 @@ object MediaManager : LifecycleOwner {
         }
     }
 
-    fun whenReady(context: Context, onReady: (reciters: List<Reciter>, surahs: List<Surah>) -> Unit) = when {
-        reciters.isEmpty() || surahs.isEmpty() -> {
-            lifecycleScope.launch(Dispatchers.IO) {
-                if (reciters.isEmpty()) reciters = async { QuranAPI.getRecitersList(context) }.await().sortedBy { reciter -> reciter.id }
-                if (surahs.isEmpty()) surahs = async { QuranAPI.getSurahs(context) }.await().sortedBy { surah -> surah.id }
-
-                withContext(Dispatchers.Main) {
-                    onReady(reciters, surahs)
-                }
-            }
-
-            false
-        }
-
-        else                                   -> {
-            onReady(reciters, surahs)
-            true
-        }
-    }
-
     fun whenReady(context: Context, reciterID: Int, onReady: (reciters: List<Reciter>, surahs: List<Surah>, surahsUri: List<Uri>) -> Unit) = when {
         reciters.isEmpty() || surahs.isEmpty() -> {
-            lifecycleScope.launch(Dispatchers.IO) {
-                if (reciters.isEmpty()) reciters = async { QuranAPI.getRecitersList(context) }.await().sortedBy { reciter -> reciter.id }
+            whenRecitersReady(context) { result ->
+                if (result is Result.Success) reciters = result.data
 
-                if (surahs.isEmpty()) {
+                whenSurahsReady(context) {
                     val reciter = reciters.first { it.id == reciterID }
                     val moshaf = reciter.moshaf.first()
                     val moshafSurahs = moshaf.surah_list.split(",").map { it.toInt() }
 
-                    surahs = async { QuranAPI.getSurahs(context) }.await().filter { it.id in moshafSurahs }.sortedBy { surah -> surah.id }
+                    surahs = it.filter { it.id in moshafSurahs }.sortedBy { surah -> surah.id }
 
                     surahsUri = getReciterSurahUris(reciterID, surahs)
                 }
-
-                withContext(Dispatchers.Main) {
-                    onReady(reciters, surahs, surahsUri)
-                }
             }
 
-            false
+            onReady(reciters, surahs, surahsUri)
         }
 
         else                                   -> {
             surahsUri = getReciterSurahUris(reciterID, surahs)
 
             onReady(reciters, surahs, surahsUri)
-
-            true
         }
     }
 

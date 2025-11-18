@@ -17,9 +17,9 @@ sealed class ServiceStatus {
 
             return "reciter=(${reciter.id}, ${reciter.name}), " +
                    "surah=(${surah.id}, ${surah.name}), " +
-                   "duration=${durationMs.milliseconds.toFormattedTime(showHours = showHours)}, " +
-                   "currentPosition=${currentPositionMs.milliseconds.toFormattedTime(showHours = showHours)}, " +
-                   "bufferedPosition=${bufferedPositionMs.milliseconds.toFormattedTime(showHours = showHours)}"
+                   "time: ${currentPositionMs.milliseconds.toFormattedTime(showHours = showHours)} " +
+                   "(${bufferedPositionMs.milliseconds.toFormattedTime(showHours = showHours)}) / " +
+                   durationMs.milliseconds.toFormattedTime(showHours = showHours)
         }
     }
 

@@ -31,10 +31,13 @@ import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.R
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
+import com.hifnawy.alquran.shared.repository.DataError
+import com.hifnawy.alquran.shared.repository.Result
 import com.hifnawy.alquran.shared.utils.ExoPlayerEx
 import com.hifnawy.alquran.shared.utils.ExoPlayerEx.asString
 import com.hifnawy.alquran.shared.utils.ImageUtil.drawTextOn
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
+import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.error
 import com.hifnawy.alquran.shared.utils.NumberExt.sp
 import com.hifnawy.alquran.shared.utils.SerializableExt.Companion.getTypedSerializable
 import kotlinx.coroutines.CoroutineScope
@@ -86,24 +89,19 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         private const val CHANNEL_ID = "Quran Playback"
     }
 
-    private val quranApplication by lazy { application as QuranApplication }
     private val serviceJob = Job()
-    private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
-    private val mediaSession: MediaSessionCompat by lazy { MediaSessionCompat(this, this::class.java.simpleName) }
-    private val audioAttributes by lazy {
-        AudioAttributes.Builder()
-            .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
-            .setUsage(C.USAGE_MEDIA)
-            .build()
+    private val serviceScope by lazy { CoroutineScope(Dispatchers.Main + serviceJob) }
+    private val quranApplication by lazy { application as QuranApplication }
+    private val mediaSession by lazy { MediaSessionCompat(this, this::class.java.simpleName) }
+    private val mediaManager by lazy { MediaManager(this) }
+    private val audioAttributes by lazy { AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_SPEECH).setUsage(C.USAGE_MEDIA).build() }
+    private val player by lazy {
+        ExoPlayer.Builder(this).build().apply {
+            setAudioAttributes(this@QuranMediaService.audioAttributes, true)
+            setHandleAudioBecomingNoisy(true)
+        }
     }
-    private val player: ExoPlayer by lazy {
-        ExoPlayer.Builder(this)
-            .build()
-            .apply {
-                setAudioAttributes(this@QuranMediaService.audioAttributes, true)
-                setHandleAudioBecomingNoisy(true)
-            }
-    }
+
     private val playerListener = object : Player.Listener {
 
         override fun onIsPlayingChanged(isPlayingNow: Boolean) {
@@ -170,7 +168,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
             isActive = true
         }
 
-        MediaManager.apply {
+        mediaManager.apply {
             onMediaReady = ::updateMediaSession
         }
 
@@ -208,7 +206,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         }
 
         // stop mediaManager
-        MediaManager.apply {
+        mediaManager.apply {
             stopLifecycle()
         }
 
@@ -258,35 +256,47 @@ class QuranMediaService : MediaBrowserServiceCompat() {
 
                 when (mediaState) {
                     MediaState.RECITER_BROWSE -> {
-                        MediaManager.whenRecitersReady(this@QuranMediaService) { reciters ->
-                            reciterDrawables.ifEmpty {
-                                reciterDrawables = reciters.mapIndexed { index, reciter ->
-                                    (if ((index % 2) == 0) R.drawable.reciter_background_2
-                                    else R.drawable.reciter_background_3).drawTextOn(
-                                            context = this@QuranMediaService,
-                                            text = reciter.name,
-                                            // subText = if (reciter.recitationStyle != null) "(${reciter.recitationStyle.style})" else "",
-                                            fontFace = R.font.aref_ruqaa,
-                                            fontSize = 60.sp.toFloat(),
-                                            fontMargin = 0
-                                    )
+                        mediaManager.whenRecitersReady(this@QuranMediaService) { recitersResult ->
+                            when (recitersResult) {
+                                is Result.Success -> {
+                                    val reciters = recitersResult.data
+                                    reciterDrawables.ifEmpty {
+                                        reciterDrawables = reciters.mapIndexed { index, reciter ->
+                                            (if ((index % 2) == 0) R.drawable.reciter_background_2
+                                            else R.drawable.reciter_background_3).drawTextOn(
+                                                    context = this@QuranMediaService,
+                                                    text = reciter.name,
+                                                    // subText = if (reciter.recitationStyle != null) "(${reciter.recitationStyle.style})" else "",
+                                                    fontFace = R.font.aref_ruqaa,
+                                                    fontSize = 60.sp.toFloat(),
+                                                    fontMargin = 0
+                                            )
+                                        }
+                                    }
+
+                                    mediaItems = reciters.mapIndexed { reciterIndex, reciter ->
+                                        createBrowsableMediaItem(
+                                                "reciter_${reciter.id}",
+                                                reciterIndex,
+                                                reciter.name
+                                        )
+                                    }.toMutableList()
+
+                                    result.sendResult(mediaItems)
+                                }
+
+                                is Result.Error   -> when (val error = recitersResult.error) {
+                                    is DataError.LocalError   -> Timber.error(error.errorMessage)
+                                    is DataError.NetworkError -> Timber.error("${error.errorCode} ${error.errorMessage}")
+                                    is DataError.ParseError   -> Timber.error(error.errorMessage)
                                 }
                             }
-                            mediaItems = reciters.mapIndexed { reciterIndex, reciter ->
-                                createBrowsableMediaItem(
-                                        "reciter_${reciter.id}",
-                                        reciterIndex,
-                                        reciter.name
-                                )
-                            }.toMutableList()
-
-                            result.sendResult(mediaItems)
                         }
                     }
 
                     MediaState.SURAH_BROWSE   -> {
                         val reciterID = parentId.replace("reciter_", "").toInt()
-                        MediaManager.whenReady(this@QuranMediaService, reciterID) { reciters, surahs, surahsUri ->
+                        mediaManager.whenReady(this@QuranMediaService, reciterID) { reciters, surahs, surahsUri ->
                             reciters.find { reciter -> reciter.id == reciterID }?.let { reciter ->
                                 val surahsUriMap = surahsUri.mapIndexed { index, uri ->
                                     Pair(surahs[index].id, uri)
@@ -501,7 +511,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
     private fun processSurah(reciter: Reciter, surah: Surah) {
         if (player.isPlaying) player.stop()
 
-        MediaManager.processSurah(this@QuranMediaService, reciter, surah)
+        mediaManager.processSurah(this@QuranMediaService, reciter, surah)
     }
 
     private fun playMedia(surah: Surah, surahUri: Uri) {
@@ -700,13 +710,13 @@ class QuranMediaService : MediaBrowserServiceCompat() {
     fun skipToNextSurah() {
         player.stop()
         currentSurahPosition = -1L
-        MediaManager.processNextSurah(this@QuranMediaService)
+        mediaManager.processNextSurah(this@QuranMediaService)
     }
 
     fun skipToPreviousSurah() {
         player.stop()
         currentSurahPosition = -1L
-        MediaManager.processPreviousSurah(this@QuranMediaService)
+        mediaManager.processPreviousSurah(this@QuranMediaService)
     }
 
     fun stopMedia() {

@@ -1,3 +1,10 @@
+* Refactored QuranRepository
+   > - QuranRepository now handles all API interactions, replacing QuranAPI.
+   > - Improved error handling with a Result wrapper for success and erro cases.
+   > - Updated MediaManager and QuranMediaService to utilize the new repository structure.
+   > - Updated RecitersScreen and SurahsScreen to reflect changes in data fetching logic.
+   > - Added pull-to-refresh and shimmer loading animations to RecitersScreen for better UX.
+   > - Added skeleton loaders for reciter cards while data is being fetched.
 * Update README.md
    >
 * Added GitHub Workflows
