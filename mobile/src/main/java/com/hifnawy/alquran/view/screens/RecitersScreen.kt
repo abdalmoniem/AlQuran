@@ -33,11 +33,13 @@ import com.hifnawy.alquran.shared.domain.MediaManager
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.repository.DataError
 import com.hifnawy.alquran.shared.repository.Result
+import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import com.hifnawy.alquran.view.composables.PlayerContainer
 import com.hifnawy.alquran.view.composables.PullToRefreshIndicator
 import com.hifnawy.alquran.view.composables.RecitersList
 import com.hifnawy.alquran.view.composables.SkeletonRecitersList
 import com.hifnawy.alquran.viewModel.MediaViewModel
+import timber.log.Timber
 
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -50,13 +52,20 @@ fun RecitersScreen(mediaViewModel: MediaViewModel, navController: NavController)
         var dataError: DataError? by remember { mutableStateOf(null) }
         var reciters by remember { mutableStateOf(listOf<Reciter>()) }
 
-        LaunchedEffect(isLoading) {
+        LaunchedEffect(isLoading, reciters) {
             if (isLoading) {
                 // delay(10.seconds) // for testing
                 mediaManager.whenRecitersReady(context) { result ->
                     when (result) {
-                        is Result.Success -> reciters = result.data
-                        is Result.Error   -> dataError = result.error
+                        is Result.Success -> {
+                            reciters = result.data
+                            dataError = null
+                        }
+
+                        is Result.Error   -> {
+                            dataError = result.error
+                            reciters = emptyList()
+                        }
                     }
 
                     isLoading = false

@@ -61,11 +61,11 @@ jobs:
 
       - name: Build App
         if: matrix.build-mode == 'manual'
-        run: bash gradlew :app:assembleDebug
+        run: bash gradlew mobile:assembleDebug
 
       - name: Get APK Name
         run: |
-          apk=$(find app/build/outputs/apk/debug/*.apk)
+          apk=$(find mobile/build/outputs/apk/debug/*.apk)
           echo $apk
           echo APK_PATH=$apk >> $GITHUB_ENV
 

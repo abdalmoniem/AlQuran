@@ -43,11 +43,11 @@ jobs:
         uses: gradle/wrapper-validation-action@v2.1.3
 
       - name: Build Debug APK
-        run: bash gradlew app:assembleDebug
+        run: bash gradlew mobile:assembleDebug
 
       - name: Get Debug APK Name
         run: |
-          debugApk=$(find app/build/outputs/apk/debug/*.apk)
+          debugApk=$(find mobile/build/outputs/apk/debug/*.apk)
           echo $debugApk
           echo ARTIFACT_NAME=$(basename $debugApk) >> $GITHUB_ENV
           echo ARTIFACT_PATH=$debugApk >> $GITHUB_ENV

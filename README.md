@@ -5,9 +5,9 @@
     <p>Listen to AlQuran anywhere</p>
 
 [![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)
-[![Debug Build](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_debug_variant.yml/badge.svg)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_debug_variant.yml)
-[![Release Build](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_release_variant.yml/badge.svg)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_release_variant.yml)
-[![New Release](https://github.com/abdalmoniem/AlQuran/actions/workflows/publish_release_on_tag.yml/badge.svg)](https://github.com/abdalmoniem/AlQuran/actions/workflows/publish_release_on_tag.yml)
+[![Debug Build](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/build_debug_variant.yml?logo=github&label=Debug%20Build)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_debug_variant.yml)
+[![Release Build](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/build_release_variant.yml?logo=github&label=Release%20Build)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_release_variant.yml)
+[![New Release](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/publish_release_on_tag.yml?logo=github&label=New%20Release)](https://github.com/abdalmoniem/AlQuran/actions/workflows/publish_release_on_tag.yml)
 
 [//]: # ([![CodeFactor]&#40;https://www.codefactor.io/repository/github/abdalmoniem/AlQuran/badge&#41;]&#40;https://www.codefactor.io/repository/github/abdalmoniem/AlQuran&#41;)
 [//]: # ([![Codacy Badge]&#40;https://app.codacy.com/project/badge/Grade/0beba9b2841c40aa982513161d5febe5&#41;]&#40;https://app.codacy.com/gh/abdalmoniem/AlQuran&#41;)

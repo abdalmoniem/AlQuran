@@ -55,10 +55,10 @@ jobs:
       - name: Build APKs
         run: |
           ls
-          bash gradlew app:assembleRelease
+          bash gradlew mobile:assembleRelease
       - name: Get Release APK Name
         run: |
-          releaseApk=$(find app/build/outputs/apk/release/*.apk)
+          releaseApk=$(find mobile/build/outputs/apk/release/*.apk)
           echo $releaseApk
           echo ARTIFACT_NAME=$(basename $releaseApk) >> $GITHUB_ENV
           echo ARTIFACT_PATH=$releaseApk >> $GITHUB_ENV
