@@ -49,7 +49,7 @@ fun MoshafCard(
                         .weight(1f)
                         .padding(vertical = 10.dp)
                         .basicMarquee(),
-                    text = "${moshaf.name} - ${pluralStringResource(R.plurals.surah_count, moshaf.surah_total, moshaf.surah_total)}",
+                    text = "${moshaf.name} - ${pluralStringResource(R.plurals.surah_count, moshaf.surahsCount, moshaf.surahsCount)}",
             )
         }
     }

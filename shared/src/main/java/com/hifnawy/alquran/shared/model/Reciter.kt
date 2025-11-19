@@ -2,13 +2,18 @@ package com.hifnawy.alquran.shared.model
 
 import java.io.Serializable
 
+@JvmInline
+value class ReciterId(val value: Int)
+
+val Int.asReciterId: ReciterId get() = ReciterId(this)
+
 /**
  * Represents a single Quran reciter.
  */
 data class Reciter(
-        val id: Int,
+        val id: ReciterId,
         val name: String,
-        val letter: String, // Likely the first letter of the name
-        val date: String, // ISO 8601 formatted date string
-        val moshaf: List<Moshaf> // A list of available recitations/versions (moshaf)
+        val letter: String,
+        val date: String,
+        val moshaf: List<Moshaf>
 ) : Serializable

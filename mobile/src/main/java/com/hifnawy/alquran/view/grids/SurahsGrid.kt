@@ -104,7 +104,7 @@ fun SurahsGrid(
 
                 SurahCard(
                         modifier = Modifier.animateItemPosition(
-                                duration = 300,
+                                durationMs = 300,
                                 animationType = when {
                                     isScrollingDown -> AnimationType.FallDown
                                     else            -> AnimationType.RiseUp

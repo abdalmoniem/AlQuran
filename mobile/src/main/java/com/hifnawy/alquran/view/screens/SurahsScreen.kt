@@ -60,8 +60,7 @@ fun SurahsScreen(
                         }
                     }
 
-                    val moshafSurahs = moshaf.surah_list.split(",").map { surahIdStr -> surahIdStr.toInt() }
-                    reciterSurahs = surahs.filter { surah -> surah.id in moshafSurahs }
+                    reciterSurahs = surahs.filter { surah -> surah.id in moshaf.surahIds }
 
                     mediaViewModel.playerState = mediaViewModel.playerState.copy(reciter = reciter, moshaf = moshaf, surahsServer = moshaf.server)
 

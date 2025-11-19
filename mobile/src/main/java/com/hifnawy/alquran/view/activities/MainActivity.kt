@@ -15,8 +15,21 @@ import com.hifnawy.alquran.view.theme.AppTheme
 import com.hifnawy.alquran.view.player.widgets.PlayerWidget
 import kotlinx.coroutines.launch
 
+/**
+ * The main activity of the app.
+ *
+ * @author AbdElMoniem ElHifnawy
+ */
 class MainActivity : ComponentActivity() {
 
+    /**
+     * Called when the activity is created.
+     *
+     * @param savedInstanceState [Bundle] If the activity is being re-initialized after
+     *     previously being shut down then this Bundle contains the data it most
+     *     recently supplied in [onSaveInstanceState].
+     *     Note: Otherwise it is null.
+     */
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,22 +48,17 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Update the glance widgets with the current list of notifications.
+     * Update all glance widgets.
      *
      * @see [GlanceAppWidgetManager]
      */
     private fun updateGlanceWidgets() {
-        // Use the lifecycleScope to run the suspend function
         lifecycleScope.launch {
             val manager = GlanceAppWidgetManager(this@MainActivity)
 
-            // Get all active GlanceIds for your specific widget class
             val glanceIds = manager.getGlanceIds(PlayerWidget::class.java)
 
-            // Iterate over all instances and call update()
-            glanceIds.forEach { glanceId ->
-                PlayerWidget().update(this@MainActivity, glanceId)
-            }
+            glanceIds.forEach { glanceId -> PlayerWidget().update(this@MainActivity, glanceId) }
         }
     }
 }

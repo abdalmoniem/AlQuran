@@ -1,5 +1,6 @@
 package com.hifnawy.alquran.view.grids
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridItemScope
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -24,6 +27,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -31,31 +36,105 @@ import androidx.compose.ui.unit.dp
 import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
+import com.hifnawy.alquran.shared.model.ReciterId
+import com.hifnawy.alquran.shared.model.asReciterId
 import com.hifnawy.alquran.utils.ModifierExt.AnimationType
 import com.hifnawy.alquran.utils.ModifierExt.animateItemPosition
+import com.hifnawy.alquran.view.ShimmerAnimation
 import com.hifnawy.alquran.view.gridItems.ReciterCard
 
 @Composable
 fun RecitersGrid(
         modifier: Modifier = Modifier,
         reciters: List<Reciter>,
+        isSkeleton: Boolean = false,
         onMoshafClick: (Reciter, Moshaf) -> Unit = { _, _ -> }
 ) {
-    Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(10.dp)
-    ) {
-        var searchQuery by remember { mutableStateOf("") }
-        var expandedReciterId by remember { mutableIntStateOf(-1) }
-        var lastAnimatedIndex by remember { mutableIntStateOf(-1) }
+    RecitersGridContainer(isSkeleton = isSkeleton) { brush ->
+        Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(10.dp)
+        ) {
+            var searchQuery by remember { mutableStateOf("") }
+            var expandedReciterId by remember { mutableStateOf((-1).asReciterId) }
+            var lastAnimatedIndex by remember { mutableIntStateOf(-1) }
 
-        val listState = rememberLazyGridState()
-        val filteredReciters = remember(reciters, searchQuery) { filterReciters(reciters, searchQuery) }
+            val listState = rememberLazyGridState()
+            val filteredReciters = remember(reciters, searchQuery) { filterReciters(reciters, searchQuery) }
 
+            SearchBar(
+                    isSkeleton = isSkeleton,
+                    brush = brush,
+                    query = searchQuery,
+                    onQueryChange = { newQuery -> searchQuery = newQuery }
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            LazyVerticalGrid(
+                    state = listState,
+                    columns = GridCells.Adaptive(minSize = 250.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                gridItems(isSkeleton = isSkeleton, items = filteredReciters) { index, reciter ->
+                    val isScrollingDown = index > lastAnimatedIndex
+
+                    GridItem(
+                            isScrollingDown = isScrollingDown,
+                            reciter = reciter,
+                            expandedReciterId = expandedReciterId,
+                            searchQuery = searchQuery,
+                            isSkeleton = isSkeleton,
+                            brush = brush,
+                            onToggleExpand = { reciterId ->
+                                expandedReciterId = when (expandedReciterId) {
+                                    reciterId -> (-1).asReciterId // Collapse it
+                                    else      -> reciterId // Expand the new one
+                                }
+                            },
+                            onMoshafClick = onMoshafClick
+                    )
+
+                    lastAnimatedIndex = index
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecitersGridContainer(
+        isSkeleton: Boolean,
+        content: @Composable (Brush?) -> Unit
+) = when {
+    isSkeleton -> ShimmerAnimation { brush -> content(brush) }
+    else       -> content(null)
+}
+
+@Composable
+private fun SearchBar(
+        isSkeleton: Boolean,
+        brush: Brush?,
+        query: String,
+        onQueryChange: (String) -> Unit = {}
+) {
+    if (isSkeleton) {
+        if (brush == null) return
+        Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(brush)
+        )
+    } else {
         TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+                value = query,
+                onValueChange = onQueryChange,
                 shape = RoundedCornerShape(10.dp),
                 colors = TextFieldDefaults.colors(
                         focusedIndicatorColor = Color.Transparent,
@@ -72,44 +151,50 @@ fun RecitersGrid(
                     )
                 }
         )
-
-        Spacer(Modifier.height(10.dp))
-
-        LazyVerticalGrid(
-                state = listState,
-                columns = GridCells.Adaptive(minSize = 250.dp),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            itemsIndexed(filteredReciters, key = { _, reciter -> reciter.id }) { index, reciter ->
-                val isScrollingDown = index > lastAnimatedIndex
-
-                ReciterCard(
-                        modifier = Modifier.animateItemPosition(
-                                duration = 300,
-                                animationType = when {
-                                    isScrollingDown -> AnimationType.FallDown
-                                    else            -> AnimationType.RiseUp
-                                }
-                        ),
-                        reciter = reciter,
-                        searchQuery = searchQuery,
-                        isExpanded = expandedReciterId == reciter.id,
-                        onToggleExpand = {
-                            expandedReciterId = when (expandedReciterId) {
-                                reciter.id -> -1
-                                else       -> reciter.id
-                            }
-                        },
-                        onMoshafClick = onMoshafClick
-                )
-
-                lastAnimatedIndex = index
-            }
-        }
     }
+}
+
+@Composable
+private fun GridItem(
+        isScrollingDown: Boolean,
+        reciter: Reciter?,
+        expandedReciterId: ReciterId,
+        searchQuery: String,
+        isSkeleton: Boolean,
+        brush: Brush?,
+        onToggleExpand: (ReciterId) -> Unit = { },
+        onMoshafClick: (Reciter, Moshaf) -> Unit
+) {
+    ReciterCard(
+            modifier = Modifier.animateItemPosition(
+                    durationMs = 300,
+                    animationType = when {
+                        isScrollingDown -> AnimationType.FallDown
+                        else            -> AnimationType.RiseUp
+                    }
+            ),
+            reciter = reciter,
+            isExpanded = when {
+                reciter == null -> false
+                else            -> expandedReciterId == reciter.id
+            },
+            searchQuery = searchQuery,
+            isSkeleton = isSkeleton,
+            brush = brush,
+            onToggleExpand = when {
+                isSkeleton -> { -> Unit }
+                else       -> { -> if (reciter != null) onToggleExpand(reciter.id) }
+            },
+            onMoshafClick = when {
+                isSkeleton -> { _, _ -> Unit }
+                else       -> onMoshafClick
+            }
+    )
+}
+
+private fun <T> LazyGridScope.gridItems(isSkeleton: Boolean, items: List<T>, content: @Composable LazyGridItemScope.(Int, T?) -> Unit) = when {
+    isSkeleton -> itemsIndexed(items = (0..300).toList(), key = { _, item -> item }) { index, _ -> content(index, null) }
+    else       -> itemsIndexed(items = items, key = { _, reciter -> reciter.hashCode() }) { index, reciter -> content(index, reciter) }
 }
 
 private fun filterReciters(reciters: List<Reciter>, query: String): List<Reciter> {

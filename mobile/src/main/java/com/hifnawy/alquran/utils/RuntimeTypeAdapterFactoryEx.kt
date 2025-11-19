@@ -3,12 +3,17 @@ package com.hifnawy.alquran.utils
 import com.google.gson.typeadapters.RuntimeTypeAdapterFactory
 import kotlin.reflect.KClass
 
+/**
+ * Util class providing extension properties and functions for [RuntimeTypeAdapterFactory].
+ *
+ * @author AbdElMoniem ElHifnawy
+ */
 object RuntimeTypeAdapterFactoryEx {
 
     /**
      * Recursively finds all sealed subclasses of the given sealed class.
      *
-     * @return A list of all sealed subclasses, including nested sealed classes.
+     * @return [List<KClass< out T >>][List] A list of all sealed subclasses, including nested sealed classes.
      */
     private val <T : Any> KClass<T>.allSealedLeafSubclasses: List<KClass<out T>>
         get() = sealedSubclasses.flatMap { sub ->
@@ -21,7 +26,7 @@ object RuntimeTypeAdapterFactoryEx {
     /**
      * Returns the type field name used by the RuntimeTypeAdapterFactory.
      *
-     * @return The type field name.
+     * @return [String] The type field name.
      */
     val RuntimeTypeAdapterFactory<*>.registeredTypeFieldName: String
         get() {
@@ -33,9 +38,8 @@ object RuntimeTypeAdapterFactoryEx {
     /**
      * Returns a string representation of the registered subtypes in the RuntimeTypeAdapterFactory.
      *
-     * @return A string containing the registered subtypes and their corresponding labels.
+     * @return [String] A string containing the registered subtypes and their corresponding labels.
      */
-    @Suppress("UNCHECKED_CAST")
     val RuntimeTypeAdapterFactory<*>.registeredSubtypes: String
         get() {
             val clazz = this::class.java
@@ -43,19 +47,18 @@ object RuntimeTypeAdapterFactoryEx {
             val labelToSubtypeField = clazz.getDeclaredField("labelToSubtype").apply { isAccessible = true }
             val subtypeToLabelField = clazz.getDeclaredField("subtypeToLabel").apply { isAccessible = true }
 
+            @Suppress("UNCHECKED_CAST")
             val labelToSubtype = labelToSubtypeField.get(this) as Map<String, Class<*>>
+
+            @Suppress("UNCHECKED_CAST")
             val subtypeToLabel = subtypeToLabelField.get(this) as Map<Class<*>, String>
 
             return buildString {
                 appendLine("Subtype - Label:")
-                labelToSubtype.forEach { label, subtype ->
-                    appendLine("$label → ${subtype.name}")
-                }
+                labelToSubtype.forEach { label, subtype -> appendLine("$label → ${subtype.name}") }
 
                 appendLine("Label - Subtype:")
-                subtypeToLabel.forEach { subtype, label ->
-                    appendLine("${subtype.name} → $label")
-                }
+                subtypeToLabel.forEach { subtype, label -> appendLine("${subtype.name} → $label") }
             }
         }
 
@@ -63,9 +66,8 @@ object RuntimeTypeAdapterFactoryEx {
      * Extension function to automatically register all sealed subclasses
      * with Gson's RuntimeTypeAdapterFactory.
      *
-     * @return A configured RuntimeTypeAdapterFactory for the sealed class.
+     * @return [RuntimeTypeAdapterFactory < T >][RuntimeTypeAdapterFactory] A configured RuntimeTypeAdapterFactory for the sealed class.
      */
-    @Suppress("UNCHECKED_CAST")
     val <T : Any> KClass<T>.registerSealedSubtypes: RuntimeTypeAdapterFactory<T>
         get() = registerSealedSubtypes("${this.simpleName?.lowercase()}_type")
 
@@ -73,11 +75,10 @@ object RuntimeTypeAdapterFactoryEx {
      * Extension function to automatically register all sealed subclasses
      * with Gson's RuntimeTypeAdapterFactory.
      *
-     * @param typeFieldName The name of the JSON field that holds the subtype tag (e.g., "type").
+     * @param typeFieldName [String] The name of the JSON field that holds the subtype tag (e.g., "type").
      *
-     * @return A configured RuntimeTypeAdapterFactory for the sealed class.
+     * @return [RuntimeTypeAdapterFactory < T >][RuntimeTypeAdapterFactory] A configured RuntimeTypeAdapterFactory for the sealed class.
      */
-    @Suppress("UNCHECKED_CAST")
     fun <T : Any> KClass<T>.registerSealedSubtypes(typeFieldName: String): RuntimeTypeAdapterFactory<T> {
         require(this.isSealed)
 

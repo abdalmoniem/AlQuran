@@ -1,5 +1,6 @@
 package com.hifnawy.alquran.shared.model
 
+import com.google.gson.annotations.SerializedName
 import java.io.Serializable
 
 /**
@@ -7,10 +8,14 @@ import java.io.Serializable
  */
 data class Moshaf(
         val id: Int,
-        val name: String, // Name of the recitation (e.g., "حفص عن عاصم - مرتل")
-        val server: String, // Base URL for the audio files
-        val surah_total: Int, // Total number of surahs available in this moshaf
-        val moshaf_type: Int,
-        // A comma-separated string of surah numbers available for this moshaf
-        val surah_list: String
-) : Serializable
+        val name: String,
+        val server: String,
+        @SerializedName("surah_total")
+        val surahsCount: Int,
+        @SerializedName("moshaf_type")
+        val moshafType: Int,
+        @SerializedName("surah_list")
+        private val surahList: String
+) : Serializable {
+    val surahIds: List<Int> get() = surahList.split(",").map { surahIdStr -> surahIdStr.toInt() }
+}

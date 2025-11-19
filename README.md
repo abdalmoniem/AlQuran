@@ -5,13 +5,16 @@
     <p>Listen to AlQuran anywhere</p>
 
 [![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)
+
 [![Debug Build](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/build_debug_variant.yml?logo=github&label=Debug%20Build)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_debug_variant.yml)
 [![Release Build](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/build_release_variant.yml?logo=github&label=Release%20Build)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_release_variant.yml)
 [![New Release](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/publish_release_on_tag.yml?logo=github&label=New%20Release)](https://github.com/abdalmoniem/AlQuran/actions/workflows/publish_release_on_tag.yml)
 
-[//]: # ([![CodeFactor]&#40;https://www.codefactor.io/repository/github/abdalmoniem/AlQuran/badge&#41;]&#40;https://www.codefactor.io/repository/github/abdalmoniem/AlQuran&#41;)
-[//]: # ([![Codacy Badge]&#40;https://app.codacy.com/project/badge/Grade/0beba9b2841c40aa982513161d5febe5&#41;]&#40;https://app.codacy.com/gh/abdalmoniem/AlQuran&#41;)
+[![CodeFactor](https://www.codefactor.io/repository/github/abdalmoniem/AlQuran/badge)](https://www.codefactor.io/repository/github/abdalmoniem/AlQuran)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/0beba9b2841c40aa982513161d5febe5)](https://app.codacy.com/gh/abdalmoniem/AlQuran)
+
 [//]: # ([![Crowdin]&#40;https://badges.crowdin.net/AlQuran/localized.svg&#41;]&#40;https://crowdin.com/project/AlQuran&#41;)
+
 [![Views](https://views.whatilearened.today/views/github/abdalmoniem/AlQuran.svg)](https://github.com/abdalmoniem/AlQuran)
 [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/abdalmoniem/AlQuran/total?logo=github&logoSize=auto&label=GitHub%20Downloads)](https://github.com/abdalmoniem/AlQuran/releases/latest)
 
@@ -51,7 +54,7 @@ also supports Android Auto.
     <img src="assets/Screenshot_2025-11-18-13-28-05-98_ec45f2a9d727a8f202099166abb1809f.jpg" alt="AlQuran Screenshot 10"/>
 </div>
 
-# 🔽 Download
+# ⬇️ Download
 
 You can download the most recent version of AlQuran
 from [GitHub Releases](https://github.com/abdalmoniem/AlQuran/releases/latest).
@@ -64,7 +67,7 @@ from [GitHub Releases](https://github.com/abdalmoniem/AlQuran/releases/latest).
 
 [//]: # ([<img alt="Get it on Play Store" height="80" src="assets/badge_play_store.png"/>]&#40;https://play.google.com/store/apps/details?id=com.hifnawy.AlQuran&#41;)
 
-[//]: # ([<img alt="Get it on GitHub" height="80" src="assets/badge_github.png"/>]&#40;https://github.com/abdalmoniem/AlQuran/releases/latest&#41;)
+[<img alt="Get it on GitHub" height="80" src="assets/badge_github.png"/>](https://github.com/abdalmoniem/AlQuran/releases/latest)
 
 [//]: # ()
 
@@ -72,13 +75,9 @@ from [GitHub Releases](https://github.com/abdalmoniem/AlQuran/releases/latest).
 
 [//]: # (> an email with your email to be added to the beta testers)
 
-[//]: # (## 🈵 Translations)
+# 🈵 Translations
 
-[//]: # ()
-
-[//]: # (App strings and the app store description can be translated via)
-
-[//]: # (Crowdin: https://crowdin.com/project/AlQuran)
+App strings and the app store description can be translated via [Crowdin](https://crowdin.com/project/AlQuran)
 
 [//]: # ()
 

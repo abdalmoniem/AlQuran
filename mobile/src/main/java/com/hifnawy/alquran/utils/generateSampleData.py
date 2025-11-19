@@ -1,3 +1,4 @@
+import os
 import json
 import requests
 
@@ -14,8 +15,8 @@ def surahToKotlin(surah):
         "Surah("
         f"id = {surah['id']}, "
         f'name = "{ktString(surah["name"])}", '
-        f'start_page = {surah["start_page"]}, '
-        f'end_page = {surah["end_page"]}, '
+        f'startPage = {surah["start_page"]}, '
+        f'endPage = {surah["end_page"]}, '
         f'makkia = {surah["makkia"]}, '
         f'type = {surah["type"]}'
         ")"
@@ -28,9 +29,9 @@ def moshafToKotlin(moshaf):
         f"\t\t\t\tid = {moshaf['id']},\n"
         f'\t\t\t\tname = "{ktString(moshaf["name"])}",\n'
         f'\t\t\t\tserver = "{ktString(moshaf["server"])}",\n'
-        f"\t\t\t\tsurah_total = {moshaf['surah_total']},\n"
-        f"\t\t\t\tmoshaf_type = {moshaf['moshaf_type']},\n"
-        f'\t\t\t\tsurah_list = "{ktString(moshaf["surah_list"])}"\n'
+        f"\t\t\t\tsurahsCount = {moshaf['surah_total']},\n"
+        f"\t\t\t\tmoshafType = {moshaf['moshaf_type']},\n"
+        f'\t\t\t\tsurahList = "{ktString(moshaf["surah_list"])}"\n'
         "\t\t\t)"
     )
 
@@ -39,7 +40,7 @@ def reciterToKotlin(reciter):
     moshafs = ",\n\t\t\t".join(moshafToKotlin(moshaf) for moshaf in reciter["moshaf"])
     return (
         "\tReciter(\n"
-        f"\t\tid = {reciter['id']},\n"
+        f"\t\tid = {reciter['id']}.asReciterId,\n"
         f'\t\tname = "{ktString(reciter["name"])}",\n'
         f'\t\tletter = "{ktString(reciter["letter"])}",\n'
         f'\t\tdate = "{ktString(reciter["date"])}",\n'
@@ -71,6 +72,9 @@ def getSurahs():
 
 
 if __name__ == "__main__":
+    scriptDir = os.path.dirname(os.path.abspath(__file__))
+    outputPath = os.path.join(scriptDir, "SampleData.kt")
+
     print("⏳ Fetching data...")
 
     print("⏳ Fetching reciters...")
@@ -99,8 +103,20 @@ if __name__ == "__main__":
     kotlinSurahsList = f"val sampleSurahs = listOf(\n\t{kotlinSurahs}\n)\n"
     print("✔ Surahs Kotlin list created.")
 
+    fileHeaders = [
+        '@file:Suppress("SpellCheckingInspection")',
+        "package com.hifnawy.alquran.utils",
+        "import com.hifnawy.alquran.shared.model.Moshaf",
+        "import com.hifnawy.alquran.shared.model.Reciter",
+        "import com.hifnawy.alquran.shared.model.Surah",
+        "import com.hifnawy.alquran.shared.model.asReciterId"
+    ]
+
     print("⏳ Writing to SampleData.kt...")
-    with open("SampleData.kt", "w", encoding="utf-8") as file:
+    with open(outputPath, "w", encoding="utf-8") as file:
+        for item in fileHeaders:
+            file.write(item + "\n")
+
         print("⏳ Writing Reciters Kotlin list to file...")
         file.write(kotlinRecitersList)
         print("✔ Reciters Kotlin list written to file.")

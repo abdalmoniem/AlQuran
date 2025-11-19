@@ -6,6 +6,7 @@ import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.R
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
+import com.hifnawy.alquran.shared.utils.RequestExt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -25,19 +26,19 @@ object QuranRepository {
     /**
      * Sends a generic GET REST request and attempts to parse the response body.
      *
-     * @param url The URL to request.
+     * @param requestUrl The URL to request.
      * @param parser A function to convert the raw String response body into the expected type D.
      * @return A Result<D, DataError> indicating success with parsed data or a DataError.
      */
-    private suspend fun <D> sendRESTRequest(url: String, parser: (String) -> D): Result<D, DataError> = withContext(Dispatchers.IO) {
-        val client: OkHttpClient = OkHttpClient().newBuilder()
+    private suspend fun <D> sendRESTRequest(requestUrl: String, parser: (String) -> D): Result<D, DataError> = withContext(Dispatchers.IO) {
+        val client = OkHttpClient().newBuilder()
             .connectTimeout(3, TimeUnit.SECONDS)
             // .retryOnConnectionFailure(true)
             .build()
-        val request: Request = Request.Builder()
-            .url(url)
-            .method("GET", null)
-            .addHeader("Accept", "application/json")
+        val request = Request.Builder()
+            .url(url = requestUrl)
+            .method(method = RequestExt.METHOD_GET, body = null)
+            .addHeader(name = RequestExt.HEADER_ACCEPT, value = RequestExt.CONTENT_TYPE_JSON)
             .build()
 
         return@withContext try {
@@ -132,7 +133,7 @@ object QuranRepository {
         )
     }
 
-    suspend fun getRecitersList(): Result<List<Reciter>, DataError> = sendRESTRequest<List<Reciter>>(recitersURL) { jsonResponse ->
+    suspend fun getReciters(): Result<List<Reciter>, DataError> = sendRESTRequest<List<Reciter>>(recitersURL) { jsonResponse ->
         val recitersJsonArray = JSONObject(jsonResponse).getJSONArray(applicationContext.getString(R.string.API_RECITERS)).toString()
 
         Gson().fromJson(recitersJsonArray, object : TypeToken<List<Reciter>>() {}.type)

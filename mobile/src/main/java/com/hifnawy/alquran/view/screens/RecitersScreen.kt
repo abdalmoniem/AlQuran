@@ -24,7 +24,6 @@ import com.hifnawy.alquran.shared.repository.Result
 import com.hifnawy.alquran.view.DataErrorScreen
 import com.hifnawy.alquran.view.PullToRefreshIndicator
 import com.hifnawy.alquran.view.grids.RecitersGrid
-import com.hifnawy.alquran.view.grids.skeleton.SkeletonRecitersGrid
 import com.hifnawy.alquran.view.player.PlayerContainer
 import com.hifnawy.alquran.viewModel.MediaViewModel
 import kotlinx.coroutines.delay
@@ -89,23 +88,19 @@ private fun BoxScope.Content(
         dataError: DataError?,
         reciters: List<Reciter>
 ) {
-    if (isLoading) {
-        SkeletonRecitersGrid()
-        return
+    if (!isLoading && dataError != null) {
+        DataErrorScreen(dataError = dataError)
+    } else {
+        RecitersGrid(
+                reciters = reciters,
+                isSkeleton = isLoading
+        ) { reciter, moshaf ->
+            val reciterJson = Gson().toJson(reciter)
+            val moshafJson = Gson().toJson(moshaf)
+
+            navController.navigate(Screen.Surahs.route + "?reciter=$reciterJson&moshaf=$moshafJson")
+        }
+
+        PlayerContainer(mediaViewModel = mediaViewModel)
     }
-
-    if (dataError != null) {
-        val error = dataError
-        DataErrorScreen(dataError = error)
-        return
-    }
-
-    RecitersGrid(reciters = reciters) { reciter, moshaf ->
-        val reciterJson = Gson().toJson(reciter)
-        val moshafJson = Gson().toJson(moshaf)
-
-        navController.navigate(Screen.Surahs.route + "?reciter=$reciterJson&moshaf=$moshafJson")
-    }
-
-    PlayerContainer(mediaViewModel = mediaViewModel)
 }

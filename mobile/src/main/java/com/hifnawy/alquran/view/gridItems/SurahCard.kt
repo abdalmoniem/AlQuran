@@ -1,5 +1,6 @@
 package com.hifnawy.alquran.view.gridItems
 
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
@@ -41,6 +42,7 @@ fun SurahCard(
                 horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
+                    modifier = Modifier.basicMarquee(),
                     text = highlightMatchingText(
                             fullText = surah.name,
                             query = searchQuery,
