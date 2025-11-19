@@ -1,0 +1,20 @@
+* bump app version to 0.0.2
+   > More Code Refactoring and Improvements
+* More Code Refactoring and Improvements
+   >
+* Major Code Refactoring
+   > - Refactored codebase for improved readability and maintainability.
+   > - Enhanced modularity by separating concerns into distinct components.
+   > - Updated documentation to reflect code changes.
+   > - This is the first step towards implementing new features and optimizations.
+* fix gradle vs wrapper version mismatch - Updated CodeQL to v4' - Added project icon for IDE - Removed duplicate LICENSE file
+   >
+* Fix MediaManager implementation issues and enhance media session handling
+   > - Fixed MediaManager skip to next/previous functionality.
+   > - Resolved issues in MediaManager related to media session callbacks and playback state management.
+   > - Improved handling of media metadata updates to ensure accurate information display.
+   > - Refactored QuranMediaService to enhance media session lifecycle management.
+   > - Updated QuranRepository to support new media session features.
+   > - Enhanced UI components in SurahsScreen and RecitersScreen for better user experience.
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/v0.0.1...v0.0.2

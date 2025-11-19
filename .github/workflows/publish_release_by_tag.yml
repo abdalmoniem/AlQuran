@@ -9,6 +9,7 @@ on:
         required: true
         type: choice
         options:
+          - v0.0.2
           - v0.0.1
 permissions: {}
 jobs:
