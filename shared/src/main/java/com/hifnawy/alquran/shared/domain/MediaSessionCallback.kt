@@ -2,6 +2,7 @@ package com.hifnawy.alquran.shared.domain
 
 import android.os.Bundle
 import android.support.v4.media.session.MediaSessionCompat
+import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
@@ -19,10 +20,11 @@ class MediaSessionCallback(private val mediaService: QuranMediaService) : MediaS
     override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
         extras?.apply {
             val reciter = getTypedSerializable<Reciter>(QuranMediaService.Extras.EXTRA_RECITER.name)
+            val moshaf = getTypedSerializable<Moshaf>(QuranMediaService.Extras.EXTRA_MOSHAF.name)
             val surah = getTypedSerializable<Surah>(QuranMediaService.Extras.EXTRA_SURAH.name)
 
-            Timber.debug("Playing ${reciter?.name} / ${surah?.name}...")
-            mediaService.prepareMedia(reciter, surah)
+            Timber.debug("Playing ${reciter?.name} - ${moshaf?.name} / ${surah?.name}...")
+            mediaService.prepareMedia(reciter, moshaf, surah)
         }
     }
 

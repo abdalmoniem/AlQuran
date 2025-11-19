@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import com.hifnawy.alquran.shared.domain.MediaManager
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
@@ -39,9 +38,7 @@ fun SurahsScreen(
         mediaViewModel: MediaViewModel
 ) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        val context = LocalContext.current
         val pullToRefreshState = rememberPullToRefreshState()
-        val mediaManager = remember { MediaManager(context) }
         var isLoading by remember { mutableStateOf(true) }
         var dataError: DataError? by remember { mutableStateOf(null) }
         var surahs by remember { mutableStateOf(listOf<Surah>()) }
@@ -50,7 +47,7 @@ fun SurahsScreen(
         LaunchedEffect(isLoading, surahs) {
             if (isLoading) {
                 if (dataError != null) delay(3.seconds) // for testing
-                mediaManager.whenSurahsReady { result ->
+                MediaManager.whenSurahsReady { result ->
                     when (result) {
                         is Result.Success -> {
                             surahs = result.data
@@ -66,24 +63,11 @@ fun SurahsScreen(
                     val moshafSurahs = moshaf.surah_list.split(",").map { surahIdStr -> surahIdStr.toInt() }
                     reciterSurahs = surahs.filter { surah -> surah.id in moshafSurahs }
 
-                    mediaViewModel.playerState = mediaViewModel.playerState.copy(reciter = reciter, surahsServer = moshaf.server)
+                    mediaViewModel.playerState = mediaViewModel.playerState.copy(reciter = reciter, moshaf = moshaf, surahsServer = moshaf.server)
 
                     isLoading = false
                 }
             }
-            // delay(3.seconds)
-            // mediaManager.whenSurahsReady { result ->
-            //     surahs = it
-            //
-            //     val moshafSurahs = moshaf.surah_list.split(",").map { surahIdStr -> surahIdStr.toInt() }
-            //     reciterSurahs = surahs.filter { surah -> surah.id in moshafSurahs }
-            //     isLoading = false
-            //
-            //     mediaViewModel.playerState = mediaViewModel.playerState.copy(
-            //             reciter = reciter,
-            //             surahsServer = moshaf.server
-            //     )
-            // }
         }
 
         PullToRefreshBox(

@@ -1,6 +1,7 @@
 package com.hifnawy.alquran.shared
 
 import android.app.Application
+import android.content.Context
 import com.hifnawy.alquran.shared.domain.IObserver
 import com.hifnawy.alquran.shared.domain.ServiceStatus
 import com.hifnawy.alquran.shared.domain.ServiceStatusObserver
@@ -21,6 +22,8 @@ class QuranApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        QuranApplication.applicationContext = applicationContext
 
         if (BuildConfig.DEBUG) Timber.plant(LogDebugTree())
 
@@ -49,5 +52,11 @@ class QuranApplication : Application() {
         }
 
         Timber.debug("observers notified!")
+    }
+
+    companion object {
+
+        lateinit var applicationContext: Context
+            private set
     }
 }

@@ -10,6 +10,7 @@ import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.domain.QuranMediaService
 import com.hifnawy.alquran.shared.domain.ServiceStatus
 import com.hifnawy.alquran.shared.domain.ServiceStatusObserver
+import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
@@ -20,11 +21,14 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
     val quranApplication by lazy { application as QuranApplication }
     var playerState by mutableStateOf(PlayerState())
 
-    init { quranApplication.quranServiceObservers.add(this) }
+    init {
+        quranApplication.quranServiceObservers.add(this)
+    }
 
     fun playMedia(surah: Surah): Unit = Intent(quranApplication, QuranMediaService::class.java).run {
         action = QuranMediaService.Actions.ACTION_START_PLAYBACK.name
         putExtra(QuranMediaService.Extras.EXTRA_RECITER.name, playerState.reciter)
+        putExtra(QuranMediaService.Extras.EXTRA_MOSHAF.name, playerState.moshaf)
         putExtra(QuranMediaService.Extras.EXTRA_SURAH.name, surah)
 
         quranApplication.startService(this)
@@ -81,14 +85,15 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
         Timber.debug("status: $status")
 
         when (status) {
+            is ServiceStatus.Paused,
             is ServiceStatus.Playing -> playerState = playerState.copy(
-                    isPlaying = true,
+                    isPlaying = status is ServiceStatus.Playing,
+                    surah = status.surah,
                     durationMs = status.durationMs,
                     currentPositionMs = status.currentPositionMs,
                     bufferedPositionMs = status.bufferedPositionMs
             )
 
-            is ServiceStatus.Paused  -> Unit
             is ServiceStatus.Stopped -> playerState = playerState.copy(isPlaying = false)
             is ServiceStatus.Ended   -> skipToNextSurah()
         }
@@ -99,6 +104,7 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
 
 data class PlayerState(
         val reciter: Reciter? = null,
+        val moshaf: Moshaf? = null,
         val surah: Surah? = null,
         val surahsServer: String? = null,
         val durationMs: Long = 0,

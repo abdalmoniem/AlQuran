@@ -6,12 +6,14 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 
 @Composable
 fun ShimmerAnimation(content: @Composable (brush: Brush) -> Unit) {
@@ -32,9 +34,9 @@ fun ShimmerAnimation(content: @Composable (brush: Brush) -> Unit) {
     )
 
     val shimmerColorShades = listOf(
-            Color.LightGray.copy(alpha = 0.9f),
-            Color.LightGray.copy(alpha = 0.2f),
-            Color.LightGray.copy(alpha = 0.9f)
+            Color(color = MaterialTheme.colorScheme.onSurface.toArgb()).copy(alpha = 0.9f),
+            Color(color = MaterialTheme.colorScheme.onSurface.toArgb()).copy(alpha = 0.2f),
+            Color(color = MaterialTheme.colorScheme.onSurface.toArgb()).copy(alpha = 0.9f)
     )
 
     // The width of the gradient is now 800f (1500f - 700f).

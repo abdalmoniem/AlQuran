@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.google.gson.Gson
 import com.hifnawy.alquran.shared.domain.MediaManager
@@ -35,9 +34,7 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun RecitersScreen(mediaViewModel: MediaViewModel, navController: NavController) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        val context = LocalContext.current
         val pullToRefreshState = rememberPullToRefreshState()
-        val mediaManager = remember { MediaManager(context) }
         var isLoading by remember { mutableStateOf(true) }
         var dataError: DataError? by remember { mutableStateOf(null) }
         var reciters by remember { mutableStateOf(listOf<Reciter>()) }
@@ -45,7 +42,7 @@ fun RecitersScreen(mediaViewModel: MediaViewModel, navController: NavController)
         LaunchedEffect(isLoading, reciters) {
             if (isLoading) {
                 if (dataError != null) delay(3.seconds) // for testing
-                mediaManager.whenRecitersReady { result ->
+                MediaManager.whenRecitersReady { result ->
                     when (result) {
                         is Result.Success -> {
                             reciters = result.data

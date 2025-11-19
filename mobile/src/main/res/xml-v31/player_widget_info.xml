@@ -11,7 +11,7 @@ where M is the number of cells
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/player_widget_description"
-    android:initialKeyguardLayout="@layout/player_widget"
+    android:initialKeyguardLayout="@layout/player_widget_preview"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:minWidth="@dimen/widget_width"
     android:minHeight="@dimen/widget_height"

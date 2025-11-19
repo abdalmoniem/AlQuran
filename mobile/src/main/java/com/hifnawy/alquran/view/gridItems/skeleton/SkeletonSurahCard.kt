@@ -45,8 +45,8 @@ fun SkeletonSurahCard(modifier: Modifier = Modifier, brush: Brush) {
             // placeholder for surah type
             Spacer(
                     modifier = Modifier
-                        .fillMaxWidth(0.35f)
-                        .height(50.dp)
+                        .fillMaxWidth(0.5f)
+                        .height(30.dp)
                         .padding(10.dp)
                         .clip(RoundedCornerShape(20.dp))
                         .background(brush)

@@ -1,7 +1,6 @@
 package com.hifnawy.alquran.shared.domain
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import androidx.appcompat.content.res.AppCompatResources
@@ -10,6 +9,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.lifecycleScope
+import com.hifnawy.alquran.shared.QuranApplication
+import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.shared.repository.DataError
@@ -19,17 +20,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
-class MediaManager(private val context: Context) : LifecycleOwner {
+object MediaManager : LifecycleOwner {
 
-    var onMediaReady: ((reciter: Reciter, surah: Surah, surahUri: Uri, surahDrawable: Drawable?) -> Unit)? = null
+    var onMediaReady: ((reciter: Reciter, moshaf: Moshaf, surah: Surah, surahUri: Uri, surahDrawable: Drawable?) -> Unit)? = null
 
     private var reciters: List<Reciter> = emptyList()
     private var surahs: List<Surah> = emptyList()
     private var surahsUri: List<Uri> = emptyList()
     private var currentReciter: Reciter? = null
+    private var currentMoshaf: Moshaf? = null
     private var currentSurah: Surah? = null
-    private val quranRepository by lazy { QuranRepository(context) }
     private val lifecycleRegistry: LifecycleRegistry by lazy { LifecycleRegistry(this) }
+    private val applicationContext by lazy { QuranApplication.applicationContext }
 
     override val lifecycle: Lifecycle
         get() = lifecycleRegistry
@@ -44,7 +46,14 @@ class MediaManager(private val context: Context) : LifecycleOwner {
 
     fun whenRecitersReady(onReady: (result: Result<List<Reciter>, DataError>) -> Unit) {
         when {
-            reciters.isEmpty() -> lifecycleScope.launch(Dispatchers.IO) { onReady(async { quranRepository.getRecitersList() }.await()) }
+            reciters.isEmpty() -> lifecycleScope.launch(Dispatchers.IO) {
+                val result = async { QuranRepository.getRecitersList() }.await()
+
+                onReady(result)
+
+                if (result !is Result.Success) return@launch
+                reciters = result.data
+            }
 
             else               -> onReady(Result.Success(reciters))
         }
@@ -52,13 +61,20 @@ class MediaManager(private val context: Context) : LifecycleOwner {
 
     fun whenSurahsReady(onReady: (result: Result<List<Surah>, DataError>) -> Unit) {
         when {
-            surahs.isEmpty() -> lifecycleScope.launch(Dispatchers.IO) { onReady(async { quranRepository.getSurahs() }.await()) }
+            surahs.isEmpty() -> lifecycleScope.launch(Dispatchers.IO) {
+                val result = async { QuranRepository.getSurahs() }.await()
+
+                onReady(result)
+
+                if (result !is Result.Success) return@launch
+                surahs = result.data
+            }
 
             else             -> onReady(Result.Success(surahs))
         }
     }
 
-    fun whenReady(reciterID: Int, onReady: (reciters: List<Reciter>, surahs: List<Surah>, surahsUri: List<Uri>) -> Unit) = when {
+    fun whenReady(reciterID: Int, onReady: (reciters: List<Reciter>, moshafs: Moshaf, surahs: List<Surah>, surahsUri: List<Uri>) -> Unit) = when {
         reciters.isEmpty() || surahs.isEmpty() -> {
             whenRecitersReady { result ->
                 if (result is Result.Success) reciters = result.data
@@ -73,61 +89,66 @@ class MediaManager(private val context: Context) : LifecycleOwner {
 
                     surahsUri = getReciterSurahUris(reciterID, surahs)
 
-                    onReady(reciters, surahs, surahsUri)
+                    onReady(reciters, moshaf, surahs, surahsUri)
                 }
             }
         }
 
         else                                   -> {
             surahsUri = getReciterSurahUris(reciterID, surahs)
+            val reciter = reciters.first { it.id == reciterID }
+            val moshaf = reciter.moshaf.first()
 
-            onReady(reciters, surahs, surahsUri)
+            onReady(reciters, moshaf, surahs, surahsUri)
         }
     }
 
-    fun processSurah(context: Context, reciter: Reciter, surah: Surah) {
+    fun processSurah(reciter: Reciter, moshaf: Moshaf, surah: Surah) {
         @SuppressLint("DiscouragedApi")
-        val drawableId = context.resources.getIdentifier("surah_${surah.id.toString().padStart(3, '0')}", "drawable", context.packageName)
-        val moshaf = reciter.moshaf.first()
+        val drawableId = applicationContext.resources.getIdentifier("surah_${surah.id.toString().padStart(3, '0')}", "drawable", applicationContext.packageName)
         val surahNum = surah.id.toString().padStart(3, '0')
         val surahUri = "${moshaf.server}$surahNum.mp3"
 
         currentReciter = reciter
+        currentMoshaf = moshaf
         currentSurah = surah
 
         onMediaReady?.invoke(
                 reciter,
+                moshaf,
                 surah,
                 surahUri.toUri(),
-                AppCompatResources.getDrawable(context, drawableId)
+                AppCompatResources.getDrawable(applicationContext, drawableId)
         )
     }
 
-    fun processNextSurah(context: Context) {
+    fun processNextSurah() {
         val reciter = currentReciter ?: return
+        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
-        currentSurah = surahs.find {
+        surahs.find {
             it.id == when (surah.id) {
                 surahs.last().id -> 1
                 else             -> surah.id + 1
             }
-        }?.also { newSurah ->
-            processSurah(context, reciter, newSurah)
+        }?.let { newSurah ->
+            processSurah(reciter, moshaf, newSurah)
         }
     }
 
-    fun processPreviousSurah(context: Context) {
+    fun processPreviousSurah() {
         val reciter = currentReciter ?: return
+        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
-        currentSurah = surahs.find {
+        surahs.find {
             it.id == when (surah.id) {
                 surahs.first().id -> surahs.last().id
                 else              -> surah.id - 1
             }
-        }?.also { newSurah ->
-            processSurah(context, reciter, newSurah)
+        }?.let { newSurah ->
+            processSurah(reciter, moshaf, newSurah)
         }
     }
 

@@ -41,10 +41,10 @@ jobs:
 
           echo "keystoreFile: $keystoreFile"
 
-          echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> local.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
-          echo "keyAlias=release_key" >> local.properties
           echo "storeFile=$keystoreFile" >> local.properties
+          echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> local.properties
+          echo "keyAlias=release_key" >> local.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
       - name: Setup Java
         uses: actions/setup-java@v4
         with:

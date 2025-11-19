@@ -1,8 +1,8 @@
 package com.hifnawy.alquran.shared.repository
 
-import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.R
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
@@ -16,10 +16,11 @@ import java.io.IOException
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
-class QuranRepository(private val context: Context) {
+object QuranRepository {
 
-    val recitersURL = "${context.getString(R.string.API_BASE_URL)}/${context.getString(R.string.API_RECITERS)}?language=ar"
-    val surahsURL = "${context.getString(R.string.API_BASE_URL)}/${context.getString(R.string.API_SURAHS)}?language=ar"
+    private val applicationContext by lazy { QuranApplication.applicationContext }
+    private val recitersURL by lazy { "${applicationContext.getString(R.string.API_BASE_URL)}/${applicationContext.getString(R.string.API_RECITERS)}?language=ar" }
+    private val surahsURL by lazy { "${applicationContext.getString(R.string.API_BASE_URL)}/${applicationContext.getString(R.string.API_SURAHS)}?language=ar" }
 
     /**
      * Sends a generic GET REST request and attempts to parse the response body.
@@ -132,13 +133,13 @@ class QuranRepository(private val context: Context) {
     }
 
     suspend fun getRecitersList(): Result<List<Reciter>, DataError> = sendRESTRequest<List<Reciter>>(recitersURL) { jsonResponse ->
-        val recitersJsonArray = JSONObject(jsonResponse).getJSONArray(context.getString(R.string.API_RECITERS)).toString()
+        val recitersJsonArray = JSONObject(jsonResponse).getJSONArray(applicationContext.getString(R.string.API_RECITERS)).toString()
 
         Gson().fromJson(recitersJsonArray, object : TypeToken<List<Reciter>>() {}.type)
     }
 
     suspend fun getSurahs(): Result<List<Surah>, DataError> = sendRESTRequest(surahsURL) { jsonResponse ->
-        val surahsJsonArray = JSONObject(jsonResponse).getJSONArray(context.getString(R.string.API_SURAHS)).toString()
+        val surahsJsonArray = JSONObject(jsonResponse).getJSONArray(applicationContext.getString(R.string.API_SURAHS)).toString()
 
         Gson().fromJson(surahsJsonArray, object : TypeToken<List<Surah>>() {}.type)
     }

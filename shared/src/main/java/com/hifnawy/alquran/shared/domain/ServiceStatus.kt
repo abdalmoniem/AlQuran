@@ -15,11 +15,12 @@ sealed class ServiceStatus {
         final override fun toString(): String {
             val showHours = durationMs.milliseconds.hoursLong > 0
 
-            return "reciter=(${reciter.id}, ${reciter.name}), " +
+            return "${this::class.simpleName}(" +
+                   "reciter=(${reciter.id}, ${reciter.name}), " +
                    "surah=(${surah.id}, ${surah.name}), " +
                    "time: ${currentPositionMs.milliseconds.toFormattedTime(showHours = showHours)} " +
                    "(${bufferedPositionMs.milliseconds.toFormattedTime(showHours = showHours)}) / " +
-                   durationMs.milliseconds.toFormattedTime(showHours = showHours)
+                   "${durationMs.milliseconds.toFormattedTime(showHours = showHours)})"
         }
     }
 

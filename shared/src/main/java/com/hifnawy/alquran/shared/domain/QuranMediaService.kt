@@ -29,6 +29,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.R
+import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.shared.repository.DataError
@@ -63,6 +64,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
 
     enum class Extras {
         EXTRA_RECITER,
+        EXTRA_MOSHAF,
         EXTRA_SURAH,
         EXTRA_SEEK_POSITION
     }
@@ -93,7 +95,6 @@ class QuranMediaService : MediaBrowserServiceCompat() {
     private val serviceScope by lazy { CoroutineScope(Dispatchers.Main + serviceJob) }
     private val quranApplication by lazy { application as QuranApplication }
     private val mediaSession by lazy { MediaSessionCompat(this, this::class.java.simpleName) }
-    private val mediaManager by lazy { MediaManager(this) }
     private val audioAttributes by lazy { AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_SPEECH).setUsage(C.USAGE_MEDIA).build() }
     private val player by lazy {
         ExoPlayer.Builder(this).build().apply {
@@ -125,18 +126,20 @@ class QuranMediaService : MediaBrowserServiceCompat() {
                     if (mediaSession.controller?.playbackState?.state == PlaybackStateCompat.STATE_STOPPED) return
 
                     val reciter = currentReciter ?: return
+                    val moshaf = currentMoshaf ?: return
                     val surah = currentSurah ?: return
 
                     isMediaReady = false
-                    prepareMedia(reciter, surah, currentSurahPosition)
+                    prepareMedia(reciter, moshaf, surah, currentSurahPosition)
                 }
 
                 Player.STATE_READY     -> {
                     Timber.debug("Player.STATE_READY")
                     val reciter = currentReciter ?: return
+                    val moshaf = currentMoshaf ?: return
                     val surah = currentSurah ?: return
 
-                    updateMediaSession(reciter, surah)
+                    updateMediaSession(reciter, moshaf, surah)
                     listenForPlayerPosition()
                 }
 
@@ -153,6 +156,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
     private var positionUpdateJob: Job? = null
     private var reciterDrawables = listOf<Bitmap>()
     private var currentReciter: Reciter? = null
+    private var currentMoshaf: Moshaf? = null
     private var currentSurah: Surah? = null
     private var currentSurahPosition: Long = -1L
     private var isMediaReady = false
@@ -168,7 +172,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
             isActive = true
         }
 
-        mediaManager.apply {
+        MediaManager.apply {
             onMediaReady = ::updateMediaSession
         }
 
@@ -206,7 +210,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         }
 
         // stop mediaManager
-        mediaManager.apply {
+        MediaManager.apply {
             stopLifecycle()
         }
 
@@ -220,11 +224,15 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         when (action) {
             Actions.ACTION_START_PLAYBACK.name    -> intent.apply {
                 val reciter = getTypedSerializable<Reciter>(Extras.EXTRA_RECITER.name) ?: return START_NOT_STICKY
+                val moshaf = getTypedSerializable<Moshaf>(Extras.EXTRA_MOSHAF.name) ?: return START_NOT_STICKY
                 val surah = getTypedSerializable<Surah>(Extras.EXTRA_SURAH.name) ?: return START_NOT_STICKY
 
-                if (reciter.id == currentReciter?.id && surah.id == currentSurah?.id) return START_NOT_STICKY
+                if (reciter.id == currentReciter?.id &&
+                    moshaf.id == currentMoshaf?.id &&
+                    surah.id == currentSurah?.id
+                ) return START_NOT_STICKY
 
-                processSurah(reciter, surah)
+                processSurah(reciter, moshaf, surah)
             }
 
             Actions.ACTION_STOP_PLAYBACK.name     -> stopMedia()
@@ -256,7 +264,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
 
                 when (mediaState) {
                     MediaState.RECITER_BROWSE -> {
-                        mediaManager.whenRecitersReady { recitersResult ->
+                        MediaManager.whenRecitersReady { recitersResult ->
                             when (recitersResult) {
                                 is Result.Success -> {
                                     val reciters = recitersResult.data
@@ -296,7 +304,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
 
                     MediaState.SURAH_BROWSE   -> {
                         val reciterID = parentId.replace("reciter_", "").toInt()
-                        mediaManager.whenReady(reciterID) { reciters, surahs, surahsUri ->
+                        MediaManager.whenReady(reciterID) { reciters, moshaf, surahs, surahsUri ->
                             reciters.find { reciter -> reciter.id == reciterID }?.let { reciter ->
                                 val surahsUriMap = surahsUri.mapIndexed { index, uri ->
                                     Pair(surahs[index].id, uri)
@@ -306,6 +314,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
                                     createMediaItem(
                                             mediaId = "surah_${surah.id}",
                                             reciter = reciter,
+                                            moshaf = moshaf,
                                             surah = surah,
                                             surahUri = surahsUriMap[surah.id],
                                     )
@@ -353,6 +362,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
     private fun createMediaItem(
             mediaId: String,
             reciter: Reciter,
+            moshaf: Moshaf,
             surah: Surah,
             surahUri: Uri? = null
     ): MediaBrowserCompat.MediaItem {
@@ -382,6 +392,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
             )
 
             putSerializable(Extras.EXTRA_RECITER.name, reciter)
+            putSerializable(Extras.EXTRA_MOSHAF.name, moshaf)
             putSerializable(Extras.EXTRA_SURAH.name, surah)
         })
 
@@ -416,11 +427,13 @@ class QuranMediaService : MediaBrowserServiceCompat() {
 
     private fun updateMediaSession(
             reciter: Reciter,
+            moshaf: Moshaf,
             surah: Surah,
             surahUri: Uri? = null,
             surahDrawable: Drawable? = null
     ) {
         currentReciter = reciter
+        currentMoshaf = moshaf
         currentSurah = surah
 
         updateNotification(reciter, surah)
@@ -508,10 +521,10 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         mediaSession.setPlaybackState(playbackStateBuilder.build())
     }
 
-    private fun processSurah(reciter: Reciter, surah: Surah) {
+    private fun processSurah(reciter: Reciter, moshaf: Moshaf, surah: Surah) {
         if (player.isPlaying) player.stop()
 
-        mediaManager.processSurah(this@QuranMediaService, reciter, surah)
+        MediaManager.processSurah(reciter, moshaf, surah)
     }
 
     private fun playMedia(surah: Surah, surahUri: Uri) {
@@ -541,11 +554,23 @@ class QuranMediaService : MediaBrowserServiceCompat() {
                         }
                 )
 
-                if (player.playbackState != ExoPlayerEx.PlayerState.BUFFERING.state) {
-                    val reciter = currentReciter ?: return
+                val reciter = currentReciter ?: return
 
-                    updateMediaSession(reciter, surah)
-                    quranApplication.lastStatusUpdate = ServiceStatus.Playing(
+                when {
+                    player.playbackState != ExoPlayerEx.PlayerState.BUFFERING.state -> {
+                        val moshaf = currentMoshaf ?: return
+
+                        updateMediaSession(reciter, moshaf, surah)
+                        quranApplication.lastStatusUpdate = ServiceStatus.Playing(
+                                reciter = reciter,
+                                surah = surah,
+                                durationMs = player.duration,
+                                currentPositionMs = player.currentPosition,
+                                bufferedPositionMs = player.bufferedPosition
+                        )
+                    }
+
+                    else                                                            -> quranApplication.lastStatusUpdate = ServiceStatus.Paused(
                             reciter = reciter,
                             surah = surah,
                             durationMs = player.duration,
@@ -587,9 +612,10 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         player.play()
 
         val reciter = currentReciter ?: return
+        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
-        updateMediaSession(reciter, surah)
+        updateMediaSession(reciter, moshaf, surah)
         setMediaSessionState(MediaSessionState.PLAYING)
         quranApplication.lastStatusUpdate = ServiceStatus.Playing(
                 reciter = reciter,
@@ -600,18 +626,20 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         )
     }
 
-    fun prepareMedia(reciter: Reciter? = null, surah: Surah? = null, surahPosition: Long = 0L) {
-        Timber.debug("preparing (${reciter?.id}: ${reciter?.name})[${surah?.id}: ${surah?.name}]")
-        if ((reciter == null) || (surah == null)) return
+    fun prepareMedia(reciter: Reciter?, moshaf: Moshaf?, surah: Surah?, surahPosition: Long = 0L) {
+        Timber.debug("preparing (${reciter?.id}: ${reciter?.name}) - (${moshaf?.id}: ${moshaf?.name})[${surah?.id}: ${surah?.name}]")
+        reciter ?: return
+        moshaf ?: return
+        surah ?: return
 
         currentSurahPosition = surahPosition
 
         if ((currentReciter == null) || (currentSurah == null)) {
-            Timber.debug("processing new media (${reciter.id}: ${reciter.name})[${surah.id}: ${surah.name}]")
+            Timber.debug("processing new media (${reciter.id}: ${reciter.name}) - (${moshaf.id}: ${moshaf.name})[${surah.id}: ${surah.name}]")
             currentReciter = reciter
             currentSurah = surah
 
-            processSurah(reciter, surah)
+            processSurah(reciter, moshaf, surah)
             return
         }
 
@@ -620,13 +648,13 @@ class QuranMediaService : MediaBrowserServiceCompat() {
             currentReciter = reciter
             currentSurah = surah
 
-            processSurah(reciter, surah)
+            processSurah(reciter, moshaf, surah)
             return
         }
 
         if (!isMediaReady) {
             Timber.debug("media not ready, processing (${reciter.id}: ${reciter.name})[${surah.id}: ${surah.name}]")
-            processSurah(reciter, surah)
+            processSurah(reciter, moshaf, surah)
             return
         }
     }
@@ -636,9 +664,10 @@ class QuranMediaService : MediaBrowserServiceCompat() {
         setMediaSessionState(MediaSessionState.PAUSED)
 
         val reciter = currentReciter ?: return
+        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
-        updateMediaSession(reciter, surah)
+        updateMediaSession(reciter, moshaf, surah)
         setMediaSessionState(MediaSessionState.PAUSED)
         quranApplication.lastStatusUpdate = ServiceStatus.Paused(
                 reciter = reciter,
@@ -654,9 +683,10 @@ class QuranMediaService : MediaBrowserServiceCompat() {
             player.play()
 
             val reciter = currentReciter ?: return
+            val moshaf = currentMoshaf ?: return
             val surah = currentSurah ?: return
 
-            updateMediaSession(reciter, surah)
+            updateMediaSession(reciter, moshaf, surah)
             setMediaSessionState(MediaSessionState.PLAYING)
             quranApplication.lastStatusUpdate = ServiceStatus.Playing(
                     reciter = reciter,
@@ -667,7 +697,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
             )
         }
 
-        else         -> prepareMedia(currentReciter, currentSurah, currentSurahPosition)
+        else         -> prepareMedia(currentReciter, currentMoshaf, currentSurah, currentSurahPosition)
     }
 
     fun seekTo(position: Long) {
@@ -710,17 +740,18 @@ class QuranMediaService : MediaBrowserServiceCompat() {
     fun skipToNextSurah() {
         player.stop()
         currentSurahPosition = -1L
-        mediaManager.processNextSurah(this@QuranMediaService)
+        MediaManager.processNextSurah()
     }
 
     fun skipToPreviousSurah() {
         player.stop()
         currentSurahPosition = -1L
-        mediaManager.processPreviousSurah(this@QuranMediaService)
+        MediaManager.processPreviousSurah()
     }
 
     fun stopMedia() {
         val reciter = currentReciter ?: return
+        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
         setMediaSessionState(MediaSessionState.STOPPED)
@@ -731,7 +762,7 @@ class QuranMediaService : MediaBrowserServiceCompat() {
 
         if (player.playbackState != Player.STATE_BUFFERING) positionUpdateJob?.cancel()
 
-        updateMediaSession(reciter, surah)
+        updateMediaSession(reciter, moshaf, surah)
         setMediaSessionState(MediaSessionState.STOPPED)
 
         Timber.debug("playback stopped")
