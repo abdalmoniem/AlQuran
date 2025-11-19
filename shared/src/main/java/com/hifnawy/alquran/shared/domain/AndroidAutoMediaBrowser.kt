@@ -3,11 +3,11 @@ package com.hifnawy.alquran.shared.domain
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import android.net.Uri
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.net.toUri
 import androidx.media.MediaBrowserServiceCompat
 import androidx.media.utils.MediaConstants
 import com.hifnawy.alquran.shared.R
@@ -101,8 +101,7 @@ open class AndroidAutoMediaBrowser : MediaBrowserServiceCompat() {
                                         mediaId = "surah_${surah.id}",
                                         reciter = reciter,
                                         moshaf = moshaf,
-                                        surah = surah,
-                                        surahUri = surah.uri,
+                                        surah = surah
                                 )
                             }.toMutableList()
 
@@ -140,8 +139,7 @@ open class AndroidAutoMediaBrowser : MediaBrowserServiceCompat() {
             mediaId: String,
             reciter: Reciter,
             moshaf: Moshaf,
-            surah: Surah,
-            surahUri: Uri? = null
+            surah: Surah
     ) = MediaDescriptionCompat.Builder().run {
         val extras = Bundle().apply {
             putInt(MediaConstants.DESCRIPTION_EXTRAS_KEY_CONTENT_STYLE_SINGLE_ITEM, MediaConstants.DESCRIPTION_EXTRAS_VALUE_CONTENT_STYLE_GRID_ITEM)
@@ -157,7 +155,7 @@ open class AndroidAutoMediaBrowser : MediaBrowserServiceCompat() {
         setMediaId(mediaId)
         setTitle(surah.name)
 
-        surahUri?.let { setMediaUri(it) }
+        surah.url?.let { setMediaUri(it.toUri()) }
 
         @SuppressLint("DiscouragedApi")
         val drawableId = resources.getIdentifier("surah_${surah.id.toString().padStart(3, '0')}", "drawable", packageName)

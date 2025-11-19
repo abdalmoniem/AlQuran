@@ -22,7 +22,7 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
     var playerState by mutableStateOf(PlayerState())
 
     init {
-        quranApplication.quranServiceObservers.add(this)
+        if (this !in quranApplication.quranServiceObservers) quranApplication.quranServiceObservers.add(this)
     }
 
     fun playMedia(surah: Surah): Unit = Intent(quranApplication, QuranMediaService::class.java).run {

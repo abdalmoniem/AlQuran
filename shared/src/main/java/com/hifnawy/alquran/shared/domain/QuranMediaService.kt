@@ -15,6 +15,7 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -40,7 +41,7 @@ import timber.log.Timber
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 
-class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
+class QuranMediaService : AndroidAutoMediaBrowser(), MediaManager.MediaReadyObserver, Player.Listener {
 
     enum class Actions {
         ACTION_START_PLAYBACK,
@@ -108,9 +109,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
             isActive = true
         }
 
-        MediaManager.apply {
-            onMediaReady = ::updateMediaSession
-        }
+        if (this !in MediaManager.mediaReadyListeners) MediaManager.mediaReadyListeners.add(this@QuranMediaService)
 
         player.addListener(this@QuranMediaService)
 
@@ -146,9 +145,9 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
         }
 
         // stop mediaManager
-        MediaManager.apply {
-            stopLifecycle()
-        }
+        MediaManager.stopLifecycle()
+
+        if (this in MediaManager.mediaReadyListeners) MediaManager.mediaReadyListeners.remove(this@QuranMediaService)
 
         setMediaSessionState(MediaSessionState.STOPPED)
         quranApplication.lastStatusUpdate = ServiceStatus.Stopped
@@ -182,9 +181,9 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
         return START_NOT_STICKY
     }
 
-    override fun onIsPlayingChanged(isPlayingNow: Boolean) {
-        // setMediaSessionState(if (isPlayingNow) MediaSessionState.PLAYING else MediaSessionState.BUFFERING)
-    }
+    // override fun onIsPlayingChanged(isPlayingNow: Boolean) {
+    //     setMediaSessionState(if (isPlayingNow) MediaSessionState.PLAYING else MediaSessionState.BUFFERING)
+    // }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
         super.onPlaybackStateChanged(playbackState)
@@ -199,7 +198,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
             Player.STATE_IDLE      -> {
                 Timber.debug("Player.STATE_IDLE")
 
-                if (quranApplication.lastStatusUpdate == ServiceStatus.Stopped) return
+                // if (quranApplication.lastStatusUpdate == ServiceStatus.Stopped) return
                 if (mediaSession.controller?.playbackState?.state == PlaybackStateCompat.STATE_STOPPED) return
 
                 val reciter = currentReciter ?: return
@@ -213,10 +212,12 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
             Player.STATE_READY     -> {
                 Timber.debug("Player.STATE_READY")
                 val reciter = currentReciter ?: return
-                val moshaf = currentMoshaf ?: return
                 val surah = currentSurah ?: return
 
-                updateMediaSession(reciter, moshaf, surah)
+                // onMediaReady(reciter, moshaf, surah)
+                updateNotification(reciter, surah)
+                updateMetadata(surah)
+                setMediaSessionState(MediaSessionState.PLAYING)
                 startPlaybackMonitoring()
             }
 
@@ -255,46 +256,48 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
-    private fun updateMediaSession(
+    override fun onMediaReady(
             reciter: Reciter,
             moshaf: Moshaf,
             surah: Surah,
-            surahUri: Uri? = null,
-            surahDrawable: Drawable? = null
+            surahDrawable: Drawable?
     ) {
         currentReciter = reciter
         currentMoshaf = moshaf
         currentSurah = surah
 
         updateNotification(reciter, surah)
-        updateMetadata(surah, surahDrawable)
+        updateMetadata(surah)
 
-        if (surahUri != null) playMedia(surah, surahUri)
+        val surahUri = surah.url?.toUri() ?: return
+        if (player.playbackState == ExoPlayerEx.PlayerState.BUFFERING.state) return
+
+        playMedia(surah, surahUri)
     }
 
     @SuppressLint("DiscouragedApi")
-    private fun updateMetadata(surah: Surah, surahDrawable: Drawable? = null) {
+    private fun updateMetadata(surah: Surah) {
         val surahDrawableId = resources.getIdentifier("surah_${currentSurah!!.id.toString().padStart(3, '0')}", "drawable", packageName)
-        val surahDrawableBitmap = when (surahDrawable) {
-            null -> (AppCompatResources.getDrawable(this, surahDrawableId) as BitmapDrawable).bitmap
-            else -> (surahDrawable as BitmapDrawable).bitmap
+        val surahDrawableBitmap = (AppCompatResources.getDrawable(this, surahDrawableId) as BitmapDrawable).bitmap
+
+        val title = when (mediaSession.controller?.playbackState?.state) {
+            PlaybackStateCompat.STATE_STOPPED -> surah.name
+            else                              -> when (player.playbackState) {
+                Player.STATE_IDLE,
+                Player.STATE_BUFFERING -> getString(R.string.loading_surah, surah.name)
+
+                else                   -> surah.name
+            }
         }
 
-        val metadata = MediaMetadataCompat.Builder()
-            .putText(
-                    MediaMetadataCompat.METADATA_KEY_TITLE,
-                    when (player.playbackState) {
-                        Player.STATE_IDLE,
-                        Player.STATE_BUFFERING -> getString(R.string.loading_surah, surah.name)
-
-                        else                   -> surah.name
-                    }
-            )
-            .putText(MediaMetadataCompat.METADATA_KEY_ARTIST, currentReciter?.name)
-            .putText(MediaMetadataCompat.METADATA_KEY_GENRE, getString(R.string.quran))
-            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, surahDrawableBitmap)
-            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, player.duration)
-            .build()
+        val metadata = MediaMetadataCompat.Builder().run {
+            putText(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+            putText(MediaMetadataCompat.METADATA_KEY_ARTIST, currentReciter?.name)
+            putText(MediaMetadataCompat.METADATA_KEY_GENRE, getString(R.string.quran))
+            putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, surahDrawableBitmap)
+            putLong(MediaMetadataCompat.METADATA_KEY_DURATION, player.duration)
+            build()
+        }
 
         mediaSession.setMetadata(metadata)
     }
@@ -424,20 +427,14 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
             if (!isPlaying) {
                 play()
 
-                setMediaSessionState(
-                        when (player.playbackState) {
-                            ExoPlayerEx.PlayerState.BUFFERING.state -> MediaSessionState.BUFFERING
-                            else                                    -> MediaSessionState.PLAYING
-                        }
-                )
+                setMediaSessionState(MediaSessionState.PLAYING)
 
                 val reciter = currentReciter ?: return
 
                 when {
                     player.playbackState != ExoPlayerEx.PlayerState.BUFFERING.state -> {
-                        val moshaf = currentMoshaf ?: return
-
-                        updateMediaSession(reciter, moshaf, surah)
+                        updateNotification(reciter, surah)
+                        updateMetadata(surah)
                         quranApplication.lastStatusUpdate = ServiceStatus.Playing(
                                 reciter = reciter,
                                 surah = surah,
@@ -489,10 +486,10 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
         player.play()
 
         val reciter = currentReciter ?: return
-        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
-        updateMediaSession(reciter, moshaf, surah)
+        updateNotification(reciter, surah)
+        updateMetadata(surah)
         setMediaSessionState(MediaSessionState.PLAYING)
         quranApplication.lastStatusUpdate = ServiceStatus.Playing(
                 reciter = reciter,
@@ -541,10 +538,10 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
         setMediaSessionState(MediaSessionState.PAUSED)
 
         val reciter = currentReciter ?: return
-        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
-        updateMediaSession(reciter, moshaf, surah)
+        updateNotification(reciter, surah)
+        updateMetadata(surah)
         setMediaSessionState(MediaSessionState.PAUSED)
         quranApplication.lastStatusUpdate = ServiceStatus.Paused(
                 reciter = reciter,
@@ -560,10 +557,10 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
             player.play()
 
             val reciter = currentReciter ?: return
-            val moshaf = currentMoshaf ?: return
             val surah = currentSurah ?: return
 
-            updateMediaSession(reciter, moshaf, surah)
+            updateNotification(reciter, surah)
+            updateMetadata(surah)
             setMediaSessionState(MediaSessionState.PLAYING)
             quranApplication.lastStatusUpdate = ServiceStatus.Playing(
                     reciter = reciter,
@@ -584,16 +581,12 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
             player.seekTo(position)
             currentSurahPosition = position
 
-            setMediaSessionState(
-                    when {
-                        player.isPlaying -> MediaSessionState.PLAYING
-                        else             -> MediaSessionState.PAUSED
-                    }
-            )
-
             val reciter = currentReciter ?: return
             val surah = currentSurah ?: return
 
+            updateNotification(reciter, surah)
+            updateMetadata(surah)
+            setMediaSessionState(MediaSessionState.PLAYING)
             quranApplication.lastStatusUpdate = when {
                 player.isPlaying -> ServiceStatus.Playing(
                         reciter = reciter,
@@ -628,7 +621,6 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
 
     fun stopMedia() {
         val reciter = currentReciter ?: return
-        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
         setMediaSessionState(MediaSessionState.STOPPED)
@@ -639,7 +631,8 @@ class QuranMediaService : AndroidAutoMediaBrowser(), Player.Listener {
 
         if (player.playbackState != Player.STATE_BUFFERING) positionUpdateJob?.cancel()
 
-        updateMediaSession(reciter, moshaf, surah)
+        updateNotification(reciter, surah)
+        updateMetadata(surah)
         setMediaSessionState(MediaSessionState.STOPPED)
 
         Timber.debug("playback stopped")
