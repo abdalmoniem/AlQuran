@@ -28,7 +28,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -37,7 +36,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
-import com.hifnawy.alquran.utils.DrawableResUtil.getSurahDrawableId
+import com.hifnawy.alquran.shared.utils.DrawableResUtil.defaultSurahDrawableId
+import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
 import com.hifnawy.alquran.viewModel.MediaViewModel
 import com.hifnawy.alquran.viewModel.PlayerState
 import com.hifnawy.alquran.shared.R as Rs
@@ -48,10 +48,9 @@ fun MiniPlayer(
         animatedHeight: Float,
         expandProgress: Float
 ) {
-    val context = LocalContext.current
     val state = mediaViewModel.playerState
 
-    val surahDrawableId = remember(state.surah?.id) { getSurahDrawableId(context, state.surah?.id) }
+    val surahDrawableId = remember(state.surah?.id) { state.surah?.surahDrawableId ?: defaultSurahDrawableId }
 
     Box(
             modifier = Modifier

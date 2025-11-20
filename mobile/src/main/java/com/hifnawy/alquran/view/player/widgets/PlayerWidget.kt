@@ -60,8 +60,9 @@ import com.hifnawy.alquran.shared.domain.ServiceStatus
 import com.hifnawy.alquran.shared.domain.ServiceStatusObserver
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
+import com.hifnawy.alquran.shared.utils.DrawableResUtil.defaultSurahDrawableId
+import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
-import com.hifnawy.alquran.utils.DrawableResUtil.getSurahDrawableId
 import com.hifnawy.alquran.utils.RuntimeTypeAdapterFactoryEx.registerSealedSubtypes
 import com.hifnawy.alquran.utils.RuntimeTypeAdapterFactoryEx.registeredSubtypes
 import com.hifnawy.alquran.utils.RuntimeTypeAdapterFactoryEx.registeredTypeFieldName
@@ -135,14 +136,8 @@ class PlayerWidget : GlanceAppWidget(), ServiceStatusObserver {
                 val surah = prefs[SURAH]?.let { gson.fromJson(it, Surah::class.java) }
                 val status = prefs[STATUS]?.let { gson.fromJson(it, ServiceStatus::class.java) }
 
-                val defaultSurahDrawableId = getSurahDrawableId(context)
-                val surahDrawableId = getSurahDrawableId(context, surah?.id)
-
-                val surahDrawable = when {
-                    surah != null -> AppCompatResources.getDrawable(context, surahDrawableId)
-                    else          -> AppCompatResources.getDrawable(context, defaultSurahDrawableId)
-                }
-
+                val surahDrawableId = surah?.surahDrawableId ?: defaultSurahDrawableId
+                val surahDrawable = AppCompatResources.getDrawable(context, surahDrawableId)
                 val surahBitmap = (surahDrawable as BitmapDrawable).bitmap
                 val surahBlurredBitmap = HokoBlur.with(context)
                     .scheme(HokoBlur.SCHEME_NATIVE) // different implementation, RenderScript、OpenGL、Native(default) and Java

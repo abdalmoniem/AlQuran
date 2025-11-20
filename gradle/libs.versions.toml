@@ -9,25 +9,26 @@ hokoBlur = "1.5.5"
 coreKtx = "1.17.0"
 appcompat = "1.7.1"
 material = "1.13.0"
-activity = "1.11.0"
+activity = "1.12.0"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 timberVersion = "5.0.1"
 media3Session = "1.8.0"
-animationCore = "1.9.4"
-composeBom = "2025.11.00"
+animationCore = "1.9.5"
+composeBom = "2025.11.01"
 media3Exoplayer = "1.8.0"
 glanceAppwidget = "1.1.1"
 constraintlayout = "2.2.1"
-activityCompose = "1.11.0"
-foundationLayout = "1.9.4"
+activityCompose = "1.12.0"
+foundationLayout = "1.9.5"
 navigationCompose = "2.9.6"
-material3 = "1.5.0-alpha08"
+material3 = "1.5.0-alpha09"
 toolsCore = "1.0.0-alpha13"
 appcompatResources = "1.7.1"
-lifecycleRuntimeKtx = "2.9.4"
+lifecycleRuntimeKtx = "2.10.0"
 gsonExtrasVersion = "2.13.2-rc1"
 kotlinxCoroutinesCore = "1.10.2"
+material3Adaptive = "1.3.0-alpha04"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -64,8 +65,10 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-appcompat-resources = { group = "androidx.appcompat", name = "appcompat-resources", version.ref = "appcompatResources" }
 androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
+androidx-compose-material3-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", version.ref = "material3Adaptive" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
+androidx-compose-material3-adaptive-layout = { module = "androidx.compose.material3.adaptive:adaptive-layout", version.ref = "material3Adaptive" }
 
 [plugins]
 android-lint = { id = "com.android.lint", version.ref = "agp" }
