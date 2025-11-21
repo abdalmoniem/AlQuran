@@ -62,8 +62,6 @@ fun SurahsScreen(
 
                     reciterSurahs = surahs.filter { surah -> surah.id in moshaf.surahIds }
 
-                    mediaViewModel.playerState = mediaViewModel.playerState.copy(reciter = reciter, moshaf = moshaf, surahsServer = moshaf.server)
-
                     isLoading = false
                 }
             }
@@ -83,6 +81,8 @@ fun SurahsScreen(
                     isLoading = isLoading,
                     dataError = dataError,
                     reciter = reciter,
+                    moshaf = moshaf,
+                    moshafServer = moshaf.server,
                     reciterSurahs = reciterSurahs,
                     mediaViewModel = mediaViewModel
             )
@@ -95,6 +95,8 @@ private fun BoxScope.Content(
         isLoading: Boolean,
         dataError: DataError?,
         reciter: Reciter,
+        moshaf: Moshaf,
+        moshafServer: String,
         reciterSurahs: List<Surah>,
         mediaViewModel: MediaViewModel
 ) {
@@ -116,7 +118,7 @@ private fun BoxScope.Content(
             playingSurahId = mediaViewModel.playerState.surah?.id,
             playingReciterId = mediaViewModel.playerState.reciter?.id
     ) { surah ->
-        mediaViewModel.playMedia(surah)
+        mediaViewModel.playMedia(reciter, moshaf, moshafServer, surah)
     }
 
     PlayerContainer(mediaViewModel = mediaViewModel)

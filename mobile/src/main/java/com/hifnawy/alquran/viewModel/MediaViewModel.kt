@@ -25,10 +25,10 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
         if (this !in quranApplication.quranServiceObservers) quranApplication.quranServiceObservers.add(this)
     }
 
-    fun playMedia(surah: Surah): Unit = Intent(quranApplication, QuranMediaService::class.java).run {
+    fun playMedia(reciter: Reciter, moshaf: Moshaf, moshafServer: String, surah: Surah): Unit = Intent(quranApplication, QuranMediaService::class.java).run {
         action = QuranMediaService.Actions.ACTION_START_PLAYBACK.name
-        putExtra(QuranMediaService.Extras.EXTRA_RECITER.name, playerState.reciter)
-        putExtra(QuranMediaService.Extras.EXTRA_MOSHAF.name, playerState.moshaf)
+        putExtra(QuranMediaService.Extras.EXTRA_RECITER.name, reciter)
+        putExtra(QuranMediaService.Extras.EXTRA_MOSHAF.name, moshaf)
         putExtra(QuranMediaService.Extras.EXTRA_SURAH.name, surah)
 
         quranApplication.startService(this)
@@ -36,6 +36,9 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
                 isVisible = true,
                 isPlaying = true,
                 isExpanded = true,
+                reciter = reciter,
+                moshaf = moshaf,
+                surahsServer = moshafServer,
                 surah = surah
         )
     }
