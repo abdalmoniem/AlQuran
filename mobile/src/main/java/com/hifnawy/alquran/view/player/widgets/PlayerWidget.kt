@@ -87,9 +87,7 @@ class PlayerWidget : GlanceAppWidget(), ServiceStatusObserver {
 
     private val serviceStatusAdapter = ServiceStatus::class.registerSealedSubtypes
 
-    private val gson = GsonBuilder()
-        .registerTypeAdapterFactory(serviceStatusAdapter)
-        .create()
+    private val gson = GsonBuilder().registerTypeAdapterFactory(serviceStatusAdapter).create()
 
     private lateinit var quranApplication: QuranApplication
 
@@ -159,6 +157,8 @@ class PlayerWidget : GlanceAppWidget(), ServiceStatusObserver {
     private fun Content(reciter: Reciter? = null, surah: Surah? = null, surahBitmap: Bitmap, surahBlurredBitmap: Bitmap, status: ServiceStatus? = null) {
         val context = LocalContext.current
         val contentForegroundColor = Color.White
+
+        Timber.debug("composing...")
 
         SurahCard(
                 modifier = GlanceModifier
@@ -296,9 +296,8 @@ class PlayerWidget : GlanceAppWidget(), ServiceStatusObserver {
                 modifier = GlanceModifier.size(buttonSize),
                 imageProvider = ImageProvider(
                         when (status) {
-                            is ServiceStatus.Playing -> Rs.drawable.pause_24px
-                            is ServiceStatus.Paused  -> Rs.drawable.play_arrow_24px
-                            else                     -> Rs.drawable.play_arrow_24px
+                            is ServiceStatus.Playing -> Rs.drawable.pause_circle_24px
+                            else                     -> Rs.drawable.play_circle_24px
                         }
                 ),
                 contentDescription = "Toggle Media",
@@ -401,7 +400,9 @@ class PlayerWidget : GlanceAppWidget(), ServiceStatusObserver {
 internal class SkipToPreviousAction : ActionCallback {
 
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        Intent(context, QuranMediaService::class.java).apply {
+        Timber.debug("SkipToPreviousAction")
+
+        Intent(context, QuranMediaService::class.java).run {
             action = QuranMediaService.Actions.ACTION_SKIP_TO_PREVIOUS.name
 
             context.startService(this)
@@ -412,6 +413,8 @@ internal class SkipToPreviousAction : ActionCallback {
 internal class ToggleMediaAction : ActionCallback {
 
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        Timber.debug("ToggleMediaAction")
+
         Intent(context, QuranMediaService::class.java).apply {
             action = QuranMediaService.Actions.ACTION_TOGGLE_PLAY_PAUSE.name
 
@@ -423,6 +426,8 @@ internal class ToggleMediaAction : ActionCallback {
 internal class SkipToNextAction : ActionCallback {
 
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        Timber.debug("SkipToNextAction")
+
         Intent(context, QuranMediaService::class.java).apply {
             action = QuranMediaService.Actions.ACTION_SKIP_TO_NEXT.name
 

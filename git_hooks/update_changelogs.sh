@@ -109,6 +109,7 @@ if [[ $commitHashCount -gt 0 && -f "$changelogsPath/$tagVersionCode.txt" && "$is
 fi
 
 echo "Generating Changelog between $tag and $referenceTag..."
+isFirstCommit=true
 for commitHash in $commitHashesBetweenTags; do
   subject=$(git log --format=%s -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
   # body=$(git log --format=%b -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
@@ -122,9 +123,13 @@ for commitHash in $commitHashesBetweenTags; do
     echo "saving to '$changelogsPath/$tagVersionCode.txt'..."
   fi
 
-  echo "Commit: $commitHash"
-  if [ "$isWriteChanges" == true ]; then
-    echo "Commit: $commitHash" >> "$changelogsPath/$tagVersionCode.txt"
+  if [ "$isFirstCommit" == true ]; then
+    isFirstCommit=false
+  else
+    echo "Commit: $commitHash"
+    if [ "$isWriteChanges" == true ]; then
+      echo "Commit: $commitHash" >> "$changelogsPath/$tagVersionCode.txt"
+    fi
   fi
 
   echo "* $subject"

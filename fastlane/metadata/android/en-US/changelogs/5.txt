@@ -1,0 +1,33 @@
+* Refactor: Improve Media Playback Controls and Logic
+   > - Update media control icons (play, pause, next, previous) for a consistent look and feel, and enable tinting.
+   > - Add new circled play/pause icons for the `PlayerWidget`.
+   > - Refactor `MediaManager` to correctly handle next/previous surah logic, ensuring it cycles through the available surahs for the current reciter's moshaf.
+   > - Update `QuranMediaService` to pass the necessary `reciter` and `moshaf` details when skipping to the next or previous surah.
+   > - Enhance the `PlayerWidget`'s play/pause icon state to use the new circled icons.
+------------------------------
+Commit: be7b264
+* Refactor: Decouple Media Playback from Player State
+   > This commit refactors the media playback initiation logic to make it more explicit and less dependent on the `MediaViewModel`'s internal state.
+   > - Modified `MediaViewModel.playMedia()` to accept `reciter`, `moshaf`, and `moshafServer` as direct arguments instead of relying on the `playerState`.
+   > - Updated the `SurahsScreen` to pass the necessary playback information (`reciter`, `moshaf`, `moshafServer`, `surah`) directly when a surah is selected for playing.
+   > - Removed the now-redundant update of `playerState` from the `SurahsScreen`'s `LaunchedEffect`, as this is now handled within `playMedia`.
+   > This change improves the clarity of the playback action by ensuring all required data is passed at the point of invocation.
+------------------------------
+Commit: 395f455
+* Added audio playing indicator to UI
+   > This commit introduces a visual indicator to show which audio track (Reciter/Surah/Moshaf) is currently playing.
+   > - **`AnimatedAudioBars` Composable:**
+   >   - Created a new composable to display an animation of vertical bars, simulating an audio visualizer.
+   > - **`ReciterCard` & `MoshafCard`:**
+   >   - Updated to display the `AnimatedAudioBars` animation next to the currently playing reciter or Moshaf.
+   > - **`SurahCard`:**
+   >   - Updated to show the `AnimatedAudioBars` when a Surah is playing.
+   > - **`RecitersGrid`, `SurahsGrid`:**
+   >   - Propagate the current player state down to the individual card composables to determine which item is playing.
+   > - **`RecitersScreen`, `SurahsScreen`:**
+   >   - Pass the media player state from the `MediaViewModel` to the respective grids.
+   > - **Previews:**
+   >   - Added `@Preview` annotations for the new and updated card composables to facilitate UI development and testing.
+------------------------------
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/v0.0.4...v0.0.5

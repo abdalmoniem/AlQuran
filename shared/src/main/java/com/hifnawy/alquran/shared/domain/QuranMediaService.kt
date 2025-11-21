@@ -978,9 +978,13 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
      * Stops the current playback and processes the next surah.
      */
     fun skipToNextSurah() {
+        val reciter = currentReciter ?: return
+        val moshaf = currentMoshaf ?: return
+
         player.stop()
         currentSurahPosition = -1L
-        MediaManager.processNextSurah()
+
+        MediaManager.processNextSurah(reciter, moshaf)
     }
 
     /**
@@ -989,9 +993,12 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
      * Stops the current playback and processes the previous surah.
      */
     fun skipToPreviousSurah() {
+        val reciter = currentReciter ?: return
+        val moshaf = currentMoshaf ?: return
+
         player.stop()
         currentSurahPosition = -1L
-        MediaManager.processPreviousSurah()
+        MediaManager.processPreviousSurah(reciter, moshaf)
     }
 
     /**

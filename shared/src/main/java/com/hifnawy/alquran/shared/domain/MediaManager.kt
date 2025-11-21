@@ -101,34 +101,30 @@ object MediaManager : LifecycleOwner {
         }
     }
 
-    fun processNextSurah() {
-        val reciter = currentReciter ?: return
-        val moshaf = currentMoshaf ?: return
+    fun processNextSurah(reciter: Reciter, moshaf: Moshaf) {
         val surah = currentSurah ?: return
 
-        surahs.find {
-            it.id == when (surah.id) {
-                surahs.last().id -> 1
-                else             -> surah.id + 1
-            }
-        }?.let { newSurah ->
-            processSurah(reciter, moshaf, newSurah)
-        }
+        surahs = surahs.filter { it.id in moshaf.surahIds }.sortedBy { surah -> surah.id }
+        surahs = moshaf.getMoshafSurahs(surahs)
+
+        val currentSurahIndex = surahs.indexOfFirst { it.id == surah.id }
+        val nextSurahIndex = (currentSurahIndex + 1) % surahs.size
+        val newSurah = surahs[nextSurahIndex]
+
+        processSurah(reciter, moshaf, newSurah)
     }
 
-    fun processPreviousSurah() {
-        val reciter = currentReciter ?: return
-        val moshaf = currentMoshaf ?: return
+    fun processPreviousSurah(reciter: Reciter, moshaf: Moshaf) {
         val surah = currentSurah ?: return
 
-        surahs.find {
-            it.id == when (surah.id) {
-                surahs.first().id -> surahs.last().id
-                else              -> surah.id - 1
-            }
-        }?.let { newSurah ->
-            processSurah(reciter, moshaf, newSurah)
-        }
+        surahs = surahs.filter { it.id in moshaf.surahIds }.sortedBy { surah -> surah.id }
+        surahs = moshaf.getMoshafSurahs(surahs)
+
+        val currentSurahIndex = surahs.indexOfFirst { it.id == surah.id }
+        val previousSurahIndex = (currentSurahIndex - 1 + surahs.size) % surahs.size
+        val newSurah = surahs[previousSurahIndex]
+
+        processSurah(reciter, moshaf, newSurah)
     }
 
     private fun Moshaf.getMoshafSurahs(surahs: List<Surah>): List<Surah> = surahs.map { surah ->
