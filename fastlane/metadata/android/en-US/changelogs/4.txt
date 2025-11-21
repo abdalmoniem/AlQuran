@@ -1,0 +1,26 @@
+Commit: 74c7b6b
+* Refactor: Modernized Player UI and Improved Serialization
+   > This commit introduces a significant visual and functional overhaul of the media player's progress bar. It also includes several code refinements for better serialization and previewing capabilities.
+   > - **Player Screen (`FullScreenPlayer.kt`):**
+   >     - Replaced the default `Slider` and `LinearProgressIndicator` with custom composables (`SliderThumb`, `SliderTrack`, `BufferProgressIndicator`, `BufferingIndicator`) for a more modern and visually appealing look and feel.
+   >     - Added a pulsing animation for the buffering state.
+   >     - Refactored the media player's progress bar for a completely custom look and feel.
+   > - **Serialization (`SerializableExt.kt`):**
+   >     - Introduced `SerializableExt.kt` with extension functions (`asJsonString`, `toJsonString`) to centralize object-to-JSON conversion using Gson.
+   >     - Updated `RecitersScreen.kt` and `PlayerWidget.kt` to use these new serialization extensions, simplifying the code.
+   > - **UI & Code Quality:**
+   >     - Added a `@Preview` composable for the `RecitersScreen` to facilitate easier UI development and testing.
+   >     - Refined code structure in `RecitersScreen.kt` for improved readability.
+   >     - Simplified logic in `RecitersScreen.kt` using a `when` expression for content display.
+   >     - Added a preview for `RecitersScreen` to facilitate UI development.
+   >     - Improved null safety in `PlayerWidget.kt` before updating glance widgets.
+------------------------------
+Commit: 3483432
+* Refactor: Improve FullScreenPlayer Text Scaling
+   > - Increased the font size of the Surah and Reciter names in the `FullScreenPlayer` for better readability on phone portrait and landscape modes.
+   > - Introduced an `AutoSizeText` composable to conditionally apply weight modifiers, improving layout adaptability on landscape and tablet devices.
+   > - Adjusted the device configuration mapping to correctly classify `expanded width` with `medium height` as `PHONE_LANDSCAPE`.
+   > - Refined font size scaling for the player progress text across different device configurations.
+------------------------------
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/v0.0.3...v0.0.4

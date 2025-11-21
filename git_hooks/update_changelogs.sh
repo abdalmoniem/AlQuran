@@ -111,7 +111,8 @@ fi
 echo "Generating Changelog between $tag and $referenceTag..."
 for commitHash in $commitHashesBetweenTags; do
   subject=$(git log --format=%s -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
-  body=$(git log --format=%b -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
+  # body=$(git log --format=%b -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
+  body=$(git log --format=%b -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//')
 
   subjects+=("$subject")
   bodies+=("$body")
@@ -122,8 +123,11 @@ for commitHash in $commitHashesBetweenTags; do
   fi
 
   echo "Commit: $commitHash"
-  echo "* $subject"
+  if [ "$isWriteChanges" == true ]; then
+    echo "Commit: $commitHash" >> "$changelogsPath/$tagVersionCode.txt"
+  fi
 
+  echo "* $subject"
   if [ "$isWriteChanges" == true ]; then
     echo "* $subject" >> "$changelogsPath/$tagVersionCode.txt"
   fi
@@ -133,14 +137,12 @@ for commitHash in $commitHashesBetweenTags; do
   for line in "${lines[@]}"; do
     if [[ -n "$line" ]]; then
       if [ $lineCount -gt 1 ]; then
-        echo "   > - $line"
-
+        echo "   > $line"
         if [ "$isWriteChanges" == true ]; then
-          echo "   > - $line" >> "$changelogsPath/$tagVersionCode.txt"
+          echo "   > $line" >> "$changelogsPath/$tagVersionCode.txt"
         fi
       else
         echo "   > $line"
-
         if [ "$isWriteChanges" == true ]; then
           echo "   > $line" >> "$changelogsPath/$tagVersionCode.txt"
         fi
@@ -148,7 +150,6 @@ for commitHash in $commitHashesBetweenTags; do
     else
       if [ $lineCount -eq 1 ]; then
         echo "   >"
-
         if [ "$isWriteChanges" == true ]; then
           echo "   >" >> "$changelogsPath/$tagVersionCode.txt"
         fi
@@ -156,6 +157,9 @@ for commitHash in $commitHashesBetweenTags; do
     fi
   done
   echo "------------------------------"
+  if [ "$isWriteChanges" == true ]; then
+    echo "------------------------------" >> "$changelogsPath/$tagVersionCode.txt"
+  fi
 done
 
 if [ $changelogs -gt 0 ]; then

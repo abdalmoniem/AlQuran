@@ -47,13 +47,12 @@ if [[ "$isWriteChanges" == true ]]; then
   fi
 fi
 
-for index in $(seq $(( ${#tags[@]} - 1 )) -1 0)
-do
+for index in $(seq $((${#tags[@]} - 1))   -1 0); do
   tag="${tags[$index]}"
 
   # Get the previous tag, or the first commit hash if index is 0
-  if (( index > 0 )); then
-    previousTag="${tags[$((index-1))]}"
+  if ((index > 0)); then
+    previousTag="${tags[$((index - 1))]}"
   else
     previousTag=$(git rev-parse --short $(git rev-list --max-parents=0 HEAD))
   fi
@@ -72,10 +71,10 @@ do
 
   echo "Generating Changelog between $tag and $previousTag..."
   echo "processing $commitHashCount commits..."
-  for commitHash in $commitHashesBetweenTags
-  do
+  for commitHash in $commitHashesBetweenTags; do
     subject=$(git log --format=%s -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
-    body=$(git log --format=%b -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
+    # body=$(git log --format=%b -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
+    body=$(git log --format=%b -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//')
 
     subjects+=("$subject")
     bodies+=("$body")
@@ -84,11 +83,12 @@ do
       echo "saving to '$changelogsPath/$versionCode.txt'..."
     fi
 
-    echo "------------------------------"
-
     echo "Commit: $commitHash"
-    echo "* $subject"
+    if [ "$isWriteChanges" == true ]; then
+      echo "Commit: $commitHash" >> "$changelogsPath/$versionCode.txt"
+    fi
 
+    echo "* $subject"
     if [ "$isWriteChanges" == true ]; then
       echo "* $subject" >> "$changelogsPath/$versionCode.txt"
     fi
@@ -98,14 +98,12 @@ do
     for line in "${lines[@]}"; do
       if [[ -n "$line" ]]; then
         if [ $lineCount -gt 1 ]; then
-          echo "   > - $line"
-
+          echo "   > $line"
           if [ "$isWriteChanges" == true ]; then
-            echo "   > - $line" >> "$changelogsPath/$versionCode.txt"
+            echo "   > $line" >> "$changelogsPath/$versionCode.txt"
           fi
         else
           echo "   > $line"
-
           if [ "$isWriteChanges" == true ]; then
             echo "   > $line" >> "$changelogsPath/$versionCode.txt"
           fi
@@ -113,15 +111,19 @@ do
       else
         if [ $lineCount -eq 1 ]; then
           echo "   >"
-
           if [ "$isWriteChanges" == true ]; then
             echo "   >" >> "$changelogsPath/$versionCode.txt"
           fi
         fi
       fi
 
-      ((changelogs+=1))
+      ((changelogs += 1))
     done
+
+    echo "------------------------------"
+    if [ "$isWriteChanges" == true ]; then
+      echo "------------------------------" >> "$changelogsPath/$versionCode.txt"
+    fi
   done
 
   if [[ -n "$previousTag" ]]; then

@@ -2,6 +2,12 @@ package com.hifnawy.alquran.view.player
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -33,13 +39,13 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
@@ -56,7 +62,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -65,6 +71,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
@@ -519,10 +526,7 @@ private fun RecitationInfo(
                 )
             }
 
-            AutoSizeText(
-                    modifier = Modifier
-                        .wrapContentHeight()
-            ) {
+            AutoSizeText(modifier = Modifier.wrapContentHeight()) {
                 Text(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -555,6 +559,7 @@ private fun AutoSizeText(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 private fun PlayerProgress(
         modifier: Modifier = Modifier,
         state: PlayerState,
@@ -615,20 +620,20 @@ private fun PlayerProgress(
             }
 
             Box(modifier = Modifier.fillMaxWidth()) {
-                LinearProgressIndicator(
-                        progress = { bufferedProgress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(20.dp)
-                            .align(Alignment.CenterStart),
-                        color = Color.White.copy(alpha = 0.3f),
-                        trackColor = Color.White.copy(alpha = 0.1f),
-                        gapSize = 0.dp,
-                        strokeCap = StrokeCap.Round
-                )
+                val trackGap = 5.dp
+                val trackHeight = 50.dp
+                val trackActiveColor = Color.White
+                val trackInactiveColor = Color.White.copy(alpha = 0.5f)
+                val trackShape = RoundedCornerShape(15.dp)
+
+                val thumbWidth = 10.dp
+                val thumbHeight = trackHeight + 10.dp
 
                 if (state.durationMs > 0) {
                     Slider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.Center),
                             value = sliderPosition,
                             onValueChange = {
                                 onSeekStarted()
@@ -636,31 +641,196 @@ private fun PlayerProgress(
                             },
                             onValueChangeFinished = onSeekFinished,
                             valueRange = 0f..state.durationMs.toFloat(),
+                            thumb = {
+                                SliderThumb(
+                                        thumbWidth = thumbWidth,
+                                        thumbHeight = thumbHeight,
+                                        thumbColor = trackActiveColor,
+                                        thumbShape = trackShape
+                                )
+                            },
+                            track = { sliderState ->
+                                SliderTrack(
+                                        sliderState = sliderState,
+                                        thumbWidth = thumbWidth,
+                                        trackGap = trackGap,
+                                        trackHeight = trackHeight,
+                                        trackActiveColor = trackActiveColor,
+                                        trackInactiveColor = trackInactiveColor,
+                                        trackShape = trackShape
+                                )
+                            }
+                    )
+
+                    BufferProgressIndicator(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(20.dp)
-                                .align(Alignment.CenterStart),
-                            colors = SliderDefaults.colors(
-                                    thumbColor = Color.White.copy(alpha = 0.8f),
-                                    activeTrackColor = Color.White.copy(alpha = 0.8f),
-                                    inactiveTrackColor = Color.Transparent,
-                            )
+                                .align(Alignment.Center),
+                            currentProgress = sliderPosition / state.durationMs.toFloat(),
+                            bufferProgress = bufferedProgress,
+                            thumbWidth = thumbWidth,
+                            trackGap = trackGap,
+                            trackHeight = trackHeight,
+                            trackColor = Color.DarkGray.copy(alpha = 0.3f),
+                            trackShape = trackShape
                     )
                 } else {
-                    LinearProgressIndicator(
+                    BufferingIndicator(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(20.dp)
-                                .align(Alignment.CenterStart),
-                            color = Color.White.copy(alpha = 0.3f),
-                            trackColor = Color.White.copy(alpha = 0.1f),
-                            gapSize = 0.dp,
-                            strokeCap = StrokeCap.Round,
+                                .padding(horizontal = thumbWidth / 2)
+                                .align(Alignment.Center),
+                            trackHeight = trackHeight,
+                            trackColor = trackActiveColor,
+                            trackShape = trackShape
                     )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun BufferProgressIndicator(
+        modifier: Modifier = Modifier,
+        currentProgress: Float,
+        bufferProgress: Float,
+        thumbWidth: Dp = 10.dp,
+        trackGap: Dp = 10.dp,
+        trackHeight: Dp = 50.dp,
+        trackColor: Color = Color.DarkGray.copy(alpha = 0.3f),
+        trackShape: Shape = RoundedCornerShape(10.dp),
+) {
+    val progress = currentProgress.coerceIn(0f, 1f)
+    val buffered = bufferProgress.coerceIn(0f, 1f)
+
+    val playedProgress = progress.coerceAtMost(buffered)
+    val bufferActiveProgress = (buffered - progress).coerceAtLeast(0f)
+    val bufferInActiveProgress = (1f - buffered).coerceAtLeast(0f)
+
+    Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(trackHeight)
+    ) {
+        if (playedProgress > 0f) Box(
+                modifier = Modifier
+                    .weight(playedProgress)
+                    .fillMaxHeight()
+                    .padding(end = trackGap, start = thumbWidth / 2)
+                    // .background(Color.Red.copy(alpha = 0.5f), trackShape) // debug color
+        )
+
+        // SliderThumb(thumbWidth = thumbWidth, thumbColor = Color.Yellow.copy(alpha = 0.5f)) // debug color
+        SliderThumb(thumbWidth = thumbWidth)
+
+        if (bufferActiveProgress > 0f) Box(
+                modifier = Modifier
+                    .weight(bufferActiveProgress)
+                    .fillMaxHeight()
+                    .padding(start = trackGap)
+                    .background(trackColor, trackShape)
+                    // .background(Color.Green.copy(alpha = 0.5f), trackShape) // debug color
+        )
+
+        if (bufferInActiveProgress > 0f) Box(
+                modifier = Modifier
+                    .weight(bufferInActiveProgress)
+                    .fillMaxHeight()
+                    .padding(end = thumbWidth / 2)
+                    // .background(Color.Blue.copy(alpha = 0.5f), trackShape) // debug color
+        )
+    }
+}
+
+@Composable
+private fun SliderThumb(
+        thumbHeight: Dp = 60.dp,
+        thumbWidth: Dp = 10.dp,
+        thumbColor: Color = Color.White,
+        thumbShape: Shape = RoundedCornerShape(5.dp)
+) {
+    Box(
+            modifier = Modifier
+                .width(thumbWidth)
+                .height(thumbHeight)
+                .background(thumbColor, thumbShape)
+    )
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun SliderTrack(
+        sliderState: SliderState,
+        thumbWidth: Dp = 10.dp,
+        trackGap: Dp = 10.dp,
+        trackHeight: Dp = 50.dp,
+        trackActiveColor: Color = Color.White,
+        trackInactiveColor: Color = Color.White.copy(alpha = 0.5f),
+        trackShape: Shape = RoundedCornerShape(10.dp)
+) {
+    /**
+     *  Calculates the progress of the slider's `value` relative to the `value range`
+     *
+     *  The progress is a value between `0` and `1`, where `0` represents the `start` of the value range and `1` represents the `end`
+     *
+     *  This progress is then used to calculate the `active` and `inactive` segments of the slider track
+     */
+    val progress = (sliderState.value - sliderState.valueRange.start) / (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
+
+    val activeProgress = progress.coerceIn(0f, 1f)
+    val inactiveProgress = 1f - activeProgress
+
+    Timber.debug("progress: $progress, activeProgress: $activeProgress, inactiveProgress: $inactiveProgress")
+
+    Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(trackHeight)
+    ) {
+        // Active Segment
+        if (activeProgress > 0f) Box(
+                modifier = Modifier
+                    .weight(activeProgress)
+                    .fillMaxHeight()
+                    .padding(end = trackGap + (thumbWidth / 2))
+                    .background(trackActiveColor, trackShape)
+        )
+
+        // Inactive Segment
+        if (inactiveProgress > 0f) Box(
+                modifier = Modifier
+                    .weight(inactiveProgress)
+                    .fillMaxHeight()
+                    .padding(start = trackGap + (thumbWidth / 2))
+                    .background(trackInactiveColor, trackShape)
+        )
+    }
+}
+
+@Composable
+private fun BufferingIndicator(
+        modifier: Modifier = Modifier,
+        trackHeight: Dp = 50.dp,
+        trackColor: Color = Color.White,
+        trackShape: Shape = RoundedCornerShape(10.dp)
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "buffering")
+    val alpha by infiniteTransition.animateFloat(
+            initialValue = 0.2f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                    animation = tween(1000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse
+            ),
+            label = "alpha"
+    )
+
+    Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(trackHeight)
+                .background(trackColor.copy(alpha = alpha), trackShape)
+    )
 }
 
 @Composable
@@ -726,8 +896,8 @@ private fun PlayerControls(
 @Preview(name = "FullScreenPlayerPreview - Compact", widthDp = 400, heightDp = 400, locale = "ar")
 private fun FullScreenPlayerPreview() {
     val duration = (2.5f * 60 * 60 * 1000).toLong()
-    val currentPosition = (duration * 0.55).toLong()
-    val bufferedPosition = (duration * 0.75).toLong()
+    val currentPosition = (duration * 0.25f).toLong()
+    val bufferedPosition = (duration * 0.55f).toLong()
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Box(

@@ -63,6 +63,7 @@ import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.defaultSurahDrawableId
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
+import com.hifnawy.alquran.shared.utils.SerializableExt.Companion.toJsonString
 import com.hifnawy.alquran.utils.RuntimeTypeAdapterFactoryEx.registerSealedSubtypes
 import com.hifnawy.alquran.utils.RuntimeTypeAdapterFactoryEx.registeredSubtypes
 import com.hifnawy.alquran.utils.RuntimeTypeAdapterFactoryEx.registeredTypeFieldName
@@ -100,15 +101,17 @@ class PlayerWidget : GlanceAppWidget(), ServiceStatusObserver {
 
         when (status) {
             is ServiceStatus.Paused,
-            is ServiceStatus.Playing -> {
-                currentReciter = status.reciter
-                currentSurah = status.surah
+            is ServiceStatus.Playing -> status.run {
+                currentReciter = reciter
+                currentSurah = surah
             }
 
             else                     -> Unit
         }
 
-        updateGlanceWidgets(reciter = currentReciter, surah = currentSurah, status = status)
+        val reciter = currentReciter ?: return
+        val surah = currentSurah ?: return
+        updateGlanceWidgets(reciter = reciter, surah = surah, status = status)
     }
 
     /**
@@ -371,7 +374,7 @@ class PlayerWidget : GlanceAppWidget(), ServiceStatusObserver {
         }
     }
 
-    private fun updateGlanceWidgets(reciter: Reciter? = null, surah: Surah? = null, status: ServiceStatus) {
+    private fun updateGlanceWidgets(reciter: Reciter, surah: Surah, status: ServiceStatus) {
         CoroutineScope(Dispatchers.Default).launch {
             val manager = GlanceAppWidgetManager(quranApplication)
             val glanceIds = manager.getGlanceIds(PlayerWidget::class.java)
@@ -379,9 +382,9 @@ class PlayerWidget : GlanceAppWidget(), ServiceStatusObserver {
             glanceIds.forEach { glanceId ->
                 updateAppWidgetState(quranApplication, PreferencesGlanceStateDefinition, glanceId) { prefs ->
                     prefs.toMutablePreferences().apply {
-                        val reciterJson = gson.toJson(reciter)
-                        val surahJson = gson.toJson(surah)
-                        val statusJson = gson.toJson(status, ServiceStatus::class.java)
+                        val reciterJson = reciter.toJsonString(gson)
+                        val surahJson = surah.toJsonString(gson)
+                        val statusJson = status.toJsonString(gson, ServiceStatus::class.java)
 
                         set(RECITER, reciterJson)
                         set(SURAH, surahJson)
