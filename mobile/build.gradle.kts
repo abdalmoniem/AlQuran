@@ -84,8 +84,8 @@ android {
 
         minSdk = 28
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.0.5"
+        versionCode = 6
+        versionName = "0.0.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -168,6 +168,7 @@ android {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_21
             freeCompilerArgs.add("-Xwhen-guards")
+            freeCompilerArgs.add("-Xcontext-parameters")
         }
     }
 

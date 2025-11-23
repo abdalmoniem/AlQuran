@@ -15,6 +15,7 @@ object RuntimeTypeAdapterFactoryEx {
      *
      * @return [List<KClass< out T >>][List] A list of all sealed subclasses, including nested sealed classes.
      */
+    @Suppress("NO_REFLECTION_IN_CLASS_PATH")
     private val <T : Any> KClass<T>.allSealedLeafSubclasses: List<KClass<out T>>
         get() = sealedSubclasses.flatMap { sub ->
             when {
@@ -80,6 +81,7 @@ object RuntimeTypeAdapterFactoryEx {
      * @return [RuntimeTypeAdapterFactory < T >][RuntimeTypeAdapterFactory] A configured RuntimeTypeAdapterFactory for the sealed class.
      */
     fun <T : Any> KClass<T>.registerSealedSubtypes(typeFieldName: String): RuntimeTypeAdapterFactory<T> {
+        @Suppress("NO_REFLECTION_IN_CLASS_PATH")
         require(this.isSealed)
 
         var factory = RuntimeTypeAdapterFactory.of(this.java, typeFieldName)

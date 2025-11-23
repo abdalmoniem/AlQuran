@@ -1,21 +1,93 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ============================================
+# Gson RuntimeTypeAdapterFactory Protection
+# ============================================
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep RuntimeTypeAdapterFactory fields
+-keepclassmembers class com.google.gson.typeadapters.RuntimeTypeAdapterFactory {
+    private java.lang.String typeFieldName;
+    private java.util.Map labelToSubtype;
+    private java.util.Map subtypeToLabel;
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ============================================
+# Kotlin Sealed Classes & Reflection
+# ============================================
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Kotlin metadata for sealed classes
+-keep class kotlin.Metadata { *; }
+
+# Keep all sealed classes and their metadata
+-keep class * extends com.hifnawy.alquran.shared.domain.ServiceStatus { *; }
+-keep class * extends com.hifnawy.alquran.shared.domain.ServiceStatus$** { *; }
+
+# Keep all sealed subclasses in your project
+-keep @kotlin.Metadata class ** extends ** {
+    <init>(...);
+}
+
+# Preserve Kotlin sealed class information
+-keepattributes RuntimeVisibleAnnotations,AnnotationDefault
+
+# Keep names of sealed classes to preserve reflection
+-keepnames class * extends com.hifnawy.alquran.shared.domain.ServiceStatus
+-keepnames class * extends com.hifnawy.alquran.shared.domain.ServiceStatus$**
+
+# Keep Kotlin reflection for sealed classes
+-keep class kotlin.reflect.** { *; }
+-keep class kotlin.Metadata { *; }
+-keepclassmembers class kotlin.Metadata {
+    public <methods>;
+}
+
+# Preserve sealed class metadata
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes InnerClasses
+-keepattributes EnclosingMethod
+
+# Keep all data classes used with Gson
+-keepclassmembers class com.hifnawy.alquran.shared.domain.ServiceStatus$** {
+    <init>(...);
+    <fields>;
+}
+
+# Keep the sealed class hierarchy intact
+-if class com.hifnawy.alquran.shared.domain.ServiceStatus
+-keep class com.hifnawy.alquran.shared.domain.ServiceStatus$**
+
+# ============================================
+# Gson General Rules
+# ============================================
+
+# Keep Gson annotations
+-keepattributes *Annotation*
+
+# Keep generic signatures for Gson
+-keepattributes Signature
+
+# Keep fields for Gson serialization
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Keep all model classes that might be serialized
+-keep class com.hifnawy.alquran.shared.model.** { *; }
+-keep class com.hifnawy.alquran.shared.domain.** { *; }
+
+# ============================================
+# KotlinPoet - Ignore compile-time only classes
+# ============================================
+
+# KotlinPoet references javax.lang.model classes which are compile-time only
+-dontwarn javax.lang.model.element.Element
+-dontwarn javax.lang.model.element.ElementKind
+-dontwarn javax.lang.model.element.Modifier
+-dontwarn javax.lang.model.type.TypeKind
+-dontwarn javax.lang.model.type.TypeMirror
+-dontwarn javax.lang.model.type.TypeVisitor
+-dontwarn javax.lang.model.util.SimpleTypeVisitor8
+-dontwarn javax.lang.model.util.SimpleTypeVisitor7
+-dontwarn javax.lang.model.SourceVersion
+
+# Additional javax.lang.model classes that might be referenced
+-dontwarn javax.lang.model.**

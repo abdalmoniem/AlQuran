@@ -50,6 +50,25 @@ import com.hifnawy.alquran.view.ShimmerAnimation
 import com.hifnawy.alquran.view.player.AnimatedAudioBars
 import com.hifnawy.alquran.shared.R as Rs
 
+/**
+ * A card Composable that displays information about a Quran reciter.
+ *
+ * This card shows the reciter's name and the number of available Moshafs (recitation styles).
+ * It can be expanded to reveal a list of [MoshafCard]s for each of the reciter's Moshafs.
+ * The card also supports a skeleton loading state, highlights search queries in the reciter's name,
+ * and shows an animation when a recitation by this reciter is playing.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the card.
+ * @param reciter [Reciter?][Reciter] The [Reciter] data to display. If null, the card might show a skeleton.
+ * @param isExpanded [Boolean] Whether the card is expanded to show the list of Moshafs.
+ * @param searchQuery [String] A string to highlight within the reciter's name.
+ * @param isSkeleton [Boolean] If true, the card displays a shimmer-animated skeleton placeholder.
+ * @param isPlaying [Boolean] If true, indicates that audio from this reciter is currently playing and shows an animation.
+ * @param playingMoshafId [Int?][Int] The ID of the [Moshaf] that is currently playing. Used to highlight the specific active Moshaf.
+ * @param brush [Brush?][Brush] The [Brush] to be used for the skeleton's shimmer animation. Required when [isSkeleton] is `true`.
+ * @param onToggleExpand [() -> Unit][onToggleExpand] A lambda function to be invoked when the card is clicked, typically to toggle the [isExpanded] state.
+ * @param onMoshafClick [(reciter: Reciter, moshaf: Moshaf) -> Unit][onMoshafClick] A lambda function to be invoked when a specific [Moshaf] within the expanded list is clicked.
+ */
 @Composable
 fun ReciterCard(
         modifier: Modifier = Modifier,
@@ -61,7 +80,7 @@ fun ReciterCard(
         playingMoshafId: Int? = null,
         brush: Brush? = null,
         onToggleExpand: () -> Unit = {},
-        onMoshafClick: (Reciter, Moshaf) -> Unit = { _, _ -> }
+        onMoshafClick: (reciter: Reciter, moshaf: Moshaf) -> Unit = { _, _ -> }
 ) {
     val animationDurationMillis = 500
     val floatAnimationSpec = tween<Float>(durationMillis = animationDurationMillis)
@@ -101,7 +120,7 @@ fun ReciterCard(
                             MoshafCount(
                                     isSkeleton = isSkeleton,
                                     brush = brush,
-                                    moshafCount = reciter?.moshaf?.size
+                                    moshafCount = reciter?.moshafList?.size
                             )
                         }
 
@@ -137,7 +156,7 @@ fun ReciterCard(
                             .fillMaxWidth()
                             .padding(start = 10.dp, bottom = 10.dp, end = 10.dp)
                 ) {
-                    reciter.moshaf.forEach { moshaf ->
+                    reciter.moshafList.forEach { moshaf ->
                         MoshafCard(
                                 reciter = reciter,
                                 moshaf = moshaf,
@@ -151,6 +170,16 @@ fun ReciterCard(
     }
 }
 
+/**
+ * A composable that displays a chevron icon (up or down arrow) indicating the expanded/collapsed state of the [ReciterCard].
+ * It also handles the display of a skeleton placeholder when [isSkeleton] is `true`. If the reciter has no Moshafs,
+ * the chevron is not displayed.
+ *
+ * @param isSkeleton [Boolean] A boolean flag indicating whether to show the skeleton loader.
+ * @param brush [Brush?][Brush] The [Brush] to use for the skeleton's background. Only used when [isSkeleton] is `true`.
+ * @param reciter [Reciter?][Reciter] The [Reciter] data. Used to check if the reciter has any Moshafs.
+ * @param isExpanded [Boolean] A boolean flag indicating whether the parent card is expanded, which determines the chevron's direction.
+ */
 @Composable
 private fun Chevron(
         isSkeleton: Boolean,
@@ -172,7 +201,7 @@ private fun Chevron(
 
         else       -> {
             if (reciter == null) return
-            if (reciter.moshaf.isEmpty()) return
+            if (reciter.moshafList.isEmpty()) return
 
             val iconDrawableId = when {
                 isExpanded -> R.drawable.arrow_up_24px
@@ -190,6 +219,18 @@ private fun Chevron(
     }
 }
 
+/**
+ * A composable that displays the name of a reciter.
+ *
+ * This function can display either a skeleton loader or the actual reciter's name.
+ * When displaying the name, it highlights any parts of the name that match the search query.
+ * The text uses a specific Arabic font and has a marquee effect if it's too long to fit.
+ *
+ * @param isSkeleton [Boolean] A boolean flag to indicate whether to show the skeleton loader UI.
+ * @param brush [Brush?][Brush] The [Brush] to be used for the skeleton loader's background. It's only used when [isSkeleton] is `true`.
+ * @param reciter [Reciter?][Reciter] The [Reciter] object containing the name to display. It's only used when [isSkeleton] is `false`.
+ * @param searchQuery [String] The search query string used to highlight matching parts of the reciter's name.
+ */
 @Composable
 private fun ReciterName(
         isSkeleton: Boolean,
@@ -228,6 +269,14 @@ private fun ReciterName(
     }
 }
 
+/**
+ * A composable that displays the number of Moshafs (Quranic recitations) available for a reciter.
+ * It can also display a skeleton loader view.
+ *
+ * @param isSkeleton [Boolean] A boolean flag to indicate whether to show the skeleton loader UI.
+ * @param brush [Brush?][Brush] The [Brush] to use for the skeleton loader's background. It's only used when [isSkeleton] is true.
+ * @param moshafCount [Int?][Int] The number of Moshafs to display. If null, and [isSkeleton] is false, nothing is rendered.
+ */
 @Composable
 private fun MoshafCount(
         isSkeleton: Boolean,
@@ -263,7 +312,7 @@ private fun MoshafCount(
 @Preview(locale = "ar")
 private fun ReciterCardPreview() {
     val reciter = sampleReciters.first { it.id == 118.asReciterId }
-    val playingMoshafId = reciter.moshaf.random().id
+    val playingMoshafId = reciter.moshafList.random().id
     val randomChars = reciter.name.toList().shuffled().take(5)
     val searchQuery = randomChars.joinToString("")
 
@@ -277,6 +326,18 @@ private fun ReciterCardPreview() {
     )
 }
 
+/**
+ * A Jetpack Compose preview function that showcases the [ReciterCard]
+ * in its skeleton loading state. This preview is crucial for visualizing
+ * the user interface while data is being fetched.
+ *
+ * It wraps the [ReciterCard] within a [ShimmerAnimation] to demonstrate
+ * the loading effect. The card is configured with `isSkeleton` is `true`
+ * and uses a sample reciter from the [sampleReciters] collection as
+ * placeholder data, although it won't be visible due to the skeleton
+ * state. This provides an accurate visual representation of the
+ * component's appearance during initial loading or data refresh cycles.
+ */
 @Composable
 @Preview(locale = "ar")
 private fun ReciterCardSkeletonPreview() {

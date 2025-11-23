@@ -1,0 +1,37 @@
+* Refactor: Modernize Player Widget and Improve State Management
+   > This commit introduces a significant refactoring of the player widget and underlying state management to improve performance, stability, and code clarity.
+   > -   **Widget Modernization & State Management**:
+   >     -   Replaced `PreferencesGlanceStateDefinition` with a custom `GlanceStateDefinition` using a `Proto DataStore` and a dedicated `PlayerWidgetState` data class. This provides type safety and more robust state handling.
+   >     -   Implemented `PlayerWidgetBitmaps` to pre-load and cache scaled and blurred surah images, optimizing widget update performance by avoiding on-the-fly image processing.
+   >     -   Introduced `MobileApplication` to manage widget updates sequentially on a dedicated background thread, preventing race conditions.
+   >     -   Disabled the default widget update period (`updatePeriodMillis="0"`) to rely on explicit updates from the service.
+   > -   **Domain & Model Refinements**:
+   >     -   Renamed `IObserver` to `IObservable` for better semantic clarity in the observer pattern.
+   >     -   The `Reciter` model's `moshaf` property was renamed to `moshafList`.
+   >     -   The `Moshaf` model's `surahList` property was renamed to `surahIdsStr`.
+   >     -   Added the `moshaf` property to `ServiceStatus.MediaInfo` and its subclasses (`Playing`, `Paused`) to ensure the complete media context is available.
+   > -   **Code Quality and Documentation**:
+   >     -   Added extensive KDoc documentation across `ServiceStatus`, `QuranApplication`, `ReciterCard`, `MoshafCard`, and the new widget components to clarify their roles and usage.
+   >     -   Increased the delay in the `QuranMediaService` status update loop from 100ms to 500ms to reduce processing overhead.
+   >     -   Updated ProGuard rules to correctly preserve sealed classes and data models used with Gson, preventing runtime crashes in release builds.
+------------------------------
+Commit: f6fe8e8
+* feat: Add helper scripts for asset generation
+   > - Moved `generateSampleData.py` to a new `helper_scripts` directory and improved its formatting.
+   > - Added `generateSurahDrawables.py`, a new script to create drawable images for each Surah name using `py5`.
+   > - Regenerated all Surah image assets with the new script.
+   > - Configured the Python environment for the helper scripts, including dependencies (`uv.lock`, `pyproject.toml`).
+   > - Deleted unused font files from `shared/src/main/res/font`.
+------------------------------
+Commit: 902fbe2
+* Refactor: Update Fonts in FullScreenPlayer
+   > - Changed the reciter name font from `decotype_thuluth_2` to `aref_ruqaa` for improved readability.
+   > - Applied the `decotype_thuluth_2` font with `FontWeight.ExtraBold` to the playback timer display (current position, separator, and total duration) for a more consistent and stylized appearance.
+------------------------------
+Commit: fcf6216
+* Refactor: Animate Audio Bars and Improve UI Responsiveness
+   > - Implemented `AnimatedVisibility` for the `AnimatedAudioBars` in `MoshafCard`, `ReciterCard`, and `SurahCard` to provide a smoother fade-in/out and scaling animation.
+   > - Reduced the status update delay in `QuranMediaService` from 1000ms to 100ms for more responsive UI feedback.
+------------------------------
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/v0.0.5...v0.0.6

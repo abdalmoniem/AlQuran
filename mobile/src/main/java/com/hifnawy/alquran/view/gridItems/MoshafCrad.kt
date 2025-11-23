@@ -33,13 +33,27 @@ import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.utils.sampleReciters
 import com.hifnawy.alquran.view.player.AnimatedAudioBars
 
+/**
+ * A Composable function that displays an elevated card for a specific Moshaf (a version of the Quran recitation).
+ * The card shows the Moshaf's name, the count of its Surahs, and an icon.
+ * It also includes an animated audio bar that is visible when the `isPlaying` parameter is true.
+ * The card is clickable, triggering the `onMoshafClick` lambda.
+ *
+ * @param modifier [Modifier] The modifier to be applied to the card. Defaults to [Modifier].
+ * @param reciter [Reciter] The [Reciter] associated with this Moshaf.
+ * @param moshaf [Moshaf] The [Moshaf] data to display on the card.
+ * @param isPlaying [Boolean] A boolean indicating whether this Moshaf is currently being played.
+ *                  Controls the visibility of the animated audio bars. Defaults to `false`.
+ * @param onMoshafClick [(reciter: Reciter, moshaf: Moshaf) -> Unit][onMoshafClick] A lambda function that is invoked when the card is clicked.
+ *                      It provides the clicked [Reciter] and [Moshaf]. Defaults to an empty lambda.
+ */
 @Composable
 fun MoshafCard(
         modifier: Modifier = Modifier,
         reciter: Reciter,
         moshaf: Moshaf,
         isPlaying: Boolean = false,
-        onMoshafClick: (Reciter, Moshaf) -> Unit = { _, _ -> }
+        onMoshafClick: (reciter: Reciter, moshaf: Moshaf) -> Unit = { _, _ -> }
 ) {
     val animationDurationMillis = 500
     val floatAnimationSpec = tween<Float>(durationMillis = animationDurationMillis)
@@ -95,11 +109,22 @@ fun MoshafCard(
     }
 }
 
+/**
+ * A Composable function that provides a preview of the [MoshafCard] in Android Studio's design view.
+ * It uses [sampleReciters] to display the card, selecting a random reciter and one of their moshafs.
+ * The preview is configured to display in the Arabic locale to ensure correct right-to-left
+ * layout and plural string resources are rendered as expected for the target audience.
+ * This preview helps in visualizing the static appearance of the card, without any
+ * interactions or dynamic state changes like the audio animation. It showcases the default
+ * state of the component with representative data, facilitating rapid UI development and review.
+ * By randomly selecting a moshaf, it also helps in testing how the card handles different
+ * text lengths for the moshaf name and surah count.
+ */
 @Composable
 @Preview(locale = "ar")
 fun MoshafCardPreview() {
     val reciter = sampleReciters.random()
-    val moshaf = reciter.moshaf.random()
+    val moshaf = reciter.moshafList.random()
     MoshafCard(
             reciter = reciter,
             moshaf = moshaf

@@ -33,21 +33,21 @@ def moshafToKotlin(moshaf: dict) -> str:
         f'{EDITOR_INDENT * 8}server = "{ktString(moshaf["server"])}",\n'
         f"{EDITOR_INDENT * 8}surahsCount = {moshaf['surah_total']},\n"
         f"{EDITOR_INDENT * 8}moshafType = {moshaf['moshaf_type']},\n"
-        f'{EDITOR_INDENT * 8}surahList = "{ktString(moshaf["surah_list"])}"\n'
+        f'{EDITOR_INDENT * 8}surahIdsStr = "{ktString(moshaf["surah_list"])}"\n'
         f"{EDITOR_INDENT * 6})"
     )
 
 
 def reciterToKotlin(reciter: dict) -> str:
-    moshafs = f",\n{EDITOR_INDENT * 6}".join(moshafToKotlin(moshaf) for moshaf in reciter["moshaf"])
+    moshafList = f",\n{EDITOR_INDENT * 6}".join(moshafToKotlin(moshaf) for moshaf in reciter["moshaf"])
     return (
         f"{EDITOR_INDENT * 2}Reciter(\n"
         f"{EDITOR_INDENT * 4}id = {reciter['id']}.asReciterId,\n"
         f'{EDITOR_INDENT * 4}name = "{ktString(reciter["name"])}",\n'
         f'{EDITOR_INDENT * 4}letter = "{ktString(reciter["letter"])}",\n'
         f'{EDITOR_INDENT * 4}date = "{ktString(reciter["date"])}",\n'
-        f"{EDITOR_INDENT * 4}moshaf = listOf(\n"
-        f"{EDITOR_INDENT * 6}{moshafs}\n"
+        f"{EDITOR_INDENT * 4}moshafList = listOf(\n"
+        f"{EDITOR_INDENT * 6}{moshafList}\n"
         f"{EDITOR_INDENT * 4})\n"
         f"{EDITOR_INDENT * 2})"
     )

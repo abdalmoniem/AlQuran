@@ -82,12 +82,12 @@ import kotlin.time.Duration.Companion.seconds
  * @author AbdElMoniem ElHifnawy
  *
  * @see AndroidAutoMediaBrowser
- * @see MediaManager.MediaReadyObserver
+ * @see MediaManager.MediaReadyObservable
  * @see Player.Listener
  */
 @Suppress("RemoveRedundantQualifierName")
 class QuranMediaService : AndroidAutoMediaBrowser(),
-                          MediaManager.MediaReadyObserver,
+                          MediaManager.MediaReadyObservable,
                           Player.Listener {
 
     /**
@@ -592,10 +592,12 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
         setMediaSessionState(MediaSessionState.BUFFERING)
 
         val reciter = currentReciter ?: return
+        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
         quranApplication.lastStatusUpdate = ServiceStatus.Paused(
                 reciter = reciter,
+                moshaf = moshaf,
                 surah = surah,
                 durationMs = player.duration,
                 currentPositionMs = player.currentPosition,
@@ -631,6 +633,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
         Timber.debug("Playback State: ${ExoPlayerEx.PlayerState.fromState(state)}")
 
         val reciter = currentReciter ?: return
+        val moshaf = currentMoshaf ?: return
         val surah = currentSurah ?: return
 
         when (state) {
@@ -638,6 +641,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
                 setMediaSessionState(MediaSessionState.BUFFERING)
                 quranApplication.lastStatusUpdate = ServiceStatus.Paused(
                         reciter = reciter,
+                        moshaf = moshaf,
                         surah = surah,
                         durationMs = player.duration,
                         currentPositionMs = player.currentPosition,
@@ -650,6 +654,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
                     setMediaSessionState(MediaSessionState.PLAYING)
                     quranApplication.lastStatusUpdate = ServiceStatus.Playing(
                             reciter = reciter,
+                            moshaf = moshaf,
                             surah = surah,
                             durationMs = player.duration,
                             currentPositionMs = player.currentPosition,
@@ -663,6 +668,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
                     setMediaSessionState(MediaSessionState.PAUSED)
                     quranApplication.lastStatusUpdate = ServiceStatus.Paused(
                             reciter = reciter,
+                            moshaf = moshaf,
                             surah = surah,
                             durationMs = player.duration,
                             currentPositionMs = player.currentPosition,
@@ -1042,6 +1048,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
                 Timber.debug(player.asString)
 
                 val reciter = currentReciter ?: break
+                val moshaf = currentMoshaf ?: break
                 val surah = currentSurah ?: break
 
                 val mediaSessionState = when {
@@ -1056,6 +1063,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
                 quranApplication.lastStatusUpdate = when (mediaSessionState) {
                     MediaSessionState.PLAYING -> ServiceStatus.Playing(
                             reciter = reciter,
+                            moshaf = moshaf,
                             surah = surah,
                             durationMs = player.duration,
                             currentPositionMs = player.currentPosition,
@@ -1064,6 +1072,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
 
                     MediaSessionState.PAUSED  -> ServiceStatus.Paused(
                             reciter = reciter,
+                            moshaf = moshaf,
                             surah = surah,
                             durationMs = player.duration,
                             currentPositionMs = player.currentPosition,
@@ -1074,7 +1083,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
                 }
 
                 // TODO: check this, the delay amount might be too low / too high
-                delay(100.milliseconds)
+                delay(500.milliseconds)
             }
         }
     }

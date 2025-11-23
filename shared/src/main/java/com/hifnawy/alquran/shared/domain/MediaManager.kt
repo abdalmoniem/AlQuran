@@ -20,12 +20,12 @@ import kotlinx.coroutines.launch
 
 object MediaManager : LifecycleOwner {
 
-    interface MediaReadyObserver : IObserver {
+    interface MediaReadyObservable : IObservable {
 
         fun onMediaReady(reciter: Reciter, moshaf: Moshaf, surah: Surah, surahDrawable: Drawable? = null)
     }
 
-    val mediaReadyListeners = mutableListOf<MediaReadyObserver>()
+    val mediaReadyListeners = mutableListOf<MediaReadyObservable>()
 
     private var reciters: List<Reciter> = emptyList()
     private var surahs: List<Surah> = emptyList()
@@ -140,7 +140,7 @@ object MediaManager : LifecycleOwner {
 
     private val ReciterId.moshafSurahs: MoshafSurahs
         get() {
-            val moshaf = reciters.first { it.id == this }.moshaf.first()
+            val moshaf = reciters.first { it.id == this }.moshafList.first()
             return MoshafSurahs(moshaf, moshaf.surahIds)
         }
 
