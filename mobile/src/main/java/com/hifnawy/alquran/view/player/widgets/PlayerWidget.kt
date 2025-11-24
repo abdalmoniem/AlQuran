@@ -58,6 +58,8 @@ import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
+import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.error
+import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.warn
 import com.hifnawy.alquran.utils.sampleReciters
 import com.hifnawy.alquran.utils.sampleSurahs
 import com.hifnawy.alquran.view.activities.MainActivity
@@ -155,21 +157,31 @@ class PlayerWidget : GlanceAppWidget() {
             val newState = PlayerWidgetState(reciter = status.reciter, moshaf = status.moshaf, surah = status.surah, status = status)
 
             glanceIds.forEach { glanceId ->
-                updateAppWidgetState(context, PlayerWidgetStateDefinition, glanceId) { oldState ->
-                    val currentStateChanged = oldState != newState
-                    anyStateChanged = anyStateChanged || currentStateChanged
+                try {
+                    updateAppWidgetState(context, PlayerWidgetStateDefinition, glanceId) { oldState ->
+                        val currentStateChanged = oldState != newState
+                        anyStateChanged = anyStateChanged || currentStateChanged
 
-                    when {
-                        currentStateChanged -> newState
-                        else                -> oldState
+                        when {
+                            currentStateChanged -> newState
+                            else                -> oldState
+                        }
                     }
+                } catch (ex: IllegalArgumentException) {
+                    // Log the error but ignore the dead widget, allowing others to update.
+                    Timber.error(ex.toString())
+                    Timber.error("Failed to update state for appWidgetId ${glanceId.appWidgetId}. Widget likely deleted.")
                 }
             }
 
             if (!anyStateChanged) return /* Timber.debug("No state changes! Skipping UI update!") */
-            PlayerWidget().updateAll(context)
 
-            Timber.debug("Updated $appWidgetIds glance widgets' states to ${newState.status?.javaClass?.simpleName}")
+            try {
+                PlayerWidget().updateAll(context)
+                Timber.debug("Updated $appWidgetIds glance widgets' states to ${newState.status?.javaClass?.simpleName}")
+            } catch (ex: IllegalArgumentException) {
+                Timber.warn("Widgets update failed, probably a widget was deleted: ${ex.message}")
+            }
         }
     }
 
@@ -187,6 +199,31 @@ class PlayerWidget : GlanceAppWidget() {
      * @see PlayerWidgetState
      */
     override val stateDefinition = PlayerWidgetStateDefinition
+
+    /**
+     * Called when this widget is deleted from the host.
+     *
+     * This override is responsible for cleaning up any resources associated with the specific
+     * widget instance being deleted. It calls the `release` method of the [stateDefinition]
+     * to remove the persisted state for this widget from the data store. This prevents orphaned
+     * data from accumulating.
+     *
+     * It logs the deletion for debugging purposes and logs any errors that occur during the
+     * cleanup process.
+     *
+     * @param context [Context] The [Context] in which the widget is being hosted.
+     * @param glanceId [GlanceId] The unique identifier for the widget instance being deleted.
+     */
+    override suspend fun onDelete(context: Context, glanceId: GlanceId) {
+        super.onDelete(context, glanceId)
+
+        try {
+            stateDefinition.release(context, glanceId.appWidgetId.toString())
+            Timber.debug("Deleted glance widget #${glanceId.appWidgetId}")
+        } catch (ex: Exception) {
+            Timber.error("Failed to release glance widget #${glanceId.appWidgetId}'s state: ${ex.message}")
+        }
+    }
 
     /**
      * Defines the UI content for a single instance of the [PlayerWidget].
@@ -209,6 +246,14 @@ class PlayerWidget : GlanceAppWidget() {
      * @param id [GlanceId] The unique [GlanceId] for this specific widget instance.
      */
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val manager = GlanceAppWidgetManager(context)
+        val glanceIds = manager.getGlanceIds(PlayerWidget::class.java)
+
+        if (id !in glanceIds) {
+            Timber.warn("Widget #${id.appWidgetId} is deleted / not found, skipping composition...")
+            return
+        }
+
         provideContent {
             val state = currentState<PlayerWidgetState>()
             val reciter = state.reciter
@@ -354,7 +399,7 @@ class PlayerWidget : GlanceAppWidget() {
             context: Context,
             reciter: Reciter?
     ) = Row {
-        @Suppress("KotlinConstantConditions")
+        @Suppress("KotlinConstantConditions", "RedundantSuppression")
         when {
             !BuildConfig.DEBUG -> Image(
                     provider = ImageProvider(Rs.drawable.quran_icon_monochrome_white_64),
@@ -432,9 +477,9 @@ class PlayerWidget : GlanceAppWidget() {
         ImageButton(
                 modifier = GlanceModifier.size(buttonSize),
                 imageProvider = ImageProvider(Rs.drawable.skip_previous_24px),
-                contentDescription = "Skip To Previous",
+                contentDescription = "Skip To Next",
                 contentForegroundColor = contentForegroundColor,
-                onClick = actionRunCallback<SkipToPreviousAction>()
+                onClick = actionRunCallback<SkipToNextAction>()
         )
 
         Spacer(modifier = GlanceModifier.width(buttonSpacing))
@@ -459,7 +504,7 @@ class PlayerWidget : GlanceAppWidget() {
                 imageProvider = ImageProvider(Rs.drawable.skip_next_24px),
                 contentDescription = "Skip To Previous",
                 contentForegroundColor = contentForegroundColor,
-                onClick = actionRunCallback<SkipToNextAction>()
+                onClick = actionRunCallback<SkipToPreviousAction>()
         )
     }
 

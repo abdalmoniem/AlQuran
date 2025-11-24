@@ -102,9 +102,7 @@ object PlayerWidgetBitmaps {
     val surahImages = listOf<SurahImage>(
             SurahImage(bitmap = defaultSurahBitmap, blurredBitmap = defaultSurahBlurredBitmap),
     ) + surahDrawables.map { drawableId ->
-        val surahBitmap = with(QuranApplication.applicationContext) {
-            drawableId.surahBitmap
-        }.scale(width = BITMAP_SIZE, height = BITMAP_SIZE, filter = false)
+        val surahBitmap = with(QuranApplication.applicationContext) { drawableId.surahBitmap }
         val surahBlurredBitmap = HokoBlur.with(QuranApplication.applicationContext)
             .scheme(HokoBlur.SCHEME_NATIVE)
             .mode(HokoBlur.MODE_GAUSSIAN)
@@ -135,5 +133,5 @@ object PlayerWidgetBitmaps {
      * @throws NotFoundException if the given ID does not exist.
      */
     context(context: Context)
-    private val Int.surahBitmap get() = (AppCompatResources.getDrawable(context, this) as BitmapDrawable).bitmap
+    private val Int.surahBitmap get() = (AppCompatResources.getDrawable(context, this) as BitmapDrawable).bitmap.scale(width = BITMAP_SIZE, height = BITMAP_SIZE, filter = false)
 }
