@@ -1,9 +1,20 @@
 package com.hifnawy.alquran.view.player
 
+import android.annotation.SuppressLint
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +25,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -28,28 +41,34 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
+import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.defaultSurahDrawableId
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
+import com.hifnawy.alquran.utils.sampleReciters
+import com.hifnawy.alquran.utils.sampleSurahs
+import com.hifnawy.alquran.view.theme.AppTheme
 import com.hifnawy.alquran.viewModel.MediaViewModel
 import com.hifnawy.alquran.viewModel.PlayerState
 import com.hifnawy.alquran.shared.R as Rs
 
+private val slideAnimationSpec = tween<IntOffset>(durationMillis = 150, easing = FastOutLinearInEasing)
+private val fadeAnimationSpec = tween<Float>(durationMillis = 150, easing = FastOutLinearInEasing)
+
 @Composable
 fun MiniPlayer(
         mediaViewModel: MediaViewModel,
-        animatedHeight: Float,
         expandProgress: Float
 ) {
     val state = mediaViewModel.playerState
-
     val surahDrawableId = remember(state.surah?.id) { state.surah?.surahDrawableId ?: defaultSurahDrawableId }
 
     Box(
@@ -60,18 +79,30 @@ fun MiniPlayer(
     ) {
         MiniPlayerBackground(
                 isVisible = state.isVisible,
-                surahDrawableId = surahDrawableId,
-                animatedHeight = animatedHeight
+                surahDrawableId = surahDrawableId
         )
 
         Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .alpha(expandProgress)
+                    .fillMaxSize()
+                    .alpha(expandProgress),
+                verticalArrangement = Arrangement.Center
         ) {
-            MiniPlayerProgress(state)
+            AnimatedVisibility(
+                    visible = expandProgress >= 1f,
+                    enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
+                    exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec),
+            ) {
+                MiniPlayerProgress(state = state)
+            }
 
-            MiniPlayerContent(state, surahDrawableId, mediaViewModel)
+            MiniPlayerContent(
+                    modifier = Modifier.weight(1f),
+                    state = state,
+                    surahDrawableId = surahDrawableId,
+                    mediaViewModel = mediaViewModel,
+                    expandProgress = expandProgress
+            )
         }
     }
 }
@@ -80,13 +111,11 @@ fun MiniPlayer(
 private fun MiniPlayerBackground(
         isVisible: Boolean,
         surahDrawableId: Int,
-        animatedHeight: Float
 ) {
     if (isVisible) {
         Image(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(with(LocalDensity.current) { animatedHeight.toDp() })
+                    .fillMaxSize()
                     .blur(radiusX = 15.dp, radiusY = 15.dp)
                     .alpha(0.5f),
                 painter = painterResource(id = surahDrawableId),
@@ -99,18 +128,24 @@ private fun MiniPlayerBackground(
 @Composable
 private fun MiniPlayerProgress(state: PlayerState) {
     LinearProgressIndicator(
-            progress = { state.currentPositionMs.toFloat() / state.durationMs.toFloat() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(5.dp),
+            progress = { state.currentPositionMs.toFloat() / state.durationMs.toFloat() },
             color = MaterialTheme.colorScheme.primary
     )
 }
 
 @Composable
-private fun MiniPlayerContent(state: PlayerState, surahDrawableId: Int, mediaViewModel: MediaViewModel) {
+private fun MiniPlayerContent(
+        modifier: Modifier = Modifier,
+        state: PlayerState,
+        surahDrawableId: Int,
+        mediaViewModel: MediaViewModel,
+        expandProgress: Float
+) {
     Row(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -122,7 +157,13 @@ private fun MiniPlayerContent(state: PlayerState, surahDrawableId: Int, mediaVie
                 surahDrawableId = surahDrawableId
         )
 
-        MiniPlayerControls(mediaViewModel = mediaViewModel)
+        AnimatedVisibility(
+                visible = expandProgress >= 1f,
+                enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
+                exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec),
+        ) {
+            MiniPlayerControls(mediaViewModel = mediaViewModel)
+        }
     }
 }
 
@@ -133,66 +174,111 @@ private fun MiniPlayerSurahInfo(
         @DrawableRes
         surahDrawableId: Int
 ) {
-    if (state.isVisible) {
-        Image(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(15.dp)),
-                painter = painterResource(id = surahDrawableId),
-                contentDescription = "Surah Image",
-        )
-    }
+    BoxWithConstraints(
+            modifier = modifier,
+            contentAlignment = Alignment.CenterStart
+    ) {
+        val textSize = (maxHeight.value * 0.5f).sp
+        val surahImageSize = (maxHeight.value * 0.8f).dp
 
-    Spacer(modifier = Modifier.width(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (state.isVisible) {
+                Image(
+                        modifier = Modifier
+                            .size(surahImageSize)
+                            .clip(RoundedCornerShape(15.dp)),
+                        painter = painterResource(id = surahDrawableId),
+                        contentDescription = "Surah Image",
+                )
+            }
 
-    Column(modifier = modifier) {
-        Text(
-                text = state.surah?.name ?: stringResource(R.string.loading),
-                fontSize = 25.sp,
-                fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
-                color = Color.White.copy(alpha = 0.8f)
-        )
+            Spacer(modifier = Modifier.width(16.dp))
 
-        Spacer(modifier = Modifier.size(2.dp))
+            Column {
+                Text(
+                        modifier = Modifier.basicMarquee(),
+                        text = state.surah?.name ?: stringResource(R.string.loading),
+                        fontSize = textSize,
+                        fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                        color = Color.White.copy(alpha = 0.8f)
+                )
 
-        Text(
-                text = state.reciter?.name ?: stringResource(R.string.loading),
-                fontSize = 15.sp,
-                fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
-                color = Color.White.copy(alpha = 0.8f)
-        )
+                Spacer(modifier = Modifier.size(2.dp))
+
+                Text(
+                        modifier = Modifier.basicMarquee(),
+                        text = state.reciter?.name ?: stringResource(R.string.loading),
+                        fontSize = textSize * 0.5f,
+                        fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                        color = Color.White.copy(alpha = 0.8f)
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun MiniPlayerControls(mediaViewModel: MediaViewModel) {
-    IconButton(
-            modifier = Modifier.size(32.dp),
-            onClick = mediaViewModel::togglePlayback
-    ) {
-        val icon = when {
-            mediaViewModel.playerState.isPlaying -> Rs.drawable.pause_24px
-            else                                 -> Rs.drawable.play_arrow_24px
+    Row {
+        IconButton(
+                modifier = Modifier.size(32.dp),
+                onClick = mediaViewModel::togglePlayback
+        ) {
+            val icon = when {
+                mediaViewModel.playerState.isPlaying -> Rs.drawable.pause_24px
+                else                                 -> Rs.drawable.play_arrow_24px
+            }
+            Icon(
+                    modifier = Modifier.fillMaxSize(),
+                    painter = painterResource(id = icon),
+                    contentDescription = "Play/Pause",
+                    tint = Color.White.copy(alpha = 0.8f)
+            )
         }
-        Icon(
-                modifier = Modifier.fillMaxSize(),
-                painter = painterResource(id = icon),
-                contentDescription = "Play/Pause",
-                tint = Color.White.copy(alpha = 0.8f)
-        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        IconButton(
+                modifier = Modifier.size(32.dp),
+                onClick = mediaViewModel::closePlayer
+        ) {
+            Icon(
+                    modifier = Modifier.fillMaxSize(),
+                    painter = painterResource(id = R.drawable.close_24px),
+                    contentDescription = "Close Player",
+                    tint = Color.White.copy(alpha = 0.8f)
+            )
+        }
     }
+}
 
-    Spacer(modifier = Modifier.width(16.dp))
-
-    IconButton(
-            modifier = Modifier.size(32.dp),
-            onClick = mediaViewModel::closePlayer
-    ) {
-        Icon(
-                modifier = Modifier.fillMaxSize(),
-                painter = painterResource(id = R.drawable.close_24px),
-                contentDescription = "Close Player",
-                tint = Color.White.copy(alpha = 0.8f)
-        )
+@Composable
+@Preview(widthDp = 500, heightDp = 100, locale = "ar")
+@SuppressLint("ViewModelConstructorInComposable")
+private fun MiniPlayerPreview() {
+    AppTheme {
+        ElevatedCard(
+                shape = RoundedCornerShape(25.dp),
+                elevation = CardDefaults.elevatedCardElevation(25.dp),
+                colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.secondary
+                )
+        ) {
+            val quranApplication = QuranApplication()
+            val mediaViewModel = MediaViewModel(quranApplication)
+            mediaViewModel.playerState = PlayerState(
+                    reciter = sampleReciters.random(),
+                    surah = sampleSurahs.random(),
+                    currentPositionMs = 4_000,
+                    durationMs = 10_000,
+                    isVisible = true,
+                    isPlaying = true
+            )
+            MiniPlayer(
+                    mediaViewModel = mediaViewModel,
+                    expandProgress = 1f
+            )
+        }
     }
 }

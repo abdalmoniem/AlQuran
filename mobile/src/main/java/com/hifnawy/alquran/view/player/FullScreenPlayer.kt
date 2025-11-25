@@ -2,11 +2,14 @@ package com.hifnawy.alquran.view.player
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,6 +19,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -35,7 +39,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -65,6 +68,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
@@ -73,6 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
@@ -123,7 +129,7 @@ fun FullScreenPlayer(
     val deviceConfiguration = windowSize.deviceConfiguration
 
     windowSize.run {
-        Timber.debug("minWidthDp: ${minWidthDp.toWidthSize}, minHeightDp: ${minHeightDp.toHeightSize} deviceConfiguration: $deviceConfiguration")
+        Timber.debug("size: ${minWidthDp.toWidthSize} : ${minHeightDp.toHeightSize}, deviceConfiguration: $deviceConfiguration")
     }
 
     LaunchedEffect(playbackPosition, isChangingPosition) {
@@ -224,55 +230,107 @@ private fun PlayerContentPortrait(
         onTogglePlayback: () -> Unit = {},
         onSkipToPreviousSurah: () -> Unit = {}
 ) {
-    Column(
-            modifier = modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-    ) {
-        Box(
-                modifier = Modifier
-                    .weight(1.5f)
-                    .fillMaxSize(),
-                contentAlignment = Alignment.BottomCenter
-        ) {
-            SurahImage(
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    surahDrawableId = surahDrawableId
-            )
-        }
+    val density = LocalDensity.current
+
+    var recitationInfoHeight by remember { mutableStateOf(0.dp) }
+    var playerProgressHeight by remember { mutableStateOf(0.dp) }
+
+    MiniPlayerControlsContainer(
+            modifier = modifier,
+            state = state,
+            contentAlignment = Alignment.BottomCenter,
+    ) { areControlsVisible ->
         Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
+                verticalArrangement = Arrangement.Center
         ) {
-            RecitationInfo(state = state)
-
-            PlayerProgress(
+            Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .padding(vertical = 10.dp),
-                    state = state,
-                    bufferedProgress = bufferedProgress,
-                    sliderPosition = sliderPosition,
-                    isChangingPosition = isChangingPosition,
-                    onSeekStarted = onSeekStarted,
-                    onSeekProgress = onSeekProgress,
-                    onSeekFinished = onSeekFinished
-            )
+                        .weight(1.5f)
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.BottomCenter
+            ) {
+                SurahImage(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        surahDrawableId = surahDrawableId
+                )
+            }
 
-            PlayerControls(
+            BoxWithConstraints(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .padding(vertical = 10.dp),
-                    state = state,
-                    onSkipToNextSurah = onSkipToNextSurah,
-                    onTogglePlayback = onTogglePlayback,
-                    onSkipToPreviousSurah = onSkipToPreviousSurah
-            )
+                        .weight(1f)
+                        .fillMaxSize()
+            ) {
+                val totalAvailableHeight = maxHeight
+                val usedHeight = recitationInfoHeight + playerProgressHeight
+                val remainingHeight = totalAvailableHeight - usedHeight
+
+                // Minimum height needed for regular controls ((3 icons * 64dp) + 10dp top padding + 10dp bottom padding)
+                // TODO: find a way of calculating this without hardcoding
+                val minRequiredHeight = 84.dp // 64dp + 20dp padding
+                val hasEnoughSpace = remainingHeight >= minRequiredHeight
+
+                Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Top
+                ) {
+                    val slideAnimationSpec = tween<IntOffset>(durationMillis = 300, easing = FastOutLinearInEasing)
+                    val fadeAnimationSpec = tween<Float>(durationMillis = 300, easing = FastOutLinearInEasing)
+
+                    RecitationInfo(
+                            modifier = Modifier.onSizeChanged { size -> recitationInfoHeight = with(density) { size.height.toDp() } },
+                            state = state
+                    )
+
+                    AnimatedVisibility(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                                .padding(vertical = 10.dp)
+                                .onSizeChanged { size -> playerProgressHeight = with(density) { size.height.toDp() } },
+                            visible = hasEnoughSpace || playerProgressHeight > 0.dp,
+                            enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
+                            exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec)
+                    ) {
+                        PlayerProgress(
+                                state = state,
+                                bufferedProgress = bufferedProgress,
+                                sliderPosition = sliderPosition,
+                                isChangingPosition = isChangingPosition,
+                                onSeekStarted = onSeekStarted,
+                                onSeekProgress = onSeekProgress,
+                                onSeekFinished = onSeekFinished
+                        )
+                    }
+
+                    Timber.debug("totalAvailableHeight: $totalAvailableHeight usedHeight: $usedHeight remainingHeight: $remainingHeight minRequiredHeight: $minRequiredHeight hasEnoughSpace: $hasEnoughSpace")
+
+                    AnimatedVisibility(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight(),
+                            visible = hasEnoughSpace,
+                            enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
+                            exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec)
+                    ) {
+                        PlayerControls(
+                                state = state,
+                                onSkipToNextSurah = onSkipToNextSurah,
+                                onTogglePlayback = onTogglePlayback,
+                                onSkipToPreviousSurah = onSkipToPreviousSurah
+                        )
+                    }
+                }
+
+                if (hasEnoughSpace || state.isMinimizing) return@BoxWithConstraints
+                MiniPlayerControls(
+                        state = state,
+                        areControlsVisible = areControlsVisible,
+                        onSkipToNextSurah = onSkipToNextSurah,
+                        onTogglePlayback = onTogglePlayback,
+                        onSkipToPreviousSurah = onSkipToPreviousSurah
+                )
+            }
         }
     }
 }
@@ -292,55 +350,70 @@ private fun PlayerContentLandScape(
         onTogglePlayback: () -> Unit = {},
         onSkipToPreviousSurah: () -> Unit = {}
 ) {
-    Row(
+    val slideAnimationSpec = tween<IntOffset>(durationMillis = 150, easing = FastOutLinearInEasing)
+    val fadeAnimationSpec = tween<Float>(durationMillis = 150, easing = FastOutLinearInEasing)
+    var isShown by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        delay(50.milliseconds)
+        isShown = true
+    }
+
+    AnimatedVisibility(
             modifier = modifier,
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
+            visible = isShown,
+            enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
+            exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec)
     ) {
-        SurahImage(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(0.5f),
-                surahDrawableId = surahDrawableId
-        )
-
-        Spacer(modifier = Modifier.width(10.dp))
-
-        Column(
-                modifier = Modifier
-                    .weight(2f)
-                    .fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+        Row(
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
         ) {
-            RecitationInfo(
-                    modifier = Modifier.weight(1f),
-                    state = state
-            )
-
-            PlayerProgress(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 10.dp),
-                    state = state,
-                    bufferedProgress = bufferedProgress,
-                    sliderPosition = sliderPosition,
-                    isChangingPosition = isChangingPosition,
-                    onSeekStarted = onSeekStarted,
-                    onSeekProgress = onSeekProgress,
-                    onSeekFinished = onSeekFinished
-            )
-
-            PlayerControls(
+            SurahImage(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth()
-                        .padding(vertical = 10.dp),
-                    state = state,
-                    onSkipToNextSurah = onSkipToNextSurah,
-                    onTogglePlayback = onTogglePlayback,
-                    onSkipToPreviousSurah = onSkipToPreviousSurah
+                        .fillMaxHeight(),
+                    surahDrawableId = surahDrawableId
             )
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(
+                    modifier = Modifier
+                        .weight(2f)
+                        .fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+            ) {
+                RecitationInfo(
+                        modifier = Modifier.weight(1f),
+                        state = state
+                )
+
+                PlayerProgress(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        state = state,
+                        bufferedProgress = bufferedProgress,
+                        sliderPosition = sliderPosition,
+                        isChangingPosition = isChangingPosition,
+                        onSeekStarted = onSeekStarted,
+                        onSeekProgress = onSeekProgress,
+                        onSeekFinished = onSeekFinished
+                )
+
+                PlayerControls(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        state = state,
+                        onSkipToNextSurah = onSkipToNextSurah,
+                        onTogglePlayback = onTogglePlayback,
+                        onSkipToPreviousSurah = onSkipToPreviousSurah
+                )
+            }
         }
     }
 }
@@ -353,6 +426,30 @@ private fun PlayerContentCompact(
         onSkipToNextSurah: () -> Unit = {},
         onTogglePlayback: () -> Unit = {},
         onSkipToPreviousSurah: () -> Unit = {}
+) {
+    MiniPlayerControlsContainer(modifier = modifier.fillMaxSize(), state = state) { areControlsVisible ->
+        SurahImage(
+                modifier = Modifier.padding(10.dp),
+                surahDrawableId = surahDrawableId
+        )
+
+        MiniPlayerControls(
+                state = state,
+                areControlsVisible = areControlsVisible,
+                onSkipToNextSurah = onSkipToNextSurah,
+                onTogglePlayback = onTogglePlayback,
+                onSkipToPreviousSurah = onSkipToPreviousSurah
+        )
+    }
+}
+
+@Composable
+private fun MiniPlayerControlsContainer(
+        modifier: Modifier = Modifier,
+        state: PlayerState,
+        isClickable: Boolean = true,
+        contentAlignment: Alignment = Alignment.Center,
+        content: @Composable BoxScope.(areControlsVisible: Boolean) -> Unit
 ) {
     val delayAmount = 3.seconds
     var areControlsVisible by remember { mutableStateOf(true) }
@@ -380,45 +477,58 @@ private fun PlayerContentCompact(
     Box(
             modifier = modifier
                 .fillMaxSize()
-                .clickable {
+                .clickable(
+                        enabled = isClickable,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }) {
                     val targetVisibility = !areControlsVisible
                     areControlsVisible = targetVisibility
                     if (targetVisibility && state.isPlaying) clickTrigger = !clickTrigger
-
                 },
-            contentAlignment = Alignment.Center
+            contentAlignment = contentAlignment
     ) {
-        SurahImage(
-                modifier = Modifier.padding(10.dp),
-                surahDrawableId = surahDrawableId
-        )
+        content(areControlsVisible)
+    }
+}
 
-        AnimatedVisibility(
+@Composable
+private fun BoxScope.MiniPlayerControls(
+        state: PlayerState,
+        areControlsVisible: Boolean,
+        onSkipToNextSurah: () -> Unit,
+        onTogglePlayback: () -> Unit,
+        onSkipToPreviousSurah: () -> Unit
+) {
+    val slideAnimationSpec = spring<IntOffset>(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+    val fadeAnimationSpec = spring<Float>(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)
+
+    AnimatedVisibility(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .wrapContentHeight()
+                .padding(vertical = 10.dp)
+                .align(Alignment.BottomCenter),
+            visible = areControlsVisible,
+            enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
+            exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec)
+    ) {
+        Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight()
-                    .align(Alignment.BottomCenter)
-                    .padding(vertical = 10.dp),
-                visible = areControlsVisible,
-                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                    .wrapContentHeight(),
+                shape = RoundedCornerShape(50.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.75f)),
+                elevation = CardDefaults.cardElevation(20.dp)
         ) {
-            Card(
+            PlayerControls(
                     modifier = Modifier
-                        .wrapContentWidth()
-                        .wrapContentHeight(),
-                    shape = RoundedCornerShape(50.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.75f)),
-                    elevation = CardDefaults.cardElevation(20.dp)
-            ) {
-                PlayerControls(
-                        modifier = Modifier.padding(10.dp),
-                        state = state,
-                        onSkipToNextSurah = onSkipToNextSurah,
-                        onTogglePlayback = onTogglePlayback,
-                        onSkipToPreviousSurah = onSkipToPreviousSurah
-                )
-            }
+                        .fillMaxWidth()
+                        .padding(horizontal = 5.dp, vertical = 10.dp),
+                    state = state,
+                    onSkipToNextSurah = onSkipToNextSurah,
+                    onTogglePlayback = onTogglePlayback,
+                    onSkipToPreviousSurah = onSkipToPreviousSurah
+            )
         }
     }
 }
@@ -470,18 +580,38 @@ private fun SurahImage(
         @DrawableRes
         surahDrawableId: Int
 ) {
-    Image(
-            modifier = modifier
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(25.dp))
-                .dropShadow(
-                        shape = RoundedCornerShape(25.dp),
-                        shadow = Shadow(color = Color.Black.copy(alpha = 0.5f), radius = 25.dp)
-                ),
-            painter = painterResource(id = surahDrawableId),
-            contentDescription = "Surah Image",
-            contentScale = ContentScale.FillBounds,
-    )
+    BoxWithConstraints(
+            modifier = modifier.fillMaxWidth(),
+            contentAlignment = Alignment.BottomCenter
+    ) {
+        val deviceConfiguration = currentWindowAdaptiveInfo().windowSizeClass.deviceConfiguration
+
+        val sizingFactor = when (deviceConfiguration) {
+            DeviceConfiguration.COMPACT,
+            DeviceConfiguration.PHONE_PORTRAIT,
+            DeviceConfiguration.TABLET_PORTRAIT,
+            DeviceConfiguration.TABLET_LANDSCAPE -> 1f
+
+            DeviceConfiguration.PHONE_LANDSCAPE  -> 0.9f
+        }
+
+        val surahImageSize = minOf(maxWidth, maxHeight) * sizingFactor
+
+        Image(
+                modifier = Modifier
+                    .size(surahImageSize)
+                    .aspectRatio(1f)
+                    .padding(5.dp)
+                    .clip(RoundedCornerShape(25.dp))
+                    .dropShadow(
+                            shape = RoundedCornerShape(25.dp),
+                            shadow = Shadow(color = Color.Black.copy(alpha = 0.5f), radius = 25.dp)
+                    ),
+                painter = painterResource(id = surahDrawableId),
+                contentDescription = "Surah Image",
+                contentScale = ContentScale.FillBounds,
+        )
+    }
 }
 
 @Composable
@@ -498,10 +628,10 @@ private fun RecitationInfo(
 
         val (surahSizingFactor, reciterSizingFactor) = when (deviceConfiguration) {
             DeviceConfiguration.COMPACT          -> 0f to 0f
-            DeviceConfiguration.PHONE_PORTRAIT   -> 0.15f to 0.1f
-            DeviceConfiguration.PHONE_LANDSCAPE  -> 0.5f to 0.3f
+            DeviceConfiguration.PHONE_PORTRAIT   -> 0.2f to 0.07f
+            DeviceConfiguration.PHONE_LANDSCAPE  -> 0.3f to 0.1f
             DeviceConfiguration.TABLET_PORTRAIT  -> 0.12f to 0.08f
-            DeviceConfiguration.TABLET_LANDSCAPE -> 0.2f to 0.15f
+            DeviceConfiguration.TABLET_LANDSCAPE -> 0.3f to 0.1f
         }
 
         val surahFontSize = (maxHeight.value * surahSizingFactor).sp
@@ -513,7 +643,7 @@ private fun RecitationInfo(
         ) {
             AutoSizeText(
                     modifier = Modifier
-                        .weight(1.5f)
+                        .weight(1f)
                         .fillMaxSize()
             ) {
                 Text(
@@ -527,7 +657,10 @@ private fun RecitationInfo(
                 )
             }
 
-            AutoSizeText(modifier = Modifier.wrapContentHeight()) {
+            AutoSizeText(
+                    modifier = Modifier
+                        .wrapContentHeight()
+            ) {
                 Text(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -579,56 +712,78 @@ private fun PlayerProgress(
 
         val sizingFactor = when (deviceConfiguration) {
             DeviceConfiguration.COMPACT          -> 0f
-            DeviceConfiguration.PHONE_PORTRAIT   -> 0.12f
+
+            DeviceConfiguration.PHONE_PORTRAIT,
+            DeviceConfiguration.TABLET_PORTRAIT  -> 0.12f
+
             DeviceConfiguration.PHONE_LANDSCAPE  -> 0.08f
-            DeviceConfiguration.TABLET_PORTRAIT  -> 0.05f
             DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
         }
+
+        val sliderHeightFactor = when (deviceConfiguration) {
+            DeviceConfiguration.COMPACT          -> 0f
+
+            DeviceConfiguration.PHONE_PORTRAIT,
+            DeviceConfiguration.TABLET_PORTRAIT  -> 0.2f
+
+            DeviceConfiguration.PHONE_LANDSCAPE,
+            DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
+        }
+
         val fontSize = (maxHeight.value * sizingFactor).sp
+        val sliderHeight = (maxHeight.value * sliderHeightFactor).dp
 
         Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
         ) {
-            Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+            Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.BottomCenter
             ) {
-                val currentSliderPositionMs = if (isChangingPosition) sliderPosition.toLong() else state.currentPositionMs
-                val showHours = state.durationMs.milliseconds.hoursLong > 0
+                Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val currentSliderPositionMs = if (isChangingPosition) sliderPosition.toLong() else state.currentPositionMs
+                    val showHours = state.durationMs.milliseconds.hoursLong > 0
 
-                Text(
-                        text = currentSliderPositionMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
-                        fontSize = fontSize,
-                        fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White.copy(alpha = 0.8f)
-                )
+                    Text(
+                            text = currentSliderPositionMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
+                            fontSize = fontSize,
+                            fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White.copy(alpha = 0.8f)
+                    )
 
-                Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(8.dp))
 
-                Text(
-                        text = "\\",
-                        fontSize = fontSize,
-                        fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White.copy(alpha = 0.8f)
-                )
+                    Text(
+                            text = "\\",
+                            fontSize = fontSize,
+                            fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White.copy(alpha = 0.8f)
+                    )
 
-                Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(8.dp))
 
-                Text(
-                        text = state.durationMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
-                        fontSize = fontSize,
-                        fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White.copy(alpha = 0.8f)
-                )
+                    Text(
+                            text = state.durationMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
+                            fontSize = fontSize,
+                            fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White.copy(alpha = 0.8f)
+                    )
+                }
             }
 
-            Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.TopCenter
+            ) {
                 val trackGap = 5.dp
-                val trackHeight = 50.dp
+                val trackHeight = sliderHeight
                 val trackActiveColor = Color.White
                 val trackInactiveColor = Color.White.copy(alpha = 0.5f)
                 val trackShape = RoundedCornerShape(15.dp)
@@ -636,63 +791,110 @@ private fun PlayerProgress(
                 val thumbWidth = 10.dp
                 val thumbHeight = trackHeight + 10.dp
 
-                if (state.isBuffering) {
-                    BufferingIndicator(
-                            modifier = Modifier
-                                .padding(horizontal = thumbWidth / 2)
-                                .align(Alignment.Center),
-                            trackHeight = trackHeight,
-                            trackColor = trackActiveColor,
-                            trackShape = trackShape
-                    )
-                } else {
-                    Slider(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.Center),
-                            value = sliderPosition,
-                            onValueChange = {
-                                onSeekStarted()
-                                onSeekProgress(it)
-                            },
-                            onValueChangeFinished = onSeekFinished,
-                            valueRange = 0f..state.durationMs.toFloat(),
-                            thumb = {
-                                SliderThumb(
-                                        thumbWidth = thumbWidth,
-                                        thumbHeight = thumbHeight,
-                                        thumbColor = trackActiveColor,
-                                        thumbShape = trackShape
-                                )
-                            },
-                            track = { sliderState ->
-                                SliderTrack(
-                                        sliderState = sliderState,
-                                        thumbWidth = thumbWidth,
-                                        trackGap = trackGap,
-                                        trackHeight = trackHeight,
-                                        trackActiveColor = trackActiveColor,
-                                        trackInactiveColor = trackInactiveColor,
-                                        trackShape = trackShape
-                                )
-                            }
-                    )
+                LinearProgressIndicator(
+                        state = state,
+                        thumbWidth = thumbWidth,
+                        thumbHeight = thumbHeight,
+                        trackHeight = trackHeight,
+                        trackGap = trackGap,
+                        trackShape = trackShape,
+                        trackActiveColor = trackActiveColor,
+                        trackInactiveColor = trackInactiveColor,
+                        sliderPosition = sliderPosition,
+                        bufferedProgress = bufferedProgress,
+                        onSeekStarted = onSeekStarted,
+                        onSeekProgress = onSeekProgress,
+                        onSeekFinished = onSeekFinished
+                )
+            }
+        }
+    }
+}
 
-                    BufferProgressIndicator(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.Center),
-                            currentProgress = sliderPosition / state.durationMs.toFloat(),
-                            bufferProgress = bufferedProgress,
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun BoxScope.LinearProgressIndicator(
+        state: PlayerState,
+        thumbWidth: Dp,
+        thumbHeight: Dp,
+        trackHeight: Dp,
+        trackGap: Dp,
+        trackShape: RoundedCornerShape,
+        trackActiveColor: Color = Color.White,
+        trackInactiveColor: Color = Color.White.copy(alpha = 0.5f),
+        sliderPosition: Float,
+        bufferedProgress: Float,
+        onSeekStarted: () -> Unit = {},
+        onSeekProgress: (Float) -> Unit = {},
+        onSeekFinished: () -> Unit = {}
+) {
+    // Safety Check: Ensure duration is at least 1f to prevent "0..0" range crash
+    // When the media is first loaded, the duration is 0, so we set it to 1f to prevent division by zero
+    val trackDuration = when {
+        state.durationMs > 0 -> state.durationMs.toFloat()
+        else                 -> 1f
+    }
+
+    // Calculate safe progress for the buffer (to avoid division by zero)
+    val trackCurrentProgress = when {
+        state.durationMs > 0 -> sliderPosition / state.durationMs.toFloat()
+        else                 -> 0f
+    }
+
+    if (state.isBuffering) {
+        BufferingIndicator(
+                modifier = Modifier
+                    .padding(horizontal = thumbWidth / 2)
+                    .align(Alignment.Center),
+                trackHeight = trackHeight,
+                trackColor = trackActiveColor,
+                trackShape = trackShape
+        )
+    } else {
+        Slider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center),
+                value = sliderPosition.coerceIn(0f, trackDuration),
+                onValueChange = {
+                    onSeekStarted()
+                    onSeekProgress(it)
+                },
+                onValueChangeFinished = onSeekFinished,
+                valueRange = 0f..trackDuration,
+                thumb = {
+                    SliderThumb(
+                            thumbWidth = thumbWidth,
+                            thumbHeight = thumbHeight,
+                            thumbColor = trackActiveColor,
+                            thumbShape = trackShape
+                    )
+                },
+                track = { sliderState ->
+                    SliderTrack(
+                            sliderState = sliderState,
                             thumbWidth = thumbWidth,
                             trackGap = trackGap,
                             trackHeight = trackHeight,
-                            trackColor = Color.DarkGray.copy(alpha = 0.3f),
-                            trackShape = trackShape
+                            trackShape = trackShape,
+                            trackActiveColor = trackActiveColor,
+                            trackInactiveColor = trackInactiveColor
                     )
                 }
-            }
-        }
+        )
+
+        BufferProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center),
+                currentProgress = trackCurrentProgress,
+                bufferProgress = bufferedProgress,
+                thumbWidth = thumbWidth,
+                trackGap = trackGap,
+                trackHeight = trackHeight,
+                trackColor = Color.DarkGray.copy(alpha = 0.3f),
+                trackShape = trackShape
+        )
     }
 }
 
@@ -724,7 +926,7 @@ private fun BufferProgressIndicator(
                     .weight(playedProgress)
                     .fillMaxHeight()
                     .padding(end = trackGap, start = thumbWidth / 2)
-                    // .background(Color.Red.copy(alpha = 0.5f), trackShape) // debug color
+                // .background(Color.Red.copy(alpha = 0.5f), trackShape) // debug color
         )
 
         // SliderThumb(thumbWidth = thumbWidth, thumbColor = Color.Yellow.copy(alpha = 0.5f)) // debug color
@@ -736,7 +938,7 @@ private fun BufferProgressIndicator(
                     .fillMaxHeight()
                     .padding(start = trackGap)
                     .background(trackColor, trackShape)
-                    // .background(Color.Green.copy(alpha = 0.5f), trackShape) // debug color
+                // .background(Color.Green.copy(alpha = 0.5f), trackShape) // debug color
         )
 
         if (bufferInActiveProgress > 0f) Box(
@@ -744,7 +946,7 @@ private fun BufferProgressIndicator(
                     .weight(bufferInActiveProgress)
                     .fillMaxHeight()
                     .padding(end = thumbWidth / 2)
-                    // .background(Color.Blue.copy(alpha = 0.5f), trackShape) // debug color
+                // .background(Color.Blue.copy(alpha = 0.5f), trackShape) // debug color
         )
     }
 }
@@ -771,9 +973,9 @@ private fun SliderTrack(
         thumbWidth: Dp = 10.dp,
         trackGap: Dp = 10.dp,
         trackHeight: Dp = 50.dp,
+        trackShape: Shape = RoundedCornerShape(10.dp),
         trackActiveColor: Color = Color.White,
-        trackInactiveColor: Color = Color.White.copy(alpha = 0.5f),
-        trackShape: Shape = RoundedCornerShape(10.dp)
+        trackInactiveColor: Color = Color.White.copy(alpha = 0.5f)
 ) {
     /**
      *  Calculates the progress of the slider's `value` relative to the `value range`
@@ -781,8 +983,14 @@ private fun SliderTrack(
      *  The progress is a value between `0` and `1`, where `0` represents the `start` of the value range and `1` represents the `end`
      *
      *  This progress is then used to calculate the `active` and `inactive` segments of the slider track
+     *
+     *  Safety Check inside Track: Prevent division by zero if range is somehow 0
      */
-    val progress = (sliderState.value - sliderState.valueRange.start) / (sliderState.valueRange.endInclusive - sliderState.valueRange.start)
+    val range = sliderState.valueRange.endInclusive - sliderState.valueRange.start
+    val progress = when {
+        range > 0 -> (sliderState.value - sliderState.valueRange.start) / range
+        else      -> 0f
+    }
 
     val activeProgress = progress.coerceIn(0f, 1f)
     val inactiveProgress = 1f - activeProgress
@@ -792,7 +1000,8 @@ private fun SliderTrack(
     Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(trackHeight)
+                .height(trackHeight),
+            horizontalArrangement = Arrangement.Center
     ) {
         // Active Segment
         if (activeProgress > 0f) Box(

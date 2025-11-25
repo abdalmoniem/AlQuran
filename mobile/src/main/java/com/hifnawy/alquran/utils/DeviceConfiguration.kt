@@ -3,20 +3,20 @@ package com.hifnawy.alquran.utils
 import androidx.window.core.layout.WindowSizeClass
 import com.hifnawy.alquran.utils.DeviceConfiguration.COMPACT
 import com.hifnawy.alquran.utils.DeviceConfiguration.Companion.deviceConfiguration
-import com.hifnawy.alquran.utils.DeviceConfiguration.HeightSize.COMPACT
 import com.hifnawy.alquran.utils.DeviceConfiguration.HeightSize.Companion.toHeightSize
-import com.hifnawy.alquran.utils.DeviceConfiguration.HeightSize.EXPANDED
-import com.hifnawy.alquran.utils.DeviceConfiguration.HeightSize.MEDIUM
+import com.hifnawy.alquran.utils.DeviceConfiguration.HeightSize.HEIGHT_COMPACT
+import com.hifnawy.alquran.utils.DeviceConfiguration.HeightSize.HEIGHT_EXPANDED
+import com.hifnawy.alquran.utils.DeviceConfiguration.HeightSize.HEIGHT_MEDIUM
 import com.hifnawy.alquran.utils.DeviceConfiguration.PHONE_LANDSCAPE
 import com.hifnawy.alquran.utils.DeviceConfiguration.PHONE_PORTRAIT
 import com.hifnawy.alquran.utils.DeviceConfiguration.TABLET_LANDSCAPE
 import com.hifnawy.alquran.utils.DeviceConfiguration.TABLET_PORTRAIT
-import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.COMPACT
 import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.Companion.toWidthSize
-import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.EXPANDED
-import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.EXTRA_LARGE
-import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.LARGE
-import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.MEDIUM
+import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.WIDTH_COMPACT
+import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.WIDTH_EXPANDED
+import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.WIDTH_EXTRA_LARGE
+import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.WIDTH_LARGE
+import com.hifnawy.alquran.utils.DeviceConfiguration.WidthSize.WIDTH_MEDIUM
 
 /**
  * Represents different device configurations based on screen size classes.
@@ -75,11 +75,11 @@ enum class DeviceConfiguration {
      *
      * @param dp [Int] The width size in dp.
      *
-     * @property COMPACT Represents a compact width size.
-     * @property MEDIUM Represents a medium width size.
-     * @property EXPANDED Represents an expanded width size.
-     * @property LARGE Represents a large width size.
-     * @property EXTRA_LARGE Represents an extra large width size.
+     * @property WIDTH_COMPACT Represents a compact width size.
+     * @property WIDTH_MEDIUM Represents a medium width size.
+     * @property WIDTH_EXPANDED Represents an expanded width size.
+     * @property WIDTH_LARGE Represents a large width size.
+     * @property WIDTH_EXTRA_LARGE Represents an extra large width size.
      *
      * @author AbdElMoniem ElHifnawy
      *
@@ -93,36 +93,55 @@ enum class DeviceConfiguration {
          *
          * @param dp [Int] The width size in dp.
          */
-        COMPACT(dp = 0),
+        WIDTH_COMPACT(dp = 0),
 
         /**
          * Represents a medium width size.
          *
          * @param dp [Int] The width size in dp.
          */
-        MEDIUM(dp = WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND),
+        WIDTH_MEDIUM(dp = WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND),
 
         /**
          * Represents an expanded width size.
          *
          * @param dp [Int] The width size in dp.
          */
-        EXPANDED(dp = WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND),
+        WIDTH_EXPANDED(dp = WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND),
 
         /**
          * Represents a large width size.
          *
          * @param dp [Int] The width size in dp.
          */
-        LARGE(dp = WindowSizeClass.WIDTH_DP_LARGE_LOWER_BOUND),
+        WIDTH_LARGE(dp = WindowSizeClass.WIDTH_DP_LARGE_LOWER_BOUND),
 
         /**
          * Represents an extra large width size.
          *
          * @param dp [Int] The width size in dp.
          */
-        EXTRA_LARGE(dp = WindowSizeClass.WIDTH_DP_EXTRA_LARGE_LOWER_BOUND);
+        WIDTH_EXTRA_LARGE(dp = WindowSizeClass.WIDTH_DP_EXTRA_LARGE_LOWER_BOUND);
 
+        /**
+         * Returns a string representation of the [WidthSize] enum constant, including its name
+         * and the corresponding lower bound `dp` value.
+         *
+         * For example, `WidthSize.MEDIUM.toString()` will return `"MEDIUM(600)"`.
+         *
+         * @return [String] A [String] in the format "NAME(dp)".
+         */
+        override fun toString() = "$name($dp)"
+
+        /**
+         * A companion object for the [DeviceConfiguration] enum.
+         *
+         * This object holds extension properties and utility functions related to `DeviceConfiguration`.
+         * The primary member is the [deviceConfiguration] extension property, which provides a convenient way
+         * to determine the device configuration directly from a [WindowSizeClass] instance.
+         *
+         * @author AbdElMoniem ElHifnawy
+         */
         companion object {
 
             /**
@@ -144,9 +163,9 @@ enum class DeviceConfiguration {
      *
      * @param dp [Int] The height size in dp.
      *
-     * @property COMPACT Represents a compact height size.
-     * @property MEDIUM Represents a medium height size.
-     * @property EXPANDED Represents an expanded height size.
+     * @property HEIGHT_COMPACT Represents a compact height size.
+     * @property HEIGHT_MEDIUM Represents a medium height size.
+     * @property HEIGHT_EXPANDED Represents an expanded height size.
      *
      * @author AbdElMoniem ElHifnawy
      *
@@ -160,22 +179,43 @@ enum class DeviceConfiguration {
          *
          * @param dp [Int] The height size in dp.
          */
-        COMPACT(dp = 0),
+        HEIGHT_COMPACT(dp = 0),
 
         /**
          * Represents a medium height size.
          *
          * @param dp [Int] The height size in dp.
          */
-        MEDIUM(dp = WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND),
+        HEIGHT_MEDIUM(dp = WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND),
 
         /**
          * Represents an expanded height size.
          *
          * @param dp The height size in dp.
          */
-        EXPANDED(dp = WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND);
+        HEIGHT_EXPANDED(dp = WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND);
 
+        /**
+         * Returns a string representation of the [WidthSize] enum constant.
+         *
+         * This representation includes the name of the constant and its associated dp value in parentheses,
+         * which is useful for logging and debugging purposes.
+         *
+         * For example, `WidthSize.MEDIUM` would be represented as `"MEDIUM(600)"`.
+         *
+         * @return [String] A [String] in the format `"NAME(dp)"`.
+         */
+        override fun toString() = "$name($dp)"
+
+        /**
+         * A companion object for the [DeviceConfiguration] enum.
+         *
+         * This object holds extension properties and utility functions related to `DeviceConfiguration`.
+         * The primary member is the [deviceConfiguration] extension property, which provides a convenient way
+         * to determine the device configuration directly from a [WindowSizeClass] instance.
+         *
+         * @author AbdElMoniem ElHifnawy
+         */
         companion object {
 
             /**
@@ -192,6 +232,15 @@ enum class DeviceConfiguration {
         }
     }
 
+    /**
+     * A companion object for the [DeviceConfiguration] enum.
+     *
+     * This object holds extension properties and utility functions related to `DeviceConfiguration`.
+     * The primary member is the [deviceConfiguration] extension property, which provides a convenient way
+     * to determine the device configuration directly from a [WindowSizeClass] instance.
+     *
+     * @author AbdElMoniem ElHifnawy
+     */
     companion object {
 
         /**
@@ -207,35 +256,34 @@ enum class DeviceConfiguration {
          * @see WindowSizeClass
          * @see DeviceConfiguration
          */
-        @Suppress("RemoveRedundantQualifierName")
-        val WindowSizeClass.deviceConfiguration: DeviceConfiguration
+        val WindowSizeClass.deviceConfiguration
             get() = when {
                 // Extra Large Width
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.EXTRA_LARGE.dp, heightDpBreakpoint = HeightSize.EXPANDED.dp) -> TABLET_LANDSCAPE
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.EXTRA_LARGE.dp, heightDpBreakpoint = HeightSize.MEDIUM.dp)   -> TABLET_LANDSCAPE
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.EXTRA_LARGE.dp, heightDpBreakpoint = HeightSize.COMPACT.dp)  -> PHONE_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_EXTRA_LARGE.dp, heightDpBreakpoint = HEIGHT_EXPANDED.dp) -> TABLET_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_EXTRA_LARGE.dp, heightDpBreakpoint = HEIGHT_MEDIUM.dp)   -> TABLET_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_EXTRA_LARGE.dp, heightDpBreakpoint = HEIGHT_COMPACT.dp)  -> PHONE_LANDSCAPE
 
                 // Large Width
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.LARGE.dp, heightDpBreakpoint = HeightSize.EXPANDED.dp)       -> TABLET_LANDSCAPE
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.LARGE.dp, heightDpBreakpoint = HeightSize.MEDIUM.dp)         -> TABLET_LANDSCAPE
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.LARGE.dp, heightDpBreakpoint = HeightSize.COMPACT.dp)        -> PHONE_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_LARGE.dp, heightDpBreakpoint = HEIGHT_EXPANDED.dp)       -> TABLET_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_LARGE.dp, heightDpBreakpoint = HEIGHT_MEDIUM.dp)         -> TABLET_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_LARGE.dp, heightDpBreakpoint = HEIGHT_COMPACT.dp)        -> PHONE_LANDSCAPE
 
                 // Expanded Width
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.EXPANDED.dp, heightDpBreakpoint = HeightSize.EXPANDED.dp)    -> TABLET_LANDSCAPE
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.EXPANDED.dp, heightDpBreakpoint = HeightSize.MEDIUM.dp)      -> PHONE_LANDSCAPE
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.EXPANDED.dp, heightDpBreakpoint = HeightSize.COMPACT.dp)     -> PHONE_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_EXPANDED.dp, heightDpBreakpoint = HEIGHT_EXPANDED.dp)    -> TABLET_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_EXPANDED.dp, heightDpBreakpoint = HEIGHT_MEDIUM.dp)      -> PHONE_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_EXPANDED.dp, heightDpBreakpoint = HEIGHT_COMPACT.dp)     -> PHONE_LANDSCAPE
 
                 // Medium Width
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.MEDIUM.dp, heightDpBreakpoint = HeightSize.EXPANDED.dp)      -> TABLET_PORTRAIT
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.MEDIUM.dp, heightDpBreakpoint = HeightSize.MEDIUM.dp)        -> TABLET_LANDSCAPE
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.MEDIUM.dp, heightDpBreakpoint = HeightSize.COMPACT.dp)       -> PHONE_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_MEDIUM.dp, heightDpBreakpoint = HEIGHT_EXPANDED.dp)      -> TABLET_PORTRAIT
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_MEDIUM.dp, heightDpBreakpoint = HEIGHT_MEDIUM.dp)        -> TABLET_LANDSCAPE
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_MEDIUM.dp, heightDpBreakpoint = HEIGHT_COMPACT.dp)       -> PHONE_LANDSCAPE
 
                 // Compact Width
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.COMPACT.dp, heightDpBreakpoint = HeightSize.EXPANDED.dp)     -> PHONE_PORTRAIT
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.COMPACT.dp, heightDpBreakpoint = HeightSize.MEDIUM.dp)       -> PHONE_PORTRAIT
-                isAtLeastBreakpoint(widthDpBreakpoint = WidthSize.COMPACT.dp, heightDpBreakpoint = HeightSize.COMPACT.dp)      -> COMPACT
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_COMPACT.dp, heightDpBreakpoint = HEIGHT_EXPANDED.dp)     -> PHONE_PORTRAIT
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_COMPACT.dp, heightDpBreakpoint = HEIGHT_MEDIUM.dp)       -> PHONE_PORTRAIT
+                isAtLeastBreakpoint(widthDpBreakpoint = WIDTH_COMPACT.dp, heightDpBreakpoint = HEIGHT_COMPACT.dp)      -> COMPACT
 
-                else                                                                                                           -> throw IllegalArgumentException("Unknown Device Configuration")
+                else                                                                                                   -> throw IllegalArgumentException("Unknown Device Configuration")
             }
     }
 }

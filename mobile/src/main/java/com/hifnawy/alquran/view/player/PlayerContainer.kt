@@ -7,7 +7,11 @@ import android.view.Window
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
@@ -32,12 +36,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.core.view.WindowInsetsCompat
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import com.hifnawy.alquran.viewModel.MediaViewModel
 import timber.log.Timber
+import java.util.Locale
 
 @Composable
 fun BoxScope.PlayerContainer(mediaViewModel: MediaViewModel) {
@@ -63,9 +69,33 @@ fun BoxScope.PlayerContainer(mediaViewModel: MediaViewModel) {
 
     val dragGesture = Modifier.draggable(
             orientation = Orientation.Vertical,
-            state = rememberDraggableState { delta -> heightPx = (heightPx - delta).coerceIn(minHeightPx, maxHeightPx) },
-            onDragStopped = { heightPx = calculateHeight(heightPx, minimizeThreshold, expandThreshold, maxHeightPx, minHeightPx, mediaViewModel) }
+            state = rememberDraggableState { delta ->
+                val oldHeight = heightPx
+                heightPx = (heightPx - delta).coerceIn(minHeightPx, maxHeightPx)
+
+                val draggingUp = heightPx > oldHeight
+                val draggingDown = heightPx < oldHeight
+
+                mediaViewModel.playerState = state.copy(isExpanding = draggingUp, isMinimizing = draggingDown)
+            },
+            onDragStopped = {
+                val snapped = calculateHeight(
+                        heightPx = heightPx,
+                        minimizeThreshold = minimizeThreshold,
+                        expandThreshold = expandThreshold,
+                        maxHeightPx = maxHeightPx,
+                        minHeightPx = minHeightPx,
+                        mediaViewModel = mediaViewModel
+                )
+                heightPx = snapped
+
+                // Drag ended → clear flags
+                mediaViewModel.playerState = mediaViewModel.playerState.copy(isExpanding = false, isMinimizing = false)
+            }
     )
+
+    val slideAnimationSpec = tween<IntOffset>(durationMillis = 300, easing = FastOutLinearInEasing)
+    val fadeAnimationSpec = tween<Float>(durationMillis = 300, easing = FastOutLinearInEasing)
 
     LaunchedEffect(state.isVisible, state.isExpanded, maxHeightPx) {
         handleSystemBars(activity?.window, state.isExpanded)
@@ -86,8 +116,8 @@ fun BoxScope.PlayerContainer(mediaViewModel: MediaViewModel) {
 
     AnimatedVisibility(
             visible = state.isVisible,
-            enter = slideInVertically(initialOffsetY = { it }),
-            exit = slideOutVertically(targetOffsetY = { it }),
+            enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
+            exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec),
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
@@ -115,13 +145,16 @@ fun BoxScope.PlayerContainer(mediaViewModel: MediaViewModel) {
                         contentColor = MaterialTheme.colorScheme.secondary
                 )
         ) {
+            Timber.debug("isExpanding: ${mediaViewModel.playerState.isExpanding}, isMinimizing: ${mediaViewModel.playerState.isMinimizing}")
+
             if (!mediaViewModel.playerState.isVisible) return@ElevatedCard
 
             when {
                 !mediaViewModel.playerState.isExpanded -> {
                     val expandProgress = 1f - ((animatedHeight - minHeightPx) / (maxHeightPx - minHeightPx)).coerceIn(0f, 1f)
+                    Timber.debug("expandProgress: ${String.format(Locale.ENGLISH, "%06.02f%%", expandProgress * 100f)}")
 
-                    MiniPlayer(mediaViewModel = mediaViewModel, animatedHeight = animatedHeight, expandProgress = expandProgress)
+                    MiniPlayer(mediaViewModel = mediaViewModel, expandProgress = expandProgress)
                 }
 
                 else                                   -> {

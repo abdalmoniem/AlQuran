@@ -13,8 +13,11 @@ import com.hifnawy.alquran.shared.domain.ServiceStatusObserver
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursLong
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.toFormattedTime
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import timber.log.Timber
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * ViewModel responsible for managing the state and interactions of the media player.
@@ -253,6 +256,8 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
  * @property isVisible [Boolean] Determines whether the player UI component should be visible.
  * @property isPlaying [Boolean] Indicates whether the media is currently playing `true` or paused / ended / stopped `false`.
  * @property isExpanded [Boolean] Controls the layout of the player UI, e.g., showing a minimized or fully expanded view.
+ * @property isExpanding [Boolean] Indicates whether the player UI is currently expanding.
+ * @property isMinimizing [Boolean] Indicates whether the player UI is currently minimizing.
  *
  * @author AbdElMoniem ElHifnawy
  */
@@ -267,5 +272,28 @@ data class PlayerState(
         val isVisible: Boolean = false,
         val isBuffering: Boolean = false,
         val isPlaying: Boolean = false,
-        val isExpanded: Boolean = true
-)
+        val isExpanded: Boolean = true,
+        val isExpanding: Boolean = false,
+        val isMinimizing: Boolean = false
+) {
+
+    override fun toString(): String {
+        val showHours = durationMs.milliseconds.hoursLong > 0
+
+        return "PlayerState(" +
+               "reciter=(${reciter?.id?.value}: ${reciter?.name}), " +
+               "moshaf=(${moshaf?.id}: ${moshaf?.name}), " +
+               "surah=(${surah?.id}: ${surah?.name}), " +
+               "surahsServer=$surahsServer, " +
+               "time: ${currentPositionMs.milliseconds.toFormattedTime(showHours = showHours)} " +
+               "(${bufferedPositionMs.milliseconds.toFormattedTime(showHours = showHours)}) / " +
+               "${durationMs.milliseconds.toFormattedTime(showHours = showHours)}), " +
+               "isVisible=$isVisible, " +
+               "isBuffering=$isBuffering, " +
+               "isPlaying=$isPlaying, " +
+               "isExpanded=$isExpanded, " +
+               "isExpanding=$isExpanding, " +
+               "isMinimizing=$isMinimizing" +
+               ")"
+    }
+}
