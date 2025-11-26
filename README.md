@@ -26,33 +26,67 @@
 AlQuran is an app that allows you to listen to chapters of the Quran, voiced by different reciters. It
 also supports Android Auto.
 
+---
+
+# 🚀 Getting Started
+
+- ## Important
+  This project uses automated scripts from the [helper-scripts](helper-scripts) during the gradle build
+  process to generate some of the assets used in the app. To get started, follow these steps:
+
+- ## Prerequisites
+    - Android Studio (latest stable version)
+    - JDK 21 or later
+    - Android SDK (API level 33 or higher)
+    - [uv](https://docs.astral.sh/uv) package manager (recommended)
+    - [Python](https://www.python.org) 3.13 or higher
+    - Git (for version control)
+
+- ## Setup
+    - ### Clone the repository:
+       ```bash
+       git clone https://github.com/abdalmoniem/AlQuran.git
+       cd AlQuran/helper-scripts
+       ```
+
+    - ### Install Python (If not already installed):
+        ```bash
+        uv python install
+        ```
+
+    - ### Build Variants
+        - **`debug`**: For development and testing with debug symbols
+        - **`release`**: For production release (signed with release keys)
+
+---
+
 # 💪 Features
 
-* Listen to chapters of the Quran, voiced by different reciters.
-* Support for Android Auto.
-* Offline playback.
-* Pause and resume playback.
-* Seek to a specific position in the chapter.
-* Choose your preferred reciter.
+- Listen to chapters of the Quran, voiced by different reciters.
+- Support for Android Auto.
+- Offline playback.
+- Pause and resume playback.
+- Seek to a specific position in the chapter.
+- Choose your preferred reciter.
 
 <div align=center>
     <img src="assets/Screenshot_2025-11-18-13-23-42-59_53cdc8217c5221d1a15e8f7eac296dc1.jpg" alt="AlQuran Screenshot 01" width="200"/>
     <img src="assets/Screenshot_2025-11-18-13-25-50-11_53cdc8217c5221d1a15e8f7eac296dc1.jpg" alt="AlQuran Screenshot 02" width="200"/>
-    <br/>
     <img src="assets/Screenshot_2025-11-18-13-26-16-37_53cdc8217c5221d1a15e8f7eac296dc1.jpg" alt="AlQuran Screenshot 03" width="200"/>
-    <img src="assets/Screenshot_2025-11-18-13-26-23-14_53cdc8217c5221d1a15e8f7eac296dc1.jpg" alt="AlQuran Screenshot 04" width="200"/>
     <br/>
+    <img src="assets/Screenshot_2025-11-18-13-26-23-14_53cdc8217c5221d1a15e8f7eac296dc1.jpg" alt="AlQuran Screenshot 04" width="200"/>
     <img src="assets/Screenshot_2025-11-18-13-26-26-56_53cdc8217c5221d1a15e8f7eac296dc1.jpg" alt="AlQuran Screenshot 05" width="200"/>
     <img src="assets/IMG_20251118_133414.jpg" alt="AlQuran Screenshot 06" width="200"/>
     <br/>
     <img src="assets/IMG_20251118_133645.jpg" alt="AlQuran Screenshot 07"/>
-    <br/>
     <img src="assets/Screenshot_2025-11-18-13-27-33-65_ec45f2a9d727a8f202099166abb1809f.jpg" alt="AlQuran Screenshot 08"/>
     <br/>
     <img src="assets/Screenshot_2025-11-18-13-27-57-58_ec45f2a9d727a8f202099166abb1809f.jpg" alt="AlQuran Screenshot 09"/>
     <br/>
     <img src="assets/Screenshot_2025-11-18-13-28-05-98_ec45f2a9d727a8f202099166abb1809f.jpg" alt="AlQuran Screenshot 10"/>
 </div>
+
+---
 
 # ⬇️ Download
 
@@ -75,9 +109,12 @@ from [GitHub Releases](https://github.com/abdalmoniem/AlQuran/releases/latest).
 
 [//]: # (> an email with your email to be added to the beta testers)
 
+---
+
 # 🈵 Translations
 
-App strings and the app store description can be translated via [Crowdin](https://crowdin.com/project/AlQuran)
+App strings and the app store description can be translated
+via [Crowdin](https://crowdin.com/project/AlQuran)
 
 [//]: # ()
 
