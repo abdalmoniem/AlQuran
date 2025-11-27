@@ -58,7 +58,7 @@ fun RecitersScreen(
                 is Result.Success -> {
                     reciters = result.data
                     dataError = null
-                    mediaViewModel.playerState = mediaViewModel.playerState.copy(reciters = result.data)
+                    mediaViewModel.updateState { reciters = result.data }
                 }
 
                 is Result.Error   -> {

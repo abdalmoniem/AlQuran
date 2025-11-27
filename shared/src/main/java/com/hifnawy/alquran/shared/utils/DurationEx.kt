@@ -1,5 +1,8 @@
 package com.hifnawy.alquran.shared.utils
 
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.time.Duration
 
@@ -76,4 +79,37 @@ object DurationExtensionFunctions {
             }
         }
     }
+
+
+    /**
+     * Returns a [String] representing the duration as a timestamp in the system's default time zone.
+     *
+     * This property treats the duration as the number of milliseconds since the Unix epoch (January 1, 1970, 00:00:00 UTC)
+     * and converts it into a human-readable date and time string based on the user's local time zone.
+     *
+     * The format of the timestamp is "EEE, dd MMM yyyy, hh:mm:ss.SSS a" (e.g., "Thu, 27 Nov 2025, 03:23:30.026 PM").
+     *
+     * Example:
+     * ```
+     * // The number of milliseconds from the epoch to "Thu, 27 Nov 2025, 03:23:30.026 PM" UTC
+     * val durationSinceEpoch = 1764209010026.milliseconds
+     *
+     * // Convert it to a human-readable timestamp in the local time zone
+     * val timestamp = durationSinceEpoch.asSystemTimestamp
+     *
+     * // The output will be adjusted for the system's time zone.
+     * // For example, in a UTC-5 time zone, the output would be "Thu, 27 Nov 2025, 10:23:30.026 AM".
+     * println(timestamp)
+     * ```
+     *
+     * @return [String] The formatted timestamp string.
+     */
+    val Duration.asSystemTimestamp: String
+        get() {
+            val resultInstant = Instant.ofEpochMilli(this.inWholeMilliseconds)
+            val zonedDateTime = resultInstant.atZone(ZoneId.systemDefault())
+            val formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy, hh:mm:ss.SSS a", Locale.ENGLISH)
+
+            return zonedDateTime.format(formatter)
+        }
 }

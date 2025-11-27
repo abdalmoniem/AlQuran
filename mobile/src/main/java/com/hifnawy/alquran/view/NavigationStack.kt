@@ -24,7 +24,7 @@ import com.hifnawy.alquran.viewModel.MediaViewModel
 @Composable
 fun NavigationStack() {
     val navController = rememberNavController()
-    val mediaViewModel: MediaViewModel = viewModel()
+    val mediaViewModel = viewModel<MediaViewModel>()
 
     Box(
             modifier = Modifier
@@ -57,6 +57,51 @@ fun NavigationStack() {
             }
         }
 
-        PlayerContainer(mediaViewModel = mediaViewModel)
+        with(mediaViewModel) {
+            PlayerContainer(
+                    state = playerState,
+                    onSnapped = {
+                        updateState {
+                            isExpanding = false
+                            isMinimizing = false
+                        }
+                    },
+                    onDragDirectionChanged = { isDraggingUp, isDraggingDown ->
+                        updateState {
+                            isExpanding = isDraggingUp
+                            isMinimizing = isDraggingDown
+                        }
+                    },
+                    onExpandStarted = {
+                        updateState {
+                            isExpanding = true
+                            isMinimizing = false
+                        }
+                    },
+                    onExpandFinished = {
+                        updateState {
+                            isExpanding = false
+                            isMinimizing = false
+                        }
+                    },
+                    onMinimizeStarted = {
+                        updateState {
+                            isExpanding = false
+                            isMinimizing = true
+                        }
+                    },
+                    onMinimizeFinished = {
+                        updateState {
+                            isExpanding = false
+                            isMinimizing = false
+                        }
+                    },
+                    onCloseClicked = ::closePlayer,
+                    onSeekProgress = ::seekTo,
+                    onSkipToPreviousSurah = ::skipToPreviousSurah,
+                    onTogglePlayback = ::togglePlayback,
+                    onSkipToNextSurah = ::skipToNextSurah
+            )
+        }
     }
 }

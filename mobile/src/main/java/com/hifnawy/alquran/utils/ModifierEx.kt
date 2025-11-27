@@ -135,7 +135,7 @@ object ModifierEx {
             isExpanded: Boolean,
             onSnapped: (shouldExpand: Boolean) -> Unit,
             onHeight: (isExpanded: Boolean) -> Unit,
-            onDragDirectionChanged: (isDraggingUp: Boolean, isDraggingDown: Boolean) -> Unit,
+            onDragDirectionChanged: (isDraggingUp: Boolean, isDraggingDown: Boolean) -> Unit
     ): Modifier {
         data class DragDirection(val isDraggingUp: Boolean, val isDraggingDown: Boolean)
 

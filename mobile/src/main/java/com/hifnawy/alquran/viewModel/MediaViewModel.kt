@@ -13,6 +13,7 @@ import com.hifnawy.alquran.shared.domain.ServiceStatusObserver
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.asSystemTimestamp
 import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursLong
 import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.toFormattedTime
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
@@ -60,6 +61,7 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
      * @return [PlayerState] The current state of the media player UI
      */
     var playerState by mutableStateOf(PlayerState())
+        private set
 
     /**
      * Initializes the [MediaViewModel].
@@ -83,30 +85,31 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
      * making the player UI visible and showing the selected track's information. This provides
      * instant feedback to the user while the service prepares the media in the background.
      *
-     * @param reciter [Reciter] The [Reciter] object for the selected recitation.
-     * @param moshaf [Moshaf] The [Moshaf] object associated with the reciter.
-     * @param moshafServer [String] The base URL for the server hosting the audio files for the given moshaf.
-     * @param surah [Surah] The specific [Surah] to be played.
+     * @param selectedReciter [Reciter] The [Reciter] object for the selected recitation.
+     * @param selectedMoshaf [Moshaf] The [Moshaf] object associated with the reciter.
+     * @param selectedMoshafServer [String] The base URL for the server hosting the audio files for the given moshaf.
+     * @param selectedSurah [Surah] The specific [Surah] to be played.
      */
-    fun playMedia(reciter: Reciter, moshaf: Moshaf, moshafServer: String, surah: Surah): Unit = Intent(quranApplication, QuranMediaService::class.java).run {
-        action = QuranMediaService.Actions.ACTION_START_PLAYBACK.name
-        putExtra(QuranMediaService.Extras.EXTRA_RECITER.name, reciter)
-        putExtra(QuranMediaService.Extras.EXTRA_MOSHAF.name, moshaf)
-        putExtra(QuranMediaService.Extras.EXTRA_SURAH.name, surah)
+    fun playMedia(selectedReciter: Reciter, selectedMoshaf: Moshaf, selectedMoshafServer: String, selectedSurah: Surah): Unit =
+            Intent(quranApplication, QuranMediaService::class.java).run {
+                action = QuranMediaService.Actions.ACTION_START_PLAYBACK.name
+                putExtra(QuranMediaService.Extras.EXTRA_RECITER.name, selectedReciter)
+                putExtra(QuranMediaService.Extras.EXTRA_MOSHAF.name, selectedMoshaf)
+                putExtra(QuranMediaService.Extras.EXTRA_SURAH.name, selectedSurah)
 
-        quranApplication.startService(this)
-        playerState = playerState.copy(
-                isVisible = true,
-                isBuffering = true,
-                isPlaying = false,
-                isExpanded = true,
-                reciter = reciter,
-                moshaf = moshaf,
-                surahsServer = moshafServer,
-                surah = surah,
-                surahSelectionTimeStamp = System.currentTimeMillis()
-        )
-    }
+                quranApplication.startService(this)
+                updateState {
+                    isVisible = true
+                    isBuffering = true
+                    isPlaying = false
+                    isExpanded = true
+                    reciter = selectedReciter
+                    moshaf = selectedMoshaf
+                    surahsServer = selectedMoshafServer
+                    surah = selectedSurah
+                    surahSelectionTimeStamp = System.currentTimeMillis()
+                }
+            }
 
     /**
      * Toggles the playback state between playing and paused.
@@ -125,7 +128,7 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
         action = QuranMediaService.Actions.ACTION_TOGGLE_PLAY_PAUSE.name
         quranApplication.startService(this)
 
-        playerState = playerState.copy(isPlaying = !playerState.isPlaying)
+        updateState { isPlaying = !isPlaying }
     }
 
     /**
@@ -171,8 +174,7 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
         action = QuranMediaService.Actions.ACTION_SEEK_PLAYBACK_TO.name
         putExtra(QuranMediaService.Extras.EXTRA_SEEK_POSITION.name, position)
 
-        playerState = playerState.copy(currentPositionMs = position)
-        quranApplication.startService(this)
+        updateState { currentPositionMs = position }
     }
 
     /**
@@ -189,15 +191,40 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
         action = QuranMediaService.Actions.ACTION_STOP_PLAYBACK.name
         quranApplication.startService(this)
 
-        playerState = playerState.copy(
-                durationMs = 0,
-                currentPositionMs = 0,
-                bufferedPositionMs = 0,
-                isVisible = false,
-                isPlaying = false,
-                isExpanded = true
-        )
+        updateState {
+            durationMs = 0
+            currentPositionMs = 0
+            bufferedPositionMs = 0
+            isVisible = false
+            isPlaying = false
+            isExpanded = true
+        }
     }
+
+    /**
+     * Updates the [playerState] in a safe and immutable way.
+     *
+     * This function takes a lambda with a [PlayerStateBuilder] as its receiver. This allows for
+     * concisely modifying the properties of the current player state. A new [PlayerState]
+     * object is then created from the builder and assigned to [playerState].
+     *
+     * Using this builder pattern ensures that the `playerState` (a Compose `State` object) is
+     * assigned a completely new instance, which is necessary to correctly trigger UI recomposition
+     * in components that depend on it.
+     *
+     * Example usage:
+     * ```
+     * updateState {
+     *     isPlaying = true
+     *     isBuffering = false
+     * }
+     * ```
+     *
+     * @param block [PlayerStateBuilder.() -> Unit][block] A lambda function that receives a [PlayerStateBuilder] and defines the
+     * changes to be applied to the current state.
+     */
+    fun updateState(block: PlayerStateBuilder.() -> Unit) = PlayerStateBuilder(playerState)
+        .apply(block).build().also { playerState = it }
 
     /**
      * Callback method invoked when the status of the [QuranMediaService] changes.
@@ -221,17 +248,25 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
 
         when (status) {
             is ServiceStatus.Paused,
-            is ServiceStatus.Playing   -> playerState = playerState.copy(
-                    isBuffering = false,
-                    isPlaying = status is ServiceStatus.Playing,
-                    surah = status.surah,
-                    durationMs = status.durationMs,
-                    currentPositionMs = status.currentPositionMs,
-                    bufferedPositionMs = status.bufferedPositionMs
-            )
+            is ServiceStatus.Playing   -> updateState {
+                isBuffering = false
+                isPlaying = status is ServiceStatus.Playing
+                surah = status.surah
+                durationMs = status.durationMs
+                currentPositionMs = status.currentPositionMs
+                bufferedPositionMs = status.bufferedPositionMs
+            }
 
-            is ServiceStatus.Buffering -> playerState = playerState.copy(isBuffering = true, isPlaying = false)
-            is ServiceStatus.Stopped   -> playerState = playerState.copy(isBuffering = false, isPlaying = false)
+            is ServiceStatus.Buffering -> updateState {
+                isBuffering = true
+                isPlaying = false
+            }
+
+            is ServiceStatus.Stopped   -> updateState {
+                isBuffering = false
+                isPlaying = false
+            }
+
             is ServiceStatus.Ended     -> skipToNextSurah()
         }
 
@@ -247,6 +282,8 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
  * the [MediaViewModel] as a Compose `State` object, ensuring that any changes to this
  * state automatically trigger UI recomposition.
  *
+ * @property reciters [List< Reciter >][List] The list of available [Reciter]s.
+ * @property surahs [List< Surah >][List] The list of available [Surah]s.
  * @property reciter [Reciter?][Reciter] The currently selected [Reciter], or `null` if none is selected.
  * @property moshaf [Moshaf?][Moshaf] The currently selected [Moshaf] (Quranic recitation style/version), or `null`.
  * @property surah [Surah?][Surah] The currently playing [Surah] (chapter of the Quran), or `null`.
@@ -258,7 +295,8 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
  * @property isPlaying [Boolean] Indicates whether the media is currently playing `true` or paused / ended / stopped `false`.
  * @property isExpanded [Boolean] Controls the layout of the player UI, e.g., showing a minimized or fully expanded view.
  * @property isExpanding [Boolean] Indicates whether the player UI is currently expanding.
- * @property isMinimizing [Boolean] Indicates whether the player UI is currently minimizing.
+ * @property isMinimizing [Boolean] Indicates whether the player UI is currently minimizing..
+ * @property surahSelectionTimeStamp [Long?][Long] The timestamp of the last surah selection.
  *
  * @author AbdElMoniem ElHifnawy
  */
@@ -278,26 +316,125 @@ data class PlayerState(
         val isExpanded: Boolean = true,
         val isExpanding: Boolean = false,
         val isMinimizing: Boolean = false,
-        val surahSelectionTimeStamp: Long = 0
+        val surahSelectionTimeStamp: Long? = null
 ) {
 
-    override fun toString(): String {
-        val showHours = durationMs.milliseconds.hoursLong > 0
+    private val showHours get() = durationMs.milliseconds.hoursLong > 0
 
-        return "PlayerState(" +
-               "reciter=(${reciter?.id?.value}: ${reciter?.name}), " +
-               "moshaf=(${moshaf?.id}: ${moshaf?.name}), " +
-               "surah=(${surah?.id}: ${surah?.name}), " +
-               "surahsServer=$surahsServer, " +
-               "time: ${currentPositionMs.milliseconds.toFormattedTime(showHours = showHours)} " +
-               "(${bufferedPositionMs.milliseconds.toFormattedTime(showHours = showHours)}) / " +
-               "${durationMs.milliseconds.toFormattedTime(showHours = showHours)}), " +
-               "isVisible=$isVisible, " +
-               "isBuffering=$isBuffering, " +
-               "isPlaying=$isPlaying, " +
-               "isExpanded=$isExpanded, " +
-               "isExpanding=$isExpanding, " +
-               "isMinimizing=$isMinimizing" +
-               ")"
-    }
+    /**
+     * Provides a custom string representation of the [PlayerState] object, useful for logging
+     * and debugging.
+     *
+     * This implementation formats the key properties of the player's state into a readable
+     * string, including the current reciter, moshaf, surah, playback time, and boolean flags.
+     * The playback time is formatted as `HH:MM:SS` or `MM:SS` depending on the total duration.
+     *
+     * @return [String] A formatted string summarizing the current state of the player.
+     */
+    override fun toString() = "PlayerState(" +
+                              "reciter=(${reciter?.id?.value}: ${reciter?.name}), " +
+                              "moshaf=(${moshaf?.id}: ${moshaf?.name}), " +
+                              "surah=(${surah?.id}: ${surah?.name}), " +
+                              "surahsServer=$surahsServer, " +
+                              "time: ${currentPositionMs.milliseconds.toFormattedTime(showHours = showHours)} " +
+                              "(${bufferedPositionMs.milliseconds.toFormattedTime(showHours = showHours)}) / " +
+                              "${durationMs.milliseconds.toFormattedTime(showHours = showHours)}), " +
+                              "isVisible=$isVisible, " +
+                              "isBuffering=$isBuffering, " +
+                              "isPlaying=$isPlaying, " +
+                              "isExpanded=$isExpanded, " +
+                              "isExpanding=$isExpanding, " +
+                              "isMinimizing=$isMinimizing, " +
+                              "surahSelectionTimeStamp=${surahSelectionTimeStamp?.milliseconds?.asSystemTimestamp}" +
+                              ")"
+}
+
+/**
+ * A builder class for creating new instances of [PlayerState] in an immutable way.
+ *
+ * This class facilitates updating the [PlayerState] by providing a mutable copy of an
+ * existing state. It is initialized with a `PlayerState` object, and its properties
+ * can then be modified. The [build] method is used to construct a new, immutable
+ * [PlayerState] object with the updated values.
+ *
+ * This pattern is utilized in the [MediaViewModel.updateState] function to ensure that the
+ * Compose `State` is updated with a completely new object instance, which is crucial for
+ * correctly triggering recomposition in the UI.
+ *
+ * Example usage:
+ * ```
+ * val newState = PlayerStateBuilder(currentState).apply {
+ *     isPlaying = true
+ *     currentPositionMs = 10000L
+ * }.build()
+ * ```
+ *
+ * @param current The initial [PlayerState] to build upon. All properties of the builder
+ * are initialized with the values from this object.
+ *
+ * @property reciters Mutable list of available [Reciter]s.
+ * @property surahs Mutable list of available [Surah]s.
+ * @property reciter Mutable nullable reference to the current [Reciter].
+ * @property moshaf Mutable nullable reference to the current [Moshaf].
+ * @property surah Mutable nullable reference to the current [Surah].
+ * @property surahsServer Mutable nullable string for the surahs' server URL.
+ * @property durationMs Mutable total duration of the track in milliseconds.
+ * @property currentPositionMs Mutable current playback position in milliseconds.
+ * @property bufferedPositionMs Mutable buffered position in milliseconds.
+ * @property isVisible Mutable flag for player UI visibility.
+ * @property isBuffering Mutable flag indicating if the media is buffering.
+ *
+ * @author AbdElMoniem ElHifnawy
+ *
+ * @see PlayerState
+ */
+class PlayerStateBuilder(current: PlayerState) {
+
+    var reciters = current.reciters
+    var surahs = current.surahs
+    var reciter = current.reciter
+    var moshaf = current.moshaf
+    var surah = current.surah
+    var surahsServer = current.surahsServer
+    var durationMs = current.durationMs
+    var currentPositionMs = current.currentPositionMs
+    var bufferedPositionMs = current.bufferedPositionMs
+    var isVisible = current.isVisible
+    var isBuffering = current.isBuffering
+    var isPlaying = current.isPlaying
+    var isExpanded = current.isExpanded
+    var isExpanding = current.isExpanding
+    var isMinimizing = current.isMinimizing
+    var surahSelectionTimeStamp = current.surahSelectionTimeStamp
+
+    /**
+     * Constructs and returns a new, immutable [PlayerState] object.
+     *
+     * This method is called after modifying the properties of the [PlayerStateBuilder].
+     * It takes the current values of the builder's properties and uses them to create
+     * a new `PlayerState` instance. This ensures that the state remains immutable, a key
+     * principle for working with Compose's state management, as creating a new object
+     * instance guarantees that state changes are correctly detected.
+     *
+     * @return [PlayerState] A new, immutable instance of [PlayerState] with the values
+     * configured in the builder.
+     */
+    fun build() = PlayerState(
+            reciters = reciters,
+            surahs = surahs,
+            reciter = reciter,
+            moshaf = moshaf,
+            surah = surah,
+            surahsServer = surahsServer,
+            durationMs = durationMs,
+            currentPositionMs = currentPositionMs,
+            bufferedPositionMs = bufferedPositionMs,
+            isVisible = isVisible,
+            isBuffering = isBuffering,
+            isPlaying = isPlaying,
+            isExpanded = isExpanded,
+            isExpanding = isExpanding,
+            isMinimizing = isMinimizing,
+            surahSelectionTimeStamp = surahSelectionTimeStamp
+    )
 }

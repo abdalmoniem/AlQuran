@@ -56,7 +56,7 @@ fun SurahsScreen(
                 is Result.Success -> {
                     reciterSurahs = result.data.filter { surah -> surah.id in moshaf.surahIds }
                     dataError = null
-                    mediaViewModel.playerState = mediaViewModel.playerState.copy(surahs = reciterSurahs)
+                    mediaViewModel.updateState { surahs = reciterSurahs }
                 }
 
                 is Result.Error   -> {
