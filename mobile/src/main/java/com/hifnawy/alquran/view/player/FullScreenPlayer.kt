@@ -30,12 +30,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -103,7 +105,7 @@ import com.hifnawy.alquran.shared.R as Rs
 @Composable
 fun FullScreenPlayer(
         state: PlayerState,
-        minimizeProgress: Float,
+        expandProgress: Float,
         onMinimizeClicked: () -> Unit = {},
         onSeekProgress: (Long) -> Unit = {},
         onSkipToPreviousSurah: () -> Unit = {},
@@ -149,12 +151,14 @@ fun FullScreenPlayer(
         Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .alpha(minimizeProgress),
+                    .alpha(expandProgress),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
         ) {
             if (deviceConfiguration != DeviceConfiguration.COMPACT) PlayerTopBar(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding(),
                     onMinimizeClicked = onMinimizeClicked
             )
 
@@ -194,6 +198,7 @@ fun FullScreenPlayer(
                 DeviceConfiguration.TABLET_LANDSCAPE -> PlayerContentLandScape(
                         modifier = Modifier
                             .fillMaxSize()
+                            .displayCutoutPadding()
                             .padding(horizontal = 10.dp),
                         surahDrawableId = surahDrawableId,
                         state = state,
@@ -303,8 +308,6 @@ private fun PlayerContentPortrait(
                         )
                     }
 
-                    Timber.debug("totalAvailableHeight: $totalAvailableHeight usedHeight: $usedHeight remainingHeight: $remainingHeight minRequiredHeight: $minRequiredHeight hasEnoughSpace: $hasEnoughSpace")
-
                     AnimatedVisibility(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -322,7 +325,7 @@ private fun PlayerContentPortrait(
                     }
                 }
 
-                if (hasEnoughSpace || state.isMinimizing) return@BoxWithConstraints
+                if (hasEnoughSpace || state.isMinimizing || state.isExpanding) return@BoxWithConstraints
                 MiniPlayerControls(
                         state = state,
                         areControlsVisible = areControlsVisible,
@@ -350,12 +353,13 @@ private fun PlayerContentLandScape(
         onTogglePlayback: () -> Unit = {},
         onSkipToPreviousSurah: () -> Unit = {}
 ) {
-    val slideAnimationSpec = tween<IntOffset>(durationMillis = 150, easing = FastOutLinearInEasing)
-    val fadeAnimationSpec = tween<Float>(durationMillis = 150, easing = FastOutLinearInEasing)
+    val animationDuration = 150
+    val slideAnimationSpec = tween<IntOffset>(durationMillis = animationDuration, easing = FastOutLinearInEasing)
+    val fadeAnimationSpec = tween<Float>(durationMillis = animationDuration, easing = FastOutLinearInEasing)
     var isShown by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        delay(50.milliseconds)
+        delay(10.milliseconds)
         isShown = true
     }
 
@@ -1136,7 +1140,7 @@ private fun FullScreenPlayerPreview() {
                             isVisible = true,
                             isExpanded = true
                     ),
-                    minimizeProgress = 1f,
+                    expandProgress = 1f,
             )
         }
     }

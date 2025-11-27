@@ -2,11 +2,8 @@ package com.hifnawy.alquran.view.screens
 
 import android.annotation.SuppressLint
 import android.widget.Toast
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -14,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,8 +29,9 @@ import com.hifnawy.alquran.shared.utils.SerializableExt.Companion.asJsonString
 import com.hifnawy.alquran.view.DataErrorScreen
 import com.hifnawy.alquran.view.PullToRefreshIndicator
 import com.hifnawy.alquran.view.grids.RecitersGrid
-import com.hifnawy.alquran.view.player.PlayerContainer
 import com.hifnawy.alquran.viewModel.MediaViewModel
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
@@ -40,42 +39,41 @@ import kotlin.time.Duration.Companion.seconds
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun RecitersScreen(
-        mediaViewModel: MediaViewModel,
-        navController: NavController
-) = Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        navController: NavController,
+        mediaViewModel: MediaViewModel
+) {
     val context = LocalContext.current
     val pullToRefreshState = rememberPullToRefreshState()
-    var isLoading by remember { mutableStateOf(true) }
-    var dataError: DataError? by remember { mutableStateOf(null) }
-    var reciters by remember { mutableStateOf(listOf<Reciter>()) }
+    var dataError: DataError? by rememberSaveable { mutableStateOf(null) }
+    var reciters by rememberSaveable { mutableStateOf(mediaViewModel.playerState.reciters) }
+    var isLoading by remember { mutableStateOf(reciters.isEmpty() && dataError == null) }
     val recitersLoadingError = stringResource(R.string.reciters_loading_error)
 
-    LaunchedEffect(isLoading, reciters) {
-        if (isLoading) {
-            if (dataError != null) delay(3.seconds) // for testing
-            MediaManager.whenRecitersReady { result ->
-                when (result) {
-                    is Result.Success -> {
-                        reciters = result.data
-                        dataError = null
-                    }
+    LaunchedEffect(isLoading) {
+        if (!isLoading) cancel("No longer loading!")
+        if (dataError != null) delay(3.seconds) // for testing
 
-                    is Result.Error   -> {
-                        dataError = result.error
-
-                        kotlinx.coroutines.MainScope().launch { Toast.makeText(context, recitersLoadingError, Toast.LENGTH_LONG).show() }
-                    }
+        MediaManager.whenRecitersReady { result ->
+            when (result) {
+                is Result.Success -> {
+                    reciters = result.data
+                    dataError = null
+                    mediaViewModel.playerState = mediaViewModel.playerState.copy(reciters = result.data)
                 }
 
-                isLoading = false
+                is Result.Error   -> {
+                    dataError = result.error
+
+                    MainScope().launch { Toast.makeText(context, recitersLoadingError, Toast.LENGTH_LONG).show() }
+                }
             }
+
+            isLoading = false
         }
     }
 
     PullToRefreshBox(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize(),
             state = pullToRefreshState,
             indicator = { PullToRefreshIndicator(isLoading, pullToRefreshState) },
             contentAlignment = Alignment.Center,
@@ -93,7 +91,7 @@ fun RecitersScreen(
 }
 
 @Composable
-private fun BoxScope.Content(
+private fun Content(
         isLoading: Boolean,
         navController: NavController,
         mediaViewModel: MediaViewModel,
@@ -116,8 +114,6 @@ private fun BoxScope.Content(
             navController.navigate(Screen.Surahs.route + "?reciter=$reciterJson&moshaf=$moshafJson")
         }
     }
-
-    PlayerContainer(mediaViewModel = mediaViewModel)
 }
 
 @Preview

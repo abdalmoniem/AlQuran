@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -41,8 +42,8 @@ import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.ReciterId
 import com.hifnawy.alquran.shared.model.Surah
-import com.hifnawy.alquran.utils.ModifierExt.AnimationType
-import com.hifnawy.alquran.utils.ModifierExt.animateItemPosition
+import com.hifnawy.alquran.utils.ModifierEx.AnimationType
+import com.hifnawy.alquran.utils.ModifierEx.animateItemPosition
 import com.hifnawy.alquran.view.ShimmerAnimation
 import com.hifnawy.alquran.view.gridItems.SurahCard
 import com.hifnawy.alquran.shared.R as Rs
@@ -51,25 +52,25 @@ import com.hifnawy.alquran.shared.R as Rs
 fun SurahsGrid(
         modifier: Modifier = Modifier,
         reciter: Reciter,
-        surahs: List<Surah>,
+        reciterSurahs: List<Surah>,
         isSkeleton: Boolean = false,
         isPlaying: Boolean = false,
         playingSurahId: Int? = null,
         playingReciterId: ReciterId? = null,
         onSurahCardClick: (surah: Surah) -> Unit
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var lastAnimatedIndex by remember { mutableIntStateOf(-1) }
-
-    val listState = rememberLazyGridState()
-    val filteredSurahs = remember(surahs, searchQuery) { filterSurahs(surahs, searchQuery) }
-
     SurahsGridContainer(isSkeleton = isSkeleton) { brush ->
         Column(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(10.dp)
         ) {
+            var searchQuery by remember { mutableStateOf("") }
+            var lastAnimatedIndex by remember { mutableIntStateOf(-1) }
+
+            val listState = rememberLazyGridState()
+            val filteredSurahs = remember(reciterSurahs, searchQuery) { filterSurahs(reciterSurahs, searchQuery) }
+
             ReciterName(
                     isSkeleton = isSkeleton,
                     brush = brush,
@@ -90,10 +91,10 @@ fun SurahsGrid(
             LazyVerticalGrid(
                     state = listState,
                     modifier = modifier,
+                    columns = GridCells.Adaptive(minSize = 150.dp),
                     contentPadding = PaddingValues(vertical = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                    columns = GridCells.Adaptive(minSize = 150.dp)
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 gridItems(isSkeleton = isSkeleton, items = filteredSurahs) { index, surah ->
                     val isScrollingDown = index > lastAnimatedIndex
@@ -139,7 +140,8 @@ private fun ReciterName(isSkeleton: Boolean, brush: Brush?, reciter: Reciter) {
         else       -> Text(
                 text = reciter.name,
                 fontSize = 50.sp,
-                fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2))
+                fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

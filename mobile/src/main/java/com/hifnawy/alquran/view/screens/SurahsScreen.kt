@@ -1,11 +1,8 @@
 package com.hifnawy.alquran.view.screens
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -13,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,8 +26,9 @@ import com.hifnawy.alquran.shared.repository.Result
 import com.hifnawy.alquran.view.DataErrorScreen
 import com.hifnawy.alquran.view.PullToRefreshIndicator
 import com.hifnawy.alquran.view.grids.SurahsGrid
-import com.hifnawy.alquran.view.player.PlayerContainer
 import com.hifnawy.alquran.viewModel.MediaViewModel
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
@@ -41,64 +40,58 @@ fun SurahsScreen(
         moshaf: Moshaf,
         mediaViewModel: MediaViewModel
 ) {
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        val context = LocalContext.current
-        val pullToRefreshState = rememberPullToRefreshState()
-        var isLoading by remember { mutableStateOf(true) }
-        var dataError: DataError? by remember { mutableStateOf(null) }
-        var surahs by remember { mutableStateOf(listOf<Surah>()) }
-        var reciterSurahs by remember { mutableStateOf(listOf<Surah>()) }
-        val surahsLoadingError = stringResource(R.string.surahs_loading_error)
+    val context = LocalContext.current
+    val pullToRefreshState = rememberPullToRefreshState()
+    var dataError: DataError? by rememberSaveable { mutableStateOf(null) }
+    var reciterSurahs by rememberSaveable { mutableStateOf(mediaViewModel.playerState.surahs) }
+    var isLoading by remember { mutableStateOf(reciterSurahs.isEmpty() && dataError == null) }
+    val surahsLoadingError = stringResource(R.string.surahs_loading_error)
 
-        LaunchedEffect(isLoading, surahs) {
-            if (isLoading) {
-                if (dataError != null) delay(3.seconds) // for testing
-                MediaManager.whenSurahsReady { result ->
-                    when (result) {
-                        is Result.Success -> {
-                            surahs = result.data
-                            dataError = null
-                        }
+    LaunchedEffect(isLoading) {
+        if (!isLoading) cancel("No longer loading!")
+        if (dataError != null) delay(3.seconds) // for testing
 
-                        is Result.Error   -> {
-                            dataError = result.error
+        MediaManager.whenSurahsReady { result ->
+            when (result) {
+                is Result.Success -> {
+                    reciterSurahs = result.data.filter { surah -> surah.id in moshaf.surahIds }
+                    dataError = null
+                    mediaViewModel.playerState = mediaViewModel.playerState.copy(surahs = reciterSurahs)
+                }
 
-                            kotlinx.coroutines.MainScope().launch { Toast.makeText(context, surahsLoadingError, Toast.LENGTH_LONG).show() }
-                        }
-                    }
+                is Result.Error   -> {
+                    dataError = result.error
 
-                    reciterSurahs = surahs.filter { surah -> surah.id in moshaf.surahIds }
-
-                    isLoading = false
+                    MainScope().launch { Toast.makeText(context, surahsLoadingError, Toast.LENGTH_LONG).show() }
                 }
             }
-        }
 
-        PullToRefreshBox(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                state = pullToRefreshState,
-                indicator = { PullToRefreshIndicator(isLoading, pullToRefreshState) },
-                contentAlignment = Alignment.Center,
-                isRefreshing = isLoading,
-                onRefresh = { isLoading = true }
-        ) {
-            Content(
-                    isLoading = isLoading,
-                    dataError = dataError,
-                    reciter = reciter,
-                    moshaf = moshaf,
-                    moshafServer = moshaf.server,
-                    reciterSurahs = reciterSurahs,
-                    mediaViewModel = mediaViewModel
-            )
+            isLoading = false
         }
+    }
+
+    PullToRefreshBox(
+            modifier = Modifier.fillMaxSize(),
+            state = pullToRefreshState,
+            indicator = { PullToRefreshIndicator(isLoading, pullToRefreshState) },
+            contentAlignment = Alignment.Center,
+            isRefreshing = isLoading,
+            onRefresh = { isLoading = true }
+    ) {
+        Content(
+                isLoading = isLoading,
+                dataError = dataError,
+                reciter = reciter,
+                moshaf = moshaf,
+                moshafServer = moshaf.server,
+                reciterSurahs = reciterSurahs,
+                mediaViewModel = mediaViewModel
+        )
     }
 }
 
 @Composable
-private fun BoxScope.Content(
+private fun Content(
         isLoading: Boolean,
         dataError: DataError?,
         reciter: Reciter,
@@ -113,7 +106,7 @@ private fun BoxScope.Content(
 
         else                                                       -> SurahsGrid(
                 reciter = reciter,
-                surahs = reciterSurahs,
+                reciterSurahs = reciterSurahs,
                 isSkeleton = isLoading,
                 isPlaying = mediaViewModel.playerState.isPlaying,
                 playingSurahId = mediaViewModel.playerState.surah?.id,
@@ -122,6 +115,4 @@ private fun BoxScope.Content(
             mediaViewModel.playMedia(reciter, moshaf, moshafServer, surah)
         }
     }
-
-    PlayerContainer(mediaViewModel = mediaViewModel)
 }

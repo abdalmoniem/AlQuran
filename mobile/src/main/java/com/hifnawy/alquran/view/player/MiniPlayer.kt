@@ -50,13 +50,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
-import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.defaultSurahDrawableId
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
-import com.hifnawy.alquran.utils.sampleReciters
-import com.hifnawy.alquran.utils.sampleSurahs
 import com.hifnawy.alquran.view.theme.AppTheme
-import com.hifnawy.alquran.viewModel.MediaViewModel
 import com.hifnawy.alquran.viewModel.PlayerState
 import com.hifnawy.alquran.shared.R as Rs
 
@@ -65,10 +61,11 @@ private val fadeAnimationSpec = tween<Float>(durationMillis = 150, easing = Fast
 
 @Composable
 fun MiniPlayer(
-        mediaViewModel: MediaViewModel,
-        expandProgress: Float
+        state: PlayerState,
+        minimizeProgress: Float,
+        onTogglePlayback: () -> Unit,
+        onCloseClicked: () -> Unit
 ) {
-    val state = mediaViewModel.playerState
     val surahDrawableId = remember(state.surah?.id) { state.surah?.surahDrawableId ?: defaultSurahDrawableId }
 
     Box(
@@ -85,11 +82,11 @@ fun MiniPlayer(
         Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .alpha(expandProgress),
+                    .alpha(minimizeProgress),
                 verticalArrangement = Arrangement.Center
         ) {
             AnimatedVisibility(
-                    visible = expandProgress >= 1f,
+                    visible = minimizeProgress >= 1f,
                     enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
                     exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec),
             ) {
@@ -100,8 +97,9 @@ fun MiniPlayer(
                     modifier = Modifier.weight(1f),
                     state = state,
                     surahDrawableId = surahDrawableId,
-                    mediaViewModel = mediaViewModel,
-                    expandProgress = expandProgress
+                    expandProgress = minimizeProgress,
+                    onTogglePlayback = onTogglePlayback,
+                    onCloseMiniPlayer = onCloseClicked
             )
         }
     }
@@ -141,8 +139,9 @@ private fun MiniPlayerContent(
         modifier: Modifier = Modifier,
         state: PlayerState,
         surahDrawableId: Int,
-        mediaViewModel: MediaViewModel,
-        expandProgress: Float
+        expandProgress: Float,
+        onTogglePlayback: () -> Unit,
+        onCloseMiniPlayer: () -> Unit
 ) {
     Row(
             modifier = modifier
@@ -151,18 +150,14 @@ private fun MiniPlayerContent(
             verticalAlignment = Alignment.CenterVertically
     ) {
 
-        MiniPlayerSurahInfo(
-                modifier = Modifier.weight(1f),
-                state = state,
-                surahDrawableId = surahDrawableId
-        )
+        MiniPlayerSurahInfo(modifier = Modifier.weight(1f), state = state, surahDrawableId = surahDrawableId)
 
         AnimatedVisibility(
                 visible = expandProgress >= 1f,
                 enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
                 exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec),
         ) {
-            MiniPlayerControls(mediaViewModel = mediaViewModel)
+            MiniPlayerControls(state = state, onTogglePlayback = onTogglePlayback, onCloseMiniPlayer = onCloseMiniPlayer)
         }
     }
 }
@@ -218,15 +213,19 @@ private fun MiniPlayerSurahInfo(
 }
 
 @Composable
-private fun MiniPlayerControls(mediaViewModel: MediaViewModel) {
+private fun MiniPlayerControls(
+        state: PlayerState,
+        onTogglePlayback: () -> Unit,
+        onCloseMiniPlayer: () -> Unit
+) {
     Row {
         IconButton(
                 modifier = Modifier.size(32.dp),
-                onClick = mediaViewModel::togglePlayback
+                onClick = onTogglePlayback
         ) {
             val icon = when {
-                mediaViewModel.playerState.isPlaying -> Rs.drawable.pause_24px
-                else                                 -> Rs.drawable.play_arrow_24px
+                state.isPlaying -> Rs.drawable.pause_24px
+                else            -> Rs.drawable.play_arrow_24px
             }
             Icon(
                     modifier = Modifier.fillMaxSize(),
@@ -240,7 +239,7 @@ private fun MiniPlayerControls(mediaViewModel: MediaViewModel) {
 
         IconButton(
                 modifier = Modifier.size(32.dp),
-                onClick = mediaViewModel::closePlayer
+                onClick = onCloseMiniPlayer
         ) {
             Icon(
                     modifier = Modifier.fillMaxSize(),
@@ -265,20 +264,20 @@ private fun MiniPlayerPreview() {
                         contentColor = MaterialTheme.colorScheme.secondary
                 )
         ) {
-            val quranApplication = QuranApplication()
-            val mediaViewModel = MediaViewModel(quranApplication)
-            mediaViewModel.playerState = PlayerState(
-                    reciter = sampleReciters.random(),
-                    surah = sampleSurahs.random(),
-                    currentPositionMs = 4_000,
-                    durationMs = 10_000,
-                    isVisible = true,
-                    isPlaying = true
-            )
-            MiniPlayer(
-                    mediaViewModel = mediaViewModel,
-                    expandProgress = 1f
-            )
+            // val quranApplication = QuranApplication()
+            // val mediaViewModel = MediaViewModel(quranApplication)
+            // mediaViewModel.playerState = PlayerState(
+            //         reciter = sampleReciters.random(),
+            //         surah = sampleSurahs.random(),
+            //         currentPositionMs = 4_000,
+            //         durationMs = 10_000,
+            //         isVisible = true,
+            //         isPlaying = true
+            // )
+            // MiniPlayer(
+            //         mediaViewModel = mediaViewModel,
+            //         expandProgress = 1f
+            // )
         }
     }
 }

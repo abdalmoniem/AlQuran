@@ -103,7 +103,8 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
                 reciter = reciter,
                 moshaf = moshaf,
                 surahsServer = moshafServer,
-                surah = surah
+                surah = surah,
+                surahSelectionTimeStamp = System.currentTimeMillis()
         )
     }
 
@@ -262,6 +263,8 @@ class MediaViewModel(application: Application) : AndroidViewModel(application), 
  * @author AbdElMoniem ElHifnawy
  */
 data class PlayerState(
+        val reciters: List<Reciter> = emptyList(),
+        val surahs: List<Surah> = emptyList(),
         val reciter: Reciter? = null,
         val moshaf: Moshaf? = null,
         val surah: Surah? = null,
@@ -274,7 +277,8 @@ data class PlayerState(
         val isPlaying: Boolean = false,
         val isExpanded: Boolean = true,
         val isExpanding: Boolean = false,
-        val isMinimizing: Boolean = false
+        val isMinimizing: Boolean = false,
+        val surahSelectionTimeStamp: Long = 0
 ) {
 
     override fun toString(): String {

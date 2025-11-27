@@ -1,0 +1,164 @@
+* Refactor(Player): Overhaul `PlayerContainer` with animatable state and improved gestures
+   > This commit completely refactors the `PlayerContainer` and related player components to improve animation, gesture handling, and state management. The new implementation uses `Animatable` for smoother, interruptible height animations and introduces a custom `verticalDragGesture` modifier for more robust drag-to-expand/collapse behavior.
+   > - **`PlayerContainer.kt`:**
+   >     - Replaced `animateFloatAsState` with `Animatable` to manage the player's height, allowing for more complex and physics-based animations.
+   >     - Eliminated the manual `draggable` modifier in favor of a new reusable `verticalDraggable` extension function, which encapsulates drag logic, state updates, and snapping behavior.
+   >     - Introduced a separate `Player` composable that dynamically switches between `MiniPlayer` and `FullScreenPlayer` using crossfade transitions based on the container's expansion progress.
+   >     - Player expansion state (`isExpanded`) is now a `rememberSaveable` state, preserving it across configuration changes.
+   >     - Added a `surahSelectionTimeStamp` to the `PlayerState` to automatically re-expand the player when a new / playing surah is selected.
+   > - **`ModifierEx.kt` (previously `ModifierExt.kt`):**
+   >     - Created a `verticalDraggable` modifier to handle drag-to-resize logic, including thresholds for snapping between expanded and minimized states.
+   >     - Introduced a helper function `shouldExpand` to determine the final snapped state based on drag distance and thresholds.
+   > - **`MiniPlayer.kt` & `FullScreenPlayer.kt`:**
+   >     - Refactored to be stateless. They now receive state and callbacks (`onTogglePlayback`, `onCloseClicked`, etc.) from the parent `PlayerContainer`.
+   >     - Removed direct dependency on `MediaViewModel`.
+   >     - Simplified animation logic, as the parent now controls visibility and transitions.
+   > - **`FloatEx.kt`:**
+   >     - Added a new utility `isApproximately` to perform floating-point comparisons with a tolerance, used in `BackHandler` to check if the player is fully expanded.
+   > - **`NavigationStack.kt` & Screen Composables (`RecitersScreen`, `SurahsScreen`):**
+   >     - The `PlayerContainer` is now hoisted into the main `NavigationStack`, making it a persistent component that overlays the navigation host.
+   >     - Removed `Scaffold` from screens and added `statusBarsPadding` and `displayCutoutPadding` to enable edge-to-edge while handling window insets correctly.
+   >     - Screen data (`reciters`, `surahs`) is now stored in `PlayerState` and preserved using `rememberSaveable`, improving data persistence and reducing redundant fetching.
+------------------------------
+Commit: 1ee3850
+* Refactor(Player): Center surah image in `FullScreenPlayer`
+   > This commit updates the `SurahImage` composable to allow for configurable content alignment. The `FullScreenPlayer` now centers the surah image, improving its vertical placement in both portrait and landscape modes.
+   > - Added an `alignment` parameter to the `SurahImage` composable, with a default value of `Alignment.BottomCenter`.
+   > - Updated call sites in `FullScreenPlayer` to use `Alignment.Center` for the surah image.
+------------------------------
+Commit: 40d5f9e
+* Docs: Update README with detailed getting started guide
+   > This commit significantly enhances the project's documentation by adding a detailed "Getting Started" section to the main `README.md` and creating a dedicated `README.md` for the `helper-scripts` directory.
+   > - **`README.md`:**
+   >     - Added a "Getting Started" section with prerequisites (JDK 21, uv, Python 3.13) and setup instructions, including cloning the repository and building the project in Android Studio.
+   >     - Updated the "Features" and screenshots sections for better presentation.
+   >     - Added horizontal rules to improve overall readability and structure.
+   > - **`helper-scripts/README.md`:**
+   >     - Created a new `README.md` to document the helper scripts.
+   >     - Provides prerequisites and detailed setup instructions for the Python environment using `uv`, including dependency installation (`uv sync`).
+   >     - Includes usage instructions for `generateSampleData.py` and `generateSurahDrawables.py`.
+   >     - Adds a "Development" section outlining the use of `Ruff` for code formatting and linting.
+------------------------------
+Commit: e388a33
+* Refactor(pre-build): Improve Gradle plugin and task execution
+   > This commit refactors the `pre-build` Gradle plugin to improve its structure, maintainability, and task execution logic.
+   > - **Plugin Refactoring (`PreBuildPlugin.kt`):**
+   >     - Introduced a `registerCommandTask` helper function to reduce boilerplate code for creating, configuring, and executing shell command tasks.
+   >     - Encapsulated file paths for helper scripts into a `HelperScripts` data class.
+   >     - Simplified error handling and logging within the command execution logic.
+   >     - Restricted the visibility of internal classes and functions like `Error`, `Result`, and `executeCommand` to private.
+   >     - Added a `@Suppress("UNCHECKED_CAST")` annotation in `RuntimeTypeAdapterFactoryEx.kt` to handle a type-casting warning.
+   > - **Build Script (`mobile/build.gradle.kts`):**
+   >     - The `generateSampleData` task is now correctly hooked into the `assembleDebug` task's lifecycle using `afterEvaluate`.
+   >     - Removed the explicit dependency on `preBuild`, which was causing the task to run unnecessarily for release builds.
+------------------------------
+Commit: 67c8711
+* Refactor(build): Improve Python script execution and CI workflows
+   > This commit enhances the `PreBuildPlugin` to provide better error handling and structure when executing Python helper scripts. It also streamlines the GitHub Actions CI workflows by integrating `uv` for Python environment setup.
+   > - **`PreBuildPlugin.kt`:**
+   >     - Introduced a sealed `Result` interface (`Success`, `Error`) and an `ExecutionError` class to create a robust error-handling mechanism for external process execution.
+   >     - Added detailed KDoc documentation for all classes, interfaces, and functions to improve maintainability and clarity.
+   >     - Refactored `executeCommand` and `processBuilder` to use the new `Result` type, providing structured success and failure states.
+   > - **GitHub Actions Workflows:**
+   >     - Integrated the `astral-sh/setup-uv` action across all CI/CD workflows (`build_debug_variant`, `build_release_variant`, `codeql_security_scan`, `publish_release_on_tag`).
+   >     - Replaced manual Python environment setup with `uv python install` for faster and more consistent builds.
+   >     - Standardized and renamed build-related job steps for better readability (e.g., "Build APK", "Get APK Name").
+------------------------------
+Commit: 685a882
+* Refactor: Automate pre-build steps with a custom Gradle plugin
+   > This commit removes the standalone Python helper scripts and integrates their functionality directly into the Gradle build process using a new custom `pre-build` plugin. This change automates the generation of sample data and Surah drawables, making the build process more streamlined and self-contained.
+   > - **New `pre-build` Gradle Plugin:**
+   >     - Introduces a custom Gradle plugin to handle pre-build tasks.
+   >     - The plugin ensures that `uv` (a Python package manager) is installed, creates a virtual environment, and syncs dependencies from `pyproject.toml`.
+   >     - It then executes the Python scripts to generate necessary project assets before the build proceeds.
+   > - **Python Script and Dependency Management:**
+   >     - The Python helper scripts (`generateSampleData.py` and `generateSurahDrawables.py`) have been moved into the `pre-build` plugin's context and are now executed as part of the Gradle build lifecycle.
+   >     - Python dependencies are now managed by `uv` using `pyproject.toml` and `uv.lock` within the `helper-scripts` directory. The standalone `requirements.txt` file has been removed.
+   >     - Added `ruff` as a development dependency for code formatting and linting.
+   > - **Build Configuration:**
+   >     - Updated `mobile/build.gradle.kts` and `shared/build.gradle.kts` to apply and depend on the new `pre-build` plugin, ensuring that `generateSampleData` and `generateSurahDrawables` tasks are executed before the respective modules are built.
+   >     - Added the `pre-build` module to the root `settings.gradle.kts`.
+   >     - Updated `.gitignore` to exclude generated `SampleData.kt` and `surah_*.png` files from version control, as they are now build-time artifacts.
+   >     - Added IDE configuration for Ruff (`ruff.xml`).
+   > - **Minor Improvements:**
+   >     - Added `sys.stdout.reconfigure(encoding="utf-8")` to Python scripts to ensure proper handling of UTF-8 characters during execution within the Gradle environment.
+   >     - The output messages in the Python scripts have been updated for better clarity during the build process.
+------------------------------
+Commit: 9626fa7
+* Refactor generateSampleData.py and update dependencies
+   > - Refactored `generateSampleData.py` to use dataclasses for `Surah`, `Moshaf`, and `Reciter` models, improving type safety and code structure.
+   > - Implemented a `toDataClass` utility function to recursively convert JSON dictionaries to dataclass instances.
+   > - Added detailed docstrings and type hints throughout the script for better maintainability.
+   > - Updated Python dependencies in `pyproject.toml`, `uv.lock`, and added a `requirements.txt` file.
+   > - Enhanced IDE inspection settings in `Project_Default.xml` to enforce stricter code quality checks.
+   > - Improved documentation and added a `main` function in `generateSurahDrawables.py`.
+------------------------------
+Commit: 9524393
+* Fix surah drawable border artifacts
+   > The script for generating surah header drawables was producing a thin border artifact. This change removes the stroke from the rectangle drawing operation to eliminate the unwanted border.
+   > - Disabled stroke in `generateSurahDrawables.py`.
+   > - Regenerated all `surah_*.png` drawables to apply the fix.
+------------------------------
+Commit: 2c68415
+* Refactor(Player): Enhance Player UI and Animations
+   > This commit introduces significant enhancements to the player's user interface and animations, improving both functionality and user experience across different device configurations.
+   > - **MiniPlayer:**
+   >     - Implemented animations for the progress bar and controls, which now slide and fade in/out as the player expands and collapses.
+   >     - Made the Surah and Reciter names scroll using `basicMarquee` to handle long text.
+   >     - Adjusted text and image sizes to be dynamic based on the available space.
+   > - **FullScreenPlayer:**
+   >     - Improved layout adaptability for various screen sizes and orientations (portrait/landscape).
+   >     - Introduced `MiniPlayerControls` that appear when there is insufficient vertical space for the standard player controls.
+   >     - The `FullScreenPlayer` now calculates available height and conditionally displays either the full `PlayerControls` or the new `MiniPlayerControls`.
+   >     - A new `MiniPlayerControlsContainer` composable has been created to handle the visibility logic and click-to-toggle behavior for the mini controls.
+   >     - Added animation specs for showing/hiding controls have been updated for a smoother user experience.
+   >     - Adjusted sizing factors for `SurahImage`, `RecitationInfo`, and `PlayerProgress` to improve layout across different device configurations and orientations.
+   >     - Refactored `PlayerProgress` and related composables for better structure and readability.
+   >     - Controls now dynamically appear or hide based on available vertical space, preventing UI clutter on smaller screens.
+   >     - Added a compact set of controls that appear when space is limited.
+   >     - Refined animations for showing/hiding player controls, with a new auto-hide mechanism.
+   >     - Addressed potential crashes by adding safety checks for media duration and slider values.
+   > - **PlayerContainer:**
+   >     - Enhanced drag gesture handling to track `isExpanding` and `isMinimizing` states.
+   >     - Updated animations for the player container to be smoother.
+   > - **MediaViewModel:**
+   >     - Added `isExpanding` and `isMinimizing` flags to `PlayerState` to better manage UI animations during drag gestures.
+   >     - Included a `toString()` implementation for easier debugging of the player state.
+   > - **DeviceConfiguration:**
+   >     - Renamed `WidthSize` and `HeightSize` enum values to be more descriptive (e.g., `COMPACT` to `WIDTH_COMPACT`) and avoid confusion between `WidthSize` `HeightSize` sizes.
+------------------------------
+Commit: f95a282
+* fix: Add Proguard rules for GlanceAppWidget
+   > - Keep the `AppWidgetId` class and its members to prevent them from being obfuscated or removed by Proguard. Since the `PlayerWidget` uses reflection to gain access to a private member variable `appWidgetId`; this ensures that Glance App Widgets function correctly in release builds.
+------------------------------
+Commit: 8031b13
+* Fix: Enhance `PlayerWidget` stability, state management and cleanup
+   > This commit introduces several improvements to the `PlayerWidget` to enhance its stability, prevent crashes, and manage its state more effectively.
+   > - Implement robust error handling to prevent crashes when updating a deleted widget. The widget state update now catches `IllegalArgumentException` and logs the failure instead of crashing.
+   > - Implemented `onDelete` to clean up the widget's state from the data store when it is removed, preventing orphaned data.
+   > - Corrected the `onClick` actions for the `Skip To Next` and `Skip To Previous` buttons to trigger the correct callbacks.
+   > - Introduced an in-memory cache for `DataStore` instances to improve performance by reusing existing objects.
+   > - Optimize widget state management by in-memory caching DataStore instances in `PlayerWidgetStateDefinition`, reducing redundant object creation.
+------------------------------
+Commit: 0101a07
+* Refactor: Integrate Skeleton Loaders and Add Buffering State
+   > - Integrate skeleton loading directly into `RecitersGrid` and `SurahsGrid` composables, removing the separate skeleton grid files.
+   > - Introduce a `Buffering` state to `ServiceStatus` to show a loading indicator during media buffering.
+   > - Updated `QuranMediaService` to emit the `Buffering` state and improved playback seeking logic.
+   > - Update `QuranMediaService` to restart playback from the beginning when skipping to the previous track within the first 3 seconds, otherwise seek to 0.
+   > - Show toast notifications for data loading errors in `RecitersScreen` and `SurahsScreen`.
+   > - Refactor `ReciterCard` and `SurahCard` to support the new integrated skeleton state.
+   > - Update `ANDROID_HOME` to `ANDROID_SDK_ROOT` in the desktop head unit script for better compatibility.
+------------------------------
+Commit: c16aa72
+* Fix(player): Suppress KotlinConstantConditions warning
+   > Suppressed a `KotlinConstantConditions` warning in the PlayerWidget that occurs in release builds due to the `BuildConfig.DEBUG` flag always being false.
+------------------------------
+Commit: a07a778
+* feat(build): Add distinct debug build configurations
+   > - Introduced a separate app name "AlQuran Debug" for debug builds to easily distinguish them from release versions.
+   > - Added a unique set of launcher icons for the debug variant in both the `mobile` and `automotive` modules.
+   > - Updated the Player Widget to display an "experimental" icon in debug builds for clear visual identification during development and testing.
+------------------------------
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/v0.0.6...v0.0.7

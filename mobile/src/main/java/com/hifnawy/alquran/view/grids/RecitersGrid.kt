@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -25,7 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,8 +44,8 @@ import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.ReciterId
 import com.hifnawy.alquran.shared.model.asReciterId
-import com.hifnawy.alquran.utils.ModifierExt.AnimationType
-import com.hifnawy.alquran.utils.ModifierExt.animateItemPosition
+import com.hifnawy.alquran.utils.ModifierEx.AnimationType
+import com.hifnawy.alquran.utils.ModifierEx.animateItemPosition
 import com.hifnawy.alquran.view.ShimmerAnimation
 import com.hifnawy.alquran.view.gridItems.ReciterCard
 import com.hifnawy.alquran.shared.R as Rs
@@ -64,12 +66,12 @@ fun RecitersGrid(
                     .fillMaxSize()
                     .padding(10.dp)
         ) {
-            var searchQuery by remember { mutableStateOf("") }
-            var expandedReciterId by remember { mutableStateOf((-1).asReciterId) }
-            var lastAnimatedIndex by remember { mutableIntStateOf(-1) }
+            var searchQuery by rememberSaveable { mutableStateOf("") }
+            var lastAnimatedIndex by rememberSaveable { mutableIntStateOf(-1) }
+            var expandedReciterCardId by rememberSaveable(stateSaver = Saver(save = { it.value }, restore = { ReciterId(it) })) { mutableStateOf((-1).asReciterId) }
 
             val listState = rememberLazyGridState()
-            val filteredReciters = remember(reciters, searchQuery) { filterReciters(reciters, searchQuery) }
+            val filteredReciters = rememberSaveable(reciters, searchQuery) { filterReciters(reciters, searchQuery) }
 
             TitleBar(isSkeleton = isSkeleton, brush = brush)
 
@@ -86,8 +88,8 @@ fun RecitersGrid(
 
             LazyVerticalGrid(
                     state = listState,
-                    columns = GridCells.Adaptive(minSize = 250.dp),
                     modifier = Modifier.fillMaxSize(),
+                    columns = GridCells.Adaptive(minSize = 250.dp),
                     contentPadding = PaddingValues(vertical = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -98,14 +100,14 @@ fun RecitersGrid(
                     GridItem(
                             isScrollingDown = isScrollingDown,
                             reciter = reciter,
-                            expandedReciterId = expandedReciterId,
+                            expandedReciterId = expandedReciterCardId,
                             searchQuery = searchQuery,
                             isSkeleton = isSkeleton,
                             isPlaying = isPlaying && playingReciterId == reciter?.id,
                             playingMoshafId = playingMoshafId,
                             brush = brush,
                             onToggleExpand = { reciterId ->
-                                expandedReciterId = when (expandedReciterId) {
+                                expandedReciterCardId = when (expandedReciterCardId) {
                                     reciterId -> (-1).asReciterId // Collapse it
                                     else      -> reciterId // Expand the new one
                                 }
@@ -146,7 +148,8 @@ private fun TitleBar(
     } else Text(
             text = stringResource(Rs.string.quran),
             fontSize = 50.sp,
-            fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2))
+            fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+            color = MaterialTheme.colorScheme.onSurface
     )
 }
 

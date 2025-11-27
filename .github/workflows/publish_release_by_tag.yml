@@ -9,13 +9,14 @@ on:
         required: true
         type: choice
         options:
+          - v0.0.7
           - v0.0.6
           - v0.0.5
           - v0.0.4
           - v0.0.3
           - v0.0.2
           - v0.0.1
-permissions: { }
+permissions: {}
 jobs:
   publish-release-by-tag:
     name: Publish Release By Tag
@@ -50,42 +51,33 @@ jobs:
           echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> local.properties
           echo "keyAlias=release_key" >> local.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
-
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
-
       - name: Setup Python
         run: uv python install
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: 21 
-
+          java-version: 21
       - name: Setup Xvfb Virtual Display
         run: sudo apt-get install -y libxext6 libxrender1 libxtst6 xvfb
-
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2.1.3
-
       - name: Build APK
         run: xvfb-run -a bash gradlew mobile:assembleRelease
-
       - name: Get APK Name
         run: |
           releaseApk=$(find mobile/build/outputs/apk/release/*.apk)
           echo $releaseApk
           echo ARTIFACT_NAME=$(basename $releaseApk) >> $GITHUB_ENV
           echo ARTIFACT_PATH=$releaseApk >> $GITHUB_ENV
-
       - name: Create Artifact ${{ env.ARTIFACT_NAME }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_PATH }}
           if-no-files-found: error
-
       - name: Publish Release ${{ github.ref_name }}
         uses: svenstaro/upload-release-action@v2
         with:
