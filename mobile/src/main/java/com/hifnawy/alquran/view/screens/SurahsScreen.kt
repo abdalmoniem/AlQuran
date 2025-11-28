@@ -1,8 +1,9 @@
 package com.hifnawy.alquran.view.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -33,8 +34,26 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * A Composable screen that displays a grid of Quran surahs for a given reciter and moshaf.
+ *
+ * This screen is responsible for fetching the list of available surahs for the selected reciter.
+ * It handles loading states, displaying a skeleton UI while fetching data, and showing an error
+ * screen if the data fails to load. It also integrates pull-to-refresh functionality to allow
+ * users to manually reload the surah list.
+ *
+ * When a user selects a surah from the grid, it triggers playback via the [mediaViewModel].
+ *
+ * @param reciter [Reciter] The [Reciter] for whom the surahs are being displayed.
+ * @param moshaf [Moshaf] The specific [Moshaf] (Quran narration type) to be used.
+ * @param mediaViewModel [MediaViewModel] The [MediaViewModel] used to manage media playback state and actions.
+ *
+ * @see [Reciter]
+ * @see [Moshaf]
+ * @see [MediaViewModel]
+ * @see [SurahsGrid]
+ */
 @Composable
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun SurahsScreen(
         reciter: Reciter,
         moshaf: Moshaf,
@@ -71,7 +90,10 @@ fun SurahsScreen(
     }
 
     PullToRefreshBox(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .displayCutoutPadding(),
             state = pullToRefreshState,
             indicator = { PullToRefreshIndicator(isLoading, pullToRefreshState) },
             contentAlignment = Alignment.Center,
@@ -90,6 +112,21 @@ fun SurahsScreen(
     }
 }
 
+/**
+ * A private composable function that determines which content to display based on the loading and error states.
+ *
+ * This function acts as a router for the main content area of the `SurahsScreen`.
+ * - If the data has finished loading, there is an error, and the surah list is empty, it displays a `DataErrorScreen`.
+ * - Otherwise, it displays the `SurahsGrid`, either in a loading (skeleton) state or with the actual surah data.
+ *
+ * @param isLoading [Boolean] A boolean indicating if the data is currently being fetched.
+ * @param dataError [DataError?][DataError] An optional [DataError] object representing an error that occurred during data fetching.
+ * @param reciter [Reciter] The current [Reciter].
+ * @param moshaf [Moshaf] The current [Moshaf].
+ * @param moshafServer [String] The server URL for the current moshaf.
+ * @param reciterSurahs [List< Surah >] [List] The [List] of [Surah]s available for the reciter and moshaf.
+ * @param mediaViewModel [MediaViewModel] The [MediaViewModel] to handle media playback actions.
+ */
 @Composable
 private fun Content(
         isLoading: Boolean,

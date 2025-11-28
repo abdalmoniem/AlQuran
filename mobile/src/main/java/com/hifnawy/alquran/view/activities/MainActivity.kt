@@ -10,7 +10,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.lifecycleScope
-import com.hifnawy.alquran.view.NavigationStack
+import com.hifnawy.alquran.view.NavGraph
 import com.hifnawy.alquran.view.theme.AppTheme
 import com.hifnawy.alquran.view.player.widgets.PlayerWidget
 import kotlinx.coroutines.launch
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             AppTheme {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    NavigationStack()
+                    NavGraph()
                 }
             }
         }

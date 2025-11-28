@@ -11,17 +11,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyGridItemScope
-import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -32,8 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -44,8 +36,10 @@ import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.ReciterId
 import com.hifnawy.alquran.shared.model.asReciterId
+import com.hifnawy.alquran.utils.LazyGridScopeEx.gridItems
 import com.hifnawy.alquran.utils.ModifierEx.AnimationType
 import com.hifnawy.alquran.utils.ModifierEx.animateItemPosition
+import com.hifnawy.alquran.view.SearchBar
 import com.hifnawy.alquran.view.ShimmerAnimation
 import com.hifnawy.alquran.view.gridItems.ReciterCard
 import com.hifnawy.alquran.shared.R as Rs
@@ -71,7 +65,11 @@ fun RecitersGrid(
             var expandedReciterCardId by rememberSaveable(stateSaver = Saver(save = { it.value }, restore = { ReciterId(it) })) { mutableStateOf((-1).asReciterId) }
 
             val listState = rememberRecitersGridState()
-            val filteredReciters = rememberSaveable(reciters, searchQuery) { filterReciters(reciters, searchQuery) }
+            val filteredReciters = rememberSaveable(reciters, searchQuery) {
+                reciters.filter { reciter ->
+                    reciter.name.contains(searchQuery)
+                }
+            }
 
             TitleBar(isSkeleton = isSkeleton, brush = brush)
 
@@ -81,7 +79,10 @@ fun RecitersGrid(
                     isSkeleton = isSkeleton,
                     brush = brush,
                     query = searchQuery,
-                    onQueryChange = { newQuery -> searchQuery = newQuery }
+                    placeholder = stringResource(R.string.search_reciters),
+                    label = stringResource(R.string.search_reciters),
+                    onQueryChange = { newQuery -> searchQuery = newQuery },
+                    onClearQuery = { searchQuery = "" }
             )
 
             Spacer(Modifier.height(10.dp))
@@ -94,7 +95,7 @@ fun RecitersGrid(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                gridItems(isSkeleton = isSkeleton, items = filteredReciters) { index, reciter ->
+                gridItems(isSkeleton = isSkeleton, mockCount = 300, items = filteredReciters) { index, reciter ->
                     val isScrollingDown = index > lastAnimatedIndex
 
                     GridItem(
@@ -162,44 +163,8 @@ private fun TitleBar(
 }
 
 @Composable
-private fun SearchBar(
-        isSkeleton: Boolean,
-        brush: Brush?,
-        query: String,
-        onQueryChange: (String) -> Unit = {}
-) {
-    if (isSkeleton) {
-        if (brush == null) return
-        Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(brush)
-        )
-    } else TextField(
-            value = query,
-            onValueChange = onQueryChange,
-            shape = RoundedCornerShape(20.dp),
-            colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-            ),
-            singleLine = true,
-            placeholder = { Text(stringResource(R.string.search_reciters)) },
-            label = { Text(stringResource(R.string.search_reciters)) },
-            modifier = Modifier.fillMaxWidth(),
-            trailingIcon = {
-                Icon(
-                        painter = painterResource(id = R.drawable.search_24px),
-                        contentDescription = "Search Icon"
-                )
-            }
-    )
-}
-
-@Composable
 private fun GridItem(
+        modifier: Modifier = Modifier,
         isScrollingDown: Boolean,
         reciter: Reciter?,
         expandedReciterId: ReciterId,
@@ -232,7 +197,7 @@ private fun GridItem(
     }
 
     ReciterCard(
-            modifier = Modifier.animateItemPosition(durationMs = 300, animationType = animationType),
+            modifier = modifier.animateItemPosition(durationMs = 300, animationType = animationType),
             reciter = reciter,
             isExpanded = isExpanded,
             searchQuery = searchQuery,
@@ -243,19 +208,4 @@ private fun GridItem(
             onToggleExpand = onToggleExpand,
             onMoshafClick = onMoshafClick
     )
-}
-
-private fun <T> LazyGridScope.gridItems(isSkeleton: Boolean, items: List<T>, content: @Composable LazyGridItemScope.(Int, T?) -> Unit) = when {
-    isSkeleton -> itemsIndexed(items = (1..300).toList(), key = { _, item -> item }) { index, _ -> content(index, null) }
-    else       -> itemsIndexed(items = items, key = { _, item -> item.hashCode() }) { index, item -> content(index, item) }
-}
-
-private fun filterReciters(reciters: List<Reciter>, query: String): List<Reciter> {
-    if (query.isBlank()) return reciters
-
-    val normalizedQuery = query.trim().lowercase()
-
-    return reciters.filter { reciter ->
-        reciter.name.lowercase().contains(normalizedQuery)
-    }
 }

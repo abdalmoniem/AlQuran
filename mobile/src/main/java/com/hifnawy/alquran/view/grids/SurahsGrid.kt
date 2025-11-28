@@ -12,17 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridItemInfo
-import androidx.compose.foundation.lazy.grid.LazyGridItemScope
-import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,10 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -47,8 +39,10 @@ import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.ReciterId
 import com.hifnawy.alquran.shared.model.Surah
+import com.hifnawy.alquran.utils.LazyGridScopeEx.gridItems
 import com.hifnawy.alquran.utils.ModifierEx.AnimationType
 import com.hifnawy.alquran.utils.ModifierEx.animateItemPosition
+import com.hifnawy.alquran.view.SearchBar
 import com.hifnawy.alquran.view.ShimmerAnimation
 import com.hifnawy.alquran.view.gridItems.SurahCard
 import com.hifnawy.alquran.shared.R as Rs
@@ -76,7 +70,11 @@ fun SurahsGrid(
             var lastAnimatedIndex by rememberSaveable { mutableIntStateOf(-1) }
 
             val listState = rememberSurahsGridState()
-            val filteredSurahs = rememberSaveable(reciterSurahs, searchQuery) { filterSurahs(reciterSurahs, searchQuery) }
+            val filteredSurahs = rememberSaveable(reciterSurahs, searchQuery) {
+                reciterSurahs.filter { surah ->
+                    surah.name.contains(searchQuery)
+                }
+            }
 
             ReciterName(
                     isSkeleton = isSkeleton,
@@ -90,7 +88,10 @@ fun SurahsGrid(
                     isSkeleton = isSkeleton,
                     brush = brush,
                     query = searchQuery,
-                    onQueryChange = { newQuery -> searchQuery = newQuery }
+                    placeholder = stringResource(R.string.search_surahs),
+                    label = stringResource(R.string.search_surahs),
+                    onQueryChange = { newQuery -> searchQuery = newQuery },
+                    onClearQuery = { searchQuery = "" }
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -103,7 +104,7 @@ fun SurahsGrid(
                     verticalArrangement = Arrangement.spacedBy(5.dp),
                     horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                gridItems(isSkeleton = isSkeleton, items = filteredSurahs) { index, surah ->
+                gridItems(isSkeleton = isSkeleton, mockCount = 114, items = filteredSurahs) { index, surah ->
                     val isScrollingDown = index > lastAnimatedIndex
                     val animationType = when {
                         isScrollingDown -> AnimationType.FallDown
@@ -233,62 +234,10 @@ private fun ReciterName(isSkeleton: Boolean, brush: Brush?, reciter: Reciter) {
 }
 
 @Composable
-private fun SearchBar(
-        isSkeleton: Boolean,
-        brush: Brush?,
-        query: String,
-        onQueryChange: (String) -> Unit = {}
-) {
-    if (isSkeleton) {
-        if (brush == null) return
-        Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(brush)
-        )
-    } else TextField(
-            value = query,
-            onValueChange = onQueryChange,
-            shape = RoundedCornerShape(20.dp),
-            colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-            ),
-            singleLine = true,
-            placeholder = { Text(stringResource(R.string.search_surahs)) },
-            label = { Text(stringResource(R.string.search_surahs)) },
-            modifier = Modifier.fillMaxWidth(),
-            trailingIcon = {
-                Icon(
-                        painter = painterResource(id = R.drawable.search_24px),
-                        contentDescription = "Search Icon"
-                )
-            }
-    )
-}
-
-@Composable
 private fun SurahsGridContainer(
         isSkeleton: Boolean,
         content: @Composable (brush: Brush?) -> Unit
 ) = when {
     isSkeleton -> ShimmerAnimation { brush -> content(brush) }
     else       -> content(null)
-}
-
-private fun <T> LazyGridScope.gridItems(isSkeleton: Boolean, items: List<T>, content: @Composable LazyGridItemScope.(Int, T?) -> Unit) = when {
-    isSkeleton -> itemsIndexed(items = (1..114).toList(), key = { _, item -> item }) { index, _ -> content(index, null) }
-    else       -> itemsIndexed(items = items, key = { _, item -> item.hashCode() }) { index, item -> content(index, item) }
-}
-
-private fun filterSurahs(surahs: List<Surah>, query: String): List<Surah> {
-    if (query.isBlank()) return surahs
-
-    val normalizedQuery = query.trim().lowercase()
-
-    return surahs.filter { reciter ->
-        reciter.name.lowercase().contains(normalizedQuery)
-    }
 }

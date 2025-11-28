@@ -3,23 +3,25 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
+        tools:targetApi="33"
         android:allowBackup="true"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:label="@string/app_name"
-        android:icon="@mipmap/ic_launcher"
         android:name=".MobileApplication"
+        android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
-        android:fullBackupContent="@xml/backup_rules"
         android:enableOnBackInvokedCallback="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        tools:targetApi="33">
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
 
         <activity
             android:exported="true"
             android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize"
             android:enableOnBackInvokedCallback="true"
-            android:name=".view.activities.MainActivity">
+            android:name=".view.activities.MainActivity"
+            android:configChanges="locale|layoutDirection|screenSize|orientation|keyboardHidden">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,8 +30,8 @@
         </activity>
 
         <receiver
-            android:name=".view.player.widgets.PlayerWidgetReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:name=".view.player.widgets.PlayerWidgetReceiver">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

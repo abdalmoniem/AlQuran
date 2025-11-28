@@ -5,11 +5,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -20,22 +21,60 @@ import androidx.navigation.navArgument
 import com.google.gson.Gson
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
+import com.hifnawy.alquran.utils.DeviceConfiguration
+import com.hifnawy.alquran.utils.DeviceConfiguration.Companion.deviceConfiguration
+import com.hifnawy.alquran.utils.ModifierEx.onTouch
 import com.hifnawy.alquran.view.player.PlayerContainer
 import com.hifnawy.alquran.view.screens.RecitersScreen
 import com.hifnawy.alquran.view.screens.Screen
 import com.hifnawy.alquran.view.screens.SurahsScreen
 import com.hifnawy.alquran.viewModel.MediaViewModel
 
+/**
+ * A composable that sets up the main navigation structure of the application using Jetpack Navigation.
+ *
+ * This function defines the navigation graph, including the different screens (routes) and the
+ * transitions between them. It also initializes and provides the [MediaViewModel] to the screens
+t* hat need it.
+ *
+ * The main components managed by this [NavHost] are:
+ * - [RecitersScreen]: The start destination, displaying a list of Quran reciters.
+ * - [SurahsScreen]: Displays the list of Surahs for a selected reciter and moshaf. Navigation to
+ *   this screen requires passing `reciter` and `moshaf` objects as JSON strings.
+ *
+ * It wraps the [NavHost] in a [Box] that handles clearing focus when tapping outside of an
+ * input field and applies appropriate padding based on the device configuration.
+ *
+ * This composable also integrates the [PlayerContainer], which displays the media player controls.
+ * The player's state and interactions are managed via the [MediaViewModel].
+ *
+ * @see NavHost
+ * @see Screen
+ * @see RecitersScreen
+ * @see SurahsScreen
+ * @see PlayerContainer
+ * @see MediaViewModel
+ */
 @Composable
-fun NavigationStack() {
+fun NavGraph() {
     val navController = rememberNavController()
     val mediaViewModel = viewModel<MediaViewModel>()
+    val windowSize = currentWindowAdaptiveInfo().windowSizeClass
+    val deviceConfiguration = windowSize.deviceConfiguration
+
+    val boxModifier = when (deviceConfiguration) {
+        DeviceConfiguration.COMPACT,
+        DeviceConfiguration.PHONE_LANDSCAPE -> Modifier
+
+        else                                -> Modifier.imePadding()
+    }
+
+    focusManager = LocalFocusManager.current
 
     Box(
-            modifier = Modifier
+            modifier = boxModifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .displayCutoutPadding()
+                .onTouch { focusManager?.clearFocus() }
     ) {
         val animationDuration = 300
         val fadeAnimationSpec = tween<Float>(animationDuration)

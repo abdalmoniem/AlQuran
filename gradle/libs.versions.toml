@@ -7,7 +7,6 @@ okhttp = "5.3.2"
 kotlin = "2.2.21"
 hokoBlur = "1.5.5"
 coreKtx = "1.17.0"
-kotlinDsl = "6.4.2"
 appcompat = "1.7.1"
 material = "1.13.0"
 activity = "1.12.0"
@@ -79,7 +78,6 @@ pre-build = { id = "com.hifnawy.pre.build" }
 android-lint = { id = "com.android.lint", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-dsl = { id = "org.gradle.kotlin.kotlin-dsl", version.ref = "kotlinDsl" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

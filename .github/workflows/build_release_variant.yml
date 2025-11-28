@@ -41,7 +41,7 @@ jobs:
           distribution: 'adopt'
           java-version: 21 
 
-      - name: Setup Xvfb Virtual Display
+      - name: Setup X Virtual Framebuffer
         run: sudo apt-get install -y libxext6 libxrender1 libxtst6 xvfb
 
       - name: Validate Gradle Wrapper

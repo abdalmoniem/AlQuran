@@ -157,8 +157,6 @@ android {
             this as BaseVariantOutputImpl
             val baseName = "${applicationId}_${variant.buildType.name}_v${android.defaultConfig.versionName}"
 
-            setProperty("archivesBaseName", baseName)
-
             outputFileName = "$baseName.apk"
         }
     }

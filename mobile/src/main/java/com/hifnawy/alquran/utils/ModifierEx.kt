@@ -14,10 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import com.hifnawy.alquran.utils.FlowEx.throttleFirst
 import com.hifnawy.alquran.utils.ModifierEx.AnimationType.FallDown
 import com.hifnawy.alquran.utils.ModifierEx.AnimationType.None
 import com.hifnawy.alquran.utils.ModifierEx.AnimationType.RiseUp
+import com.hifnawy.alquran.utils.ModifierEx.onTouch
 import com.hifnawy.alquran.utils.ModifierEx.verticalDraggable
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
@@ -60,12 +64,32 @@ object ModifierEx {
     }
 
     /**
+     * A [Modifier] that captures all raw pointer input events in the initial pass.
+     *
+     * This is useful for observing touch events like down, up, and move actions
+     * before they are consumed by other modifiers or composables, such as `clickable` or `draggable`.
+     * The provided [onTouch] lambda will be invoked for every [PointerEvent] that occurs within
+     * the bounds of the composable this modifier is applied to.
+     *
+     * @param onTouch [(event: PointerEvent) -> Unit][onTouch] A lambda that will be called with the [PointerEvent] for each pointer event.
+     * @return [Modifier] A [Modifier] that listens for pointer input.
+     */
+    fun Modifier.onTouch(onTouch: (event: PointerEvent) -> Unit) = pointerInput(Unit) {
+        awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                onTouch(event)
+            }
+        }
+    }
+
+    /**
      * Animate list item position, scale and alpha
      *
      * @param durationMs Duration of the animation in milliseconds
      * @param animationType Type of animation to perform
      */
-    fun Modifier.animateItemPosition(durationMs: Int = 300, animationType: AnimationType = FallDown): Modifier = composed {
+    fun Modifier.animateItemPosition(durationMs: Int = 300, animationType: AnimationType = FallDown) = composed {
         val alpha = remember { Animatable(0f) }
         val scale = remember { Animatable(1.5f) }
         val translation = remember { Animatable(animationType.value) }
@@ -136,7 +160,7 @@ object ModifierEx {
             onSnapped: (shouldExpand: Boolean) -> Unit,
             onHeight: (isExpanded: Boolean) -> Unit,
             onDragDirectionChanged: (isDraggingUp: Boolean, isDraggingDown: Boolean) -> Unit
-    ): Modifier {
+    ) = run {
         data class DragDirection(val isDraggingUp: Boolean, val isDraggingDown: Boolean)
 
         val dragDebounce = 300.milliseconds
@@ -150,7 +174,7 @@ object ModifierEx {
                 .collect()
         }
 
-        return draggable(
+        draggable(
                 orientation = Orientation.Vertical,
                 state = rememberDraggableState { delta ->
                     val oldHeight = heightPx.value
