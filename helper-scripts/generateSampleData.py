@@ -22,7 +22,11 @@ from dataclasses import dataclass, fields, is_dataclass
 from typing import TypeVar
 
 import requests
+from requests import Response
+from requests.adapters import HTTPAdapter
+from requests.exceptions import RequestException
 from typing_extensions import Annotated, get_args, get_origin
+from urllib3.util.retry import Retry
 
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
@@ -261,10 +265,10 @@ def toDataClass(data: dict, cls: type[T]) -> T:
         # List of dataclasses
         elif (
             hasattr(fieldType, "__origin__")
-            and fieldType.__origin__ is list
-            and is_dataclass(fieldType.__args__[0])
+            and get_origin(fieldType) is list
+            and is_dataclass(get_args(fieldType)[0])
         ):
-            inner = fieldType.__args__[0]
+            inner = get_args(fieldType)[0]
             initKwargs[fieldName] = [toDataClass(item, inner) for item in fieldValue]
 
         else:
@@ -273,32 +277,71 @@ def toDataClass(data: dict, cls: type[T]) -> T:
     return cls(**initKwargs)
 
 
-def getReciters() -> list[Reciter]:
+def sendRequest(url: str) -> Response | None:
+    """
+    Sends a GET request to the specified URL.
+
+    With a retry strategy defined as follows:
+        1. request timeout is 3s
+        2. retry count is 3 times spaced by an
+           exponential delay as 250ms, 500ms, 1s
+
+    so the max delay of this function if there's
+    a connection error is:
+    3s + 250ms + 3s + 500ms + 3s + 1s = 10s 750ms
+
+    :param url: (str) The URL to send the request to.
+    :return: (Response) The response from the server.
+    """
+
+    """
+    delay between retries is calculated as:
+    backoff factor * (2 ^ number of previous retries)
+    so 250ms, 500ms, 1s
+    """
+    retryStrategy = Retry(total=3, backoff_factor=0.125)
+    adapter = HTTPAdapter(max_retries=retryStrategy)
+    session = requests.session()
+    session.mount(prefix="http://", adapter=adapter)
+    session.mount(prefix="https://", adapter=adapter)
+
+    try:
+        response = session.get(url=url, timeout=3) # timeout in seconds
+    except RequestException as ex:
+        print(f"ERROR: {ex}", file=sys.stderr)
+        return None
+
+    return response
+
+
+def getReciters() -> list[Reciter] | None:
     """
     Fetches reciters data from mp3quran.net API.
 
     :return: (list[Reciter]) A list of Reciter objects.
     """
-    url = "https://mp3quran.net/api/v3/reciters?language=ar"
-    response = requests.get(url)
-    data = response.json()["reciters"]
+    response = sendRequest(url="https://mp3quran.net/api/v3/reciters?language=ar")
 
-    return [toDataClass(item, Reciter) for item in data]
+    if response is None:
+        return None
+    else:
+        data = response.json()["reciters"]
+        return [toDataClass(item, Reciter) for item in data]
 
 
-def getSurahs() -> list[Surah]:
+def getSurahs() -> list[Surah] | None:
     """
     Fetches surahs data from mp3quran.net API.
 
     :return: (list[Surah]) A list of Surah objects.
     """
-    url = "https://mp3quran.net/api/v3/suwar?language=ar"
-    response = requests.get(url)
-    responseJson = response.json()
+    response = sendRequest(url="https://mp3quran.net/api/v3/suwar?language=ar")
 
-    data = responseJson["suwar"]
-
-    return [toDataClass(item, Surah) for item in data]
+    if response is None:
+        return None
+    else:
+        data = response.json()["suwar"]
+        return [toDataClass(item, Surah) for item in data]
 
 
 def main() -> None:
@@ -320,11 +363,20 @@ def main() -> None:
 
     print("[*] Fetching reciters...")
     reciters = getReciters()
-    print("[✓] Reciters data fetched successfully.")
+
+    if reciters:
+        print("[✓] Reciters data fetched successfully.")
+    else:
+        print("[✗] Reciters data fetching failed.", file=sys.stderr)
+        exit(1)
 
     print("[*] Fetching surahs...")
     surahs = getSurahs()
-    print("[✓] Surahs data fetched successfully.")
+    if surahs:
+        print("[✓] Surahs data fetched successfully.")
+    else:
+        print("[✗] Surahs data fetching failed.", file=sys.stderr)
+        exit(2)
 
     print("[✓] Data fetched successfully.")
 

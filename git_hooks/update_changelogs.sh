@@ -1,10 +1,39 @@
 #!/bin/bash
 
+#########################################################################################################
+# This script generates changelogs based on the commits between tags.                                   #
+# It supports 3 flags:                                                                                  #
+# --tag <tag>: Specifies the tag to generate the changelog from. If not specified, the script generates #
+#              the changelog from the latest tag.                                                       #
+# --reference_tag <tag>: Specifies the tag to compare the commits with. If not specified, the script    #
+#                        compares the commits with the latest tag.                                      #
+# --write_changes: Writes the changelog to a file in the fastlane/metadata/android/en-US/changelogs     #
+#                  folder. The file name is the versionCode.txt.                                        #
+# --commit_changes: Commits the changelog file to the git repository.                                   #
+#                                                                                                       #
+# The versionCode is extracted from the build.gradle.kts file. If the versionCode does not exist in the #
+# build.gradle.kts file, the script uses the latest versionCode found in the changelogs folder.         #
+#                                                                                                       #
+# The changelog file has the following format:                                                          #
+#                                                                                                       #
+# - ### <subject1>                                                                                      #
+#   > <commit hash1>                                                                                    #
+#   > <commit body1>                                                                                    #
+# - ### <subject2>                                                                                      #
+#   > <commit hash2>                                                                                    #
+#   > <commit body2>                                                                                    #
+#   > ...                                                                                               #
+#                                                                                                       #
+# **Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/<referenceTag>...<tag>             #
+#                                                                                                       #
+# The script must be run from the root of the git repository.                                           #
+#########################################################################################################
+
 gitTopLevel="$(git rev-parse --show-toplevel)"
 versionCodeFilter="\(versionCode\s\+=\s\+\)\([[:digit:]]\+\)"
 tag="HEAD"
 # Initialize referenceTag to the latest tag (might be empty if no tags exist)
-referenceTag=$(git describe --tags $(git rev-list --tags --max-count=1) 2> /dev/null)
+referenceTag=$(git describe --tags "$(git rev-list --tags --max-count=1)" 2> /dev/null)
 changelogsPath="$gitTopLevel/fastlane/metadata/android/en-US/changelogs"
 changelogs=0
 subjects=()
@@ -94,8 +123,8 @@ fi
 
 tagVersionCode=$(git show "$tag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
 
-echo "Reference Tag: $referenceTag, referenceVersionCode: $referenceVersionCode"
 echo "Tag: $tag, tagVersionCode: $tagVersionCode"
+echo "Reference Tag: $referenceTag, referenceVersionCode: $referenceVersionCode"
 echo "processing $commitHashCount commits..."
 
 if [ ! -d "$changelogsPath" ]; then
@@ -109,11 +138,12 @@ if [[ $commitHashCount -gt 0 && -f "$changelogsPath/$tagVersionCode.txt" && "$is
 fi
 
 echo "Generating Changelog between $tag and $referenceTag..."
+echo
 isFirstCommit=true
 for commitHash in $commitHashesBetweenTags; do
   subject=$(git log --format=%s -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
   # body=$(git log --format=%b -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
-  body=$(git log --format=%b -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//')
+  body=$(git log --format=%b -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//')
 
   subjects+=("$subject")
   bodies+=("$body")
@@ -123,25 +153,27 @@ for commitHash in $commitHashesBetweenTags; do
     echo "saving to '$changelogsPath/$tagVersionCode.txt'..."
   fi
 
+  echo "- ### $subject"
+  if [ "$isWriteChanges" == true ]; then
+    echo "- ### $subject" >> "$changelogsPath/$tagVersionCode.txt"
+  fi
+
   if [ "$isFirstCommit" == true ]; then
     isFirstCommit=false
   else
-    echo "Commit: $commitHash"
+    echo "   > Commit: $commitHash"
+    echo "   > "
     if [ "$isWriteChanges" == true ]; then
-      echo "Commit: $commitHash" >> "$changelogsPath/$tagVersionCode.txt"
+      echo "   > Commit: $commitHash" >> "$changelogsPath/$tagVersionCode.txt"
+      echo "   > " >> "$changelogsPath/$tagVersionCode.txt"
     fi
-  fi
-
-  echo "* $subject"
-  if [ "$isWriteChanges" == true ]; then
-    echo "* $subject" >> "$changelogsPath/$tagVersionCode.txt"
   fi
 
   readarray -t lines <<< "$body"
   lineCount=${#lines[@]}
   for line in "${lines[@]}"; do
     if [[ -n "$line" ]]; then
-      if [ $lineCount -gt 1 ]; then
+      if [ "$lineCount" -gt 1 ]; then
         echo "   > $line"
         if [ "$isWriteChanges" == true ]; then
           echo "   > $line" >> "$changelogsPath/$tagVersionCode.txt"
@@ -153,7 +185,7 @@ for commitHash in $commitHashesBetweenTags; do
         fi
       fi
     else
-      if [ $lineCount -eq 1 ]; then
+      if [ "$lineCount" -eq 1 ]; then
         echo "   >"
         if [ "$isWriteChanges" == true ]; then
           echo "   >" >> "$changelogsPath/$tagVersionCode.txt"
@@ -167,21 +199,21 @@ for commitHash in $commitHashesBetweenTags; do
   fi
 done
 
-if [ $changelogs -gt 0 ]; then
+if [ "$changelogs" -gt 0 ]; then
+  fullChangelog="**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/$referenceTag...$tag"
+
+  echo
+  echo "$fullChangelog"
   if [ "$isWriteChanges" == true ]; then
-    echo "$changelogs changelog(s) saved to '$changelogsPath/$tagVersionCode.txt'!"
     echo >> "$changelogsPath/$tagVersionCode.txt"
-  else
-    echo "$changelogs changelog(s) found"
+    echo "$fullChangelog" >> "$changelogsPath/$tagVersionCode.txt"
   fi
 
   echo
-
-  echo "**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/$referenceTag...$tag"
-
   if [ "$isWriteChanges" == true ]; then
-    echo "**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/$referenceTag...$tag" \
-    >> "$changelogsPath/$tagVersionCode.txt"
+    echo "$changelogs changelog(s) saved to '$changelogsPath/$tagVersionCode.txt'!"
+  else
+    echo "$changelogs changelog(s) found!"
   fi
 
   if [ "$isCommitChanges" == true ]; then
@@ -218,8 +250,6 @@ if [ $changelogs -gt 0 ]; then
     git tag "$tag"
     echo "tag $tag added!"
   fi
-
 else
-
   echo "No / $changelogs change log(s) found between $referenceTag and $tag"
 fi

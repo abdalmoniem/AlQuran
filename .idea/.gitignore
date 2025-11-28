@@ -27,6 +27,7 @@
 /kotlinc.xml
 /compiler.xml
 /httpRequests
+/statistic.xml
 /migrations.xml
 /deviceManager.xml
 /jarRepositories.xml

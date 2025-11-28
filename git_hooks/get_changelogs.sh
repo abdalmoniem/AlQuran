@@ -1,8 +1,47 @@
 #!/bin/bash
 
+#########################################################################################################
+# This script generates changelogs for each release tag in the repository.                              #
+#                                                                                                       #
+# The script generates changelogs by comparing the commits between each tag.                            #
+# It starts from the latest tag and goes back to the previous tag. The                                  #
+# script extracts the versionCode from the build.gradle.kts file at the                                 #
+# tag commit. It then generates a changelog for the commits between the                                 #
+# tag and the previous tag.                                                                             #
+#                                                                                                       #
+# The generated changelog consists of a list of subjects of the commits                                 #
+# between the tag and the previous tag.                                                                 #
+#                                                                                                       #
+# It supports 3 flags:                                                                                  #
+#   --write_changes        : Write the changes to a changelog file. The                                 #
+#                            changelog file name is the <versionCode>.txt                               #
+#   --commit_changes       : Commit the changes to the repository.                                      #
+#                                                                                                       #
+# The script generates the changelogs in the following directory:                                       #
+# <gitTopLevel>/fastlane/metadata/android/en-US/changelogs                                              #
+#                                                                                                       #
+# The changelog files has the following format:                                                         #
+#                                                                                                       #
+# - ### <subject1>                                                                                      #
+#   > <commit hash1>                                                                                    #
+#   > <commit body1>                                                                                    #
+# - ### <subject2>                                                                                      #
+#   > <commit hash2>                                                                                    #
+#   > <commit body2>                                                                                    #
+#   > ...                                                                                               #
+#                                                                                                       #
+# **Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/<referenceTag>...<tag>             #
+#                                                                                                       #
+# The changelogs are generated as follows:                                                              #
+# - in reverse order, starting from the latest tag.                                                     #
+# - for all tags in the repository, including the initial tag.                                          #
+# - even if the tag is the first commit in the repository.                                              #
+#########################################################################################################
+
 gitTopLevel="$(git rev-parse --show-toplevel)"
 versionCodeFilter="\(versionCode\s\+=\s\+\)\([[:digit:]]\+\)"
 changelogsPath="$gitTopLevel/fastlane/metadata/android/en-US/changelogs"
+# shellcheck disable=SC2207
 tags=($(git tag))
 changelogs=0
 
@@ -47,6 +86,7 @@ if [[ "$isWriteChanges" == true ]]; then
   fi
 fi
 
+totalChangeLogs=0
 for index in $(seq $((${#tags[@]} - 1))   -1 0); do
   tag="${tags[$index]}"
 
@@ -54,12 +94,11 @@ for index in $(seq $((${#tags[@]} - 1))   -1 0); do
   if ((index > 0)); then
     previousTag="${tags[$((index - 1))]}"
   else
-    previousTag=$(git rev-parse --short $(git rev-list --max-parents=0 HEAD))
+    previousTag=$(git rev-parse --short "$(git rev-list --max-parents=0 HEAD)")
   fi
 
   echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   versionCode=$(git show "$tag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
-  commitMessage="$(git show "$tag" -s --format='%s%n%n%b' | sed -e 's/Change-Id:\s*\w\+//' | sed -e 's/Signed-off-by:\s*.*//')"
 
   commitHashesBetweenTags=$(git log "$previousTag".."$tag" --pretty=format:"%h")
   commitHashCount=$(echo "$commitHashesBetweenTags" | wc -l)
@@ -71,33 +110,37 @@ for index in $(seq $((${#tags[@]} - 1))   -1 0); do
 
   echo "Generating Changelog between $tag and $previousTag..."
   echo "processing $commitHashCount commits..."
+  echo
   for commitHash in $commitHashesBetweenTags; do
-    subject=$(git log --format=%s -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
-    # body=$(git log --format=%b -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
-    body=$(git log --format=%b -n 1 $commitHash | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//')
+    subject=$(git log --format=%s -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
+    # body=$(git log --format=%b -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//' | sed -e 's/^[^a-zA-Z0-9]*//')
+    body=$(git log --format=%b -n 1 "$commitHash" | sed -e 's/Change-Id:\s*.*//' | sed -e 's/Signed-off-by:\s*.*//')
 
     subjects+=("$subject")
     bodies+=("$body")
+    changelogs=${#subjects[@]}
 
     if [[ $changelogs -eq 1 && "$isWriteChanges" == true ]]; then
       echo "saving to '$changelogsPath/$versionCode.txt'..."
     fi
 
-    echo "Commit: $commitHash"
+    echo "- ### $subject"
     if [ "$isWriteChanges" == true ]; then
-      echo "Commit: $commitHash" >> "$changelogsPath/$versionCode.txt"
+      echo "- ### $subject" >> "$changelogsPath/$versionCode.txt"
     fi
 
-    echo "* $subject"
+    echo "   > Commit: $commitHash"
+    echo "   > "
     if [ "$isWriteChanges" == true ]; then
-      echo "* $subject" >> "$changelogsPath/$versionCode.txt"
+      echo "   > Commit: $commitHash" >> "$changelogsPath/$versionCode.txt"
+      echo "   > " >> "$changelogsPath/$versionCode.txt"
     fi
 
     readarray -t lines <<< "$body"
     lineCount=${#lines[@]}
     for line in "${lines[@]}"; do
       if [[ -n "$line" ]]; then
-        if [ $lineCount -gt 1 ]; then
+        if [ "$lineCount" -gt 1 ]; then
           echo "   > $line"
           if [ "$isWriteChanges" == true ]; then
             echo "   > $line" >> "$changelogsPath/$versionCode.txt"
@@ -109,57 +152,73 @@ for index in $(seq $((${#tags[@]} - 1))   -1 0); do
           fi
         fi
       else
-        if [ $lineCount -eq 1 ]; then
+        if [ "$lineCount" -eq 1 ]; then
           echo "   >"
           if [ "$isWriteChanges" == true ]; then
             echo "   >" >> "$changelogsPath/$versionCode.txt"
           fi
         fi
       fi
-
-      ((changelogs += 1))
     done
-
     echo "------------------------------"
     if [ "$isWriteChanges" == true ]; then
       echo "------------------------------" >> "$changelogsPath/$versionCode.txt"
     fi
   done
 
-  if [[ -n "$previousTag" ]]; then
-    fullChangelog="**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/$previousTag...$tag"
-  else
-    fullChangelog="**Full Changelog**: https://github.com/abdalmoniem/AlQuran/commits/$tag"
+  if [ "$changelogs" -gt 0 ]; then
+    ((totalChangeLogs++))
+
+    if [[ -n "$previousTag" ]]; then
+      fullChangelog="**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/$previousTag...$tag"
+    else
+      fullChangelog="**Full Changelog**: https://github.com/abdalmoniem/AlQuran/commits/$tag"
+    fi
+
+    echo
+    echo "$fullChangelog"
+    if [ "$isWriteChanges" == true ]; then
+      echo >> "$changelogsPath/$versionCode.txt"
+      echo "$fullChangelog" >> "$changelogsPath/$versionCode.txt"
+    fi
+
+    echo
+    if [ "$isWriteChanges" == true ]; then
+      echo "$changelogs changelog(s) saved to '$changelogsPath/$versionCode.txt'!"
+    else
+      echo "$changelogs changelog(s) found!"
+    fi
   fi
 
-  echo
-  echo "$fullChangelog"
-  if [ "$isWriteChanges" == true ]; then
-    echo >> "$changelogsPath/$versionCode.txt"
-    echo "$fullChangelog" >> "$changelogsPath/$versionCode.txt"
-  fi
+  subjects=()
+  bodies=()
 done
 
-if [[ $changelogs -gt 0 && "$isCommitChanges" == true ]]; then
-  echo "$changelogs changelog(s) saved!"
-  currentCommitHash=$(git rev-parse HEAD)
-  isCurrentCommitOnRemote=$(git branch -r --contains "$currentCommitHash")
+if [ $totalChangeLogs -gt 0 ]; then
+  if [ "$isWriteChanges" == true ]; then
+      echo "$totalChangeLogs total changelog(s) saved!"
+    else
+      echo "$totalChangeLogs total changelog(s) found!"
+    fi
 
-  echo
+  if [ "$isCommitChanges" == true ]; then
+    currentCommitHash=$(git rev-parse HEAD)
+    isCurrentCommitOnRemote=$(git branch -r --contains "$currentCommitHash")
 
-  if [ -n "$isCurrentCommitOnRemote" ]; then
-    newVersionName="${newTag#v}"
-
-    echo "commit '$currentCommitHash' is on the remote branch, creating a new change log commit..."
     echo
 
-    git add "$changelogsPath"
-    git commit -sm "updated $changelogs change logs(s)"
-  else
-    echo "commit '$currentCommitHash' is not on the remote branch, amending..."
-    echo
+    if [ -n "$isCurrentCommitOnRemote" ]; then
+      echo "commit '$currentCommitHash' is on the remote branch, creating a new change log commit..."
+      echo
 
-    git add "$changelogsPath"
-    git commit --amend --no-edit
+      git add "$changelogsPath"
+      git commit -sm "updated $changelogs change logs(s)"
+    else
+      echo "commit '$currentCommitHash' is not on the remote branch, amending..."
+      echo
+
+      git add "$changelogsPath"
+      git commit --amend --no-edit
+    fi
   fi
 fi
