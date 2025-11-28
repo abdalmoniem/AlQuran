@@ -326,7 +326,7 @@ private fun PlayerContentPortrait(
                 }
 
                 if (hasEnoughSpace || state.isMinimizing || state.isExpanding) return@BoxWithConstraints
-                MiniPlayerControls(
+                OverlayPlayerControls(
                         state = state,
                         areControlsVisible = areControlsVisible,
                         onSkipToNextSurah = onSkipToNextSurah,
@@ -439,7 +439,7 @@ private fun PlayerContentCompact(
                 alignment = Alignment.Center
         )
 
-        MiniPlayerControls(
+        OverlayPlayerControls(
                 state = state,
                 areControlsVisible = areControlsVisible,
                 onSkipToNextSurah = onSkipToNextSurah,
@@ -498,7 +498,7 @@ private fun MiniPlayerControlsContainer(
 }
 
 @Composable
-private fun BoxScope.MiniPlayerControls(
+private fun BoxScope.OverlayPlayerControls(
         state: PlayerState,
         areControlsVisible: Boolean,
         onSkipToNextSurah: () -> Unit,
@@ -531,6 +531,7 @@ private fun BoxScope.MiniPlayerControls(
                         .fillMaxWidth()
                         .padding(horizontal = 5.dp, vertical = 10.dp),
                     state = state,
+                    isOverlay = true,
                     onSkipToNextSurah = onSkipToNextSurah,
                     onTogglePlayback = onTogglePlayback,
                     onSkipToPreviousSurah = onSkipToPreviousSurah
@@ -1060,6 +1061,7 @@ private fun BufferingIndicator(
 private fun PlayerControls(
         modifier: Modifier = Modifier,
         state: PlayerState,
+        isOverlay: Boolean = false,
         onSkipToPreviousSurah: () -> Unit = {},
         onTogglePlayback: () -> Unit = {},
         onSkipToNextSurah: () -> Unit = {}
@@ -1069,8 +1071,12 @@ private fun PlayerControls(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.Top
     ) {
+        val buttonModifier = when {
+            isOverlay -> Modifier.weight(1f)
+            else      -> Modifier
+        }
         IconButton(
-                modifier = Modifier.size(64.dp),
+                modifier = buttonModifier.size(64.dp),
                 onClick = onSkipToPreviousSurah
         ) {
             Icon(
@@ -1082,8 +1088,8 @@ private fun PlayerControls(
         }
 
         Card(
+                modifier = buttonModifier.size(64.dp),
                 onClick = onTogglePlayback,
-                modifier = Modifier.size(64.dp),
                 shape = RoundedCornerShape(25.dp),
                 elevation = CardDefaults.cardElevation(20.dp),
                 colors = CardDefaults.cardColors(
@@ -1100,7 +1106,7 @@ private fun PlayerControls(
         }
 
         IconButton(
-                modifier = Modifier.size(64.dp),
+                modifier = buttonModifier.size(64.dp),
                 onClick = onSkipToNextSurah
         ) {
             Icon(

@@ -33,8 +33,8 @@ fun AnimatedAudioBars(
         barCount: Int = 7,
         barWidth: Dp = 3.dp,
         barSpacing: Dp = 2.dp,
-        color: Color = MaterialTheme.colorScheme.onSurface,
-        durationRangeMs: IntRange = 100..300
+        color: Color = MaterialTheme.colorScheme.tertiary,
+        durationRangeMs: IntRange = 100..150
 ) {
     val barMaxHeight = height - 5.dp
     val barMinHeight = 5.dp
@@ -78,10 +78,7 @@ private fun RandomHeightBar(
             val next = Random.nextFloat()
             anim.animateTo(
                     targetValue = next,
-                    animationSpec = tween(
-                            durationMillis = Random.nextInt(durationRangeMs.first, durationRangeMs.last),
-                            easing = LinearEasing
-                    )
+                    animationSpec = tween(durationMillis = Random.nextInt(durationRangeMs.first, durationRangeMs.last), easing = LinearEasing)
             )
         }
     }

@@ -9,6 +9,7 @@ on:
         required: true
         type: choice
         options:
+          - v0.0.7.2
           - v0.0.7.1
           - v0.0.7
           - v0.0.6

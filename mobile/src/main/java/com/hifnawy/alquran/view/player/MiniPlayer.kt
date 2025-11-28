@@ -157,7 +157,7 @@ private fun MiniPlayerContent(
                 enter = slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }) + fadeIn(animationSpec = fadeAnimationSpec),
                 exit = slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it }) + fadeOut(animationSpec = fadeAnimationSpec),
         ) {
-            MiniPlayerControls(state = state, onTogglePlayback = onTogglePlayback, onCloseMiniPlayer = onCloseMiniPlayer)
+            OverlayPlayerControls(state = state, onTogglePlayback = onTogglePlayback, onCloseMiniPlayer = onCloseMiniPlayer)
         }
     }
 }
@@ -213,7 +213,7 @@ private fun MiniPlayerSurahInfo(
 }
 
 @Composable
-private fun MiniPlayerControls(
+private fun OverlayPlayerControls(
         state: PlayerState,
         onTogglePlayback: () -> Unit,
         onCloseMiniPlayer: () -> Unit

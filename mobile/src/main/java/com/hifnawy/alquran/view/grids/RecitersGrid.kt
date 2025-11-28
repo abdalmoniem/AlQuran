@@ -13,9 +13,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -70,7 +70,7 @@ fun RecitersGrid(
             var lastAnimatedIndex by rememberSaveable { mutableIntStateOf(-1) }
             var expandedReciterCardId by rememberSaveable(stateSaver = Saver(save = { it.value }, restore = { ReciterId(it) })) { mutableStateOf((-1).asReciterId) }
 
-            val listState = rememberLazyGridState()
+            val listState = rememberRecitersGridState()
             val filteredReciters = rememberSaveable(reciters, searchQuery) { filterReciters(reciters, searchQuery) }
 
             TitleBar(isSkeleton = isSkeleton, brush = brush)
@@ -120,6 +120,14 @@ fun RecitersGrid(
             }
         }
     }
+}
+
+@Composable
+private fun rememberRecitersGridState(
+        firstVisibleItemIndex: Int = 0,
+        firstVisibleItemScrollOffset: Int = 0
+) = rememberSaveable(saver = LazyGridState.Saver) {
+    LazyGridState(firstVisibleItemIndex = firstVisibleItemIndex, firstVisibleItemScrollOffset = firstVisibleItemScrollOffset)
 }
 
 @Composable
@@ -203,32 +211,37 @@ private fun GridItem(
         onToggleExpand: (ReciterId) -> Unit = { },
         onMoshafClick: (Reciter, Moshaf) -> Unit
 ) {
+    val animationType = when {
+        isScrollingDown -> AnimationType.FallDown
+        else            -> AnimationType.RiseUp
+    }
+
+    val isExpanded = when {
+        reciter == null -> false
+        else            -> expandedReciterId == reciter.id
+    }
+
+    val onToggleExpand = when {
+        isSkeleton -> { -> Unit }
+        else       -> { -> if (reciter != null) onToggleExpand(reciter.id) }
+    }
+
+    val onMoshafClick = when {
+        isSkeleton -> { _, _ -> Unit }
+        else       -> onMoshafClick
+    }
+
     ReciterCard(
-            modifier = Modifier.animateItemPosition(
-                    durationMs = 300,
-                    animationType = when {
-                        isScrollingDown -> AnimationType.FallDown
-                        else            -> AnimationType.RiseUp
-                    }
-            ),
+            modifier = Modifier.animateItemPosition(durationMs = 300, animationType = animationType),
             reciter = reciter,
-            isExpanded = when {
-                reciter == null -> false
-                else            -> expandedReciterId == reciter.id
-            },
+            isExpanded = isExpanded,
             searchQuery = searchQuery,
             isSkeleton = isSkeleton,
             isPlaying = isPlaying,
             playingMoshafId = playingMoshafId,
             brush = brush,
-            onToggleExpand = when {
-                isSkeleton -> { -> Unit }
-                else       -> { -> if (reciter != null) onToggleExpand(reciter.id) }
-            },
-            onMoshafClick = when {
-                isSkeleton -> { _, _ -> Unit }
-                else       -> onMoshafClick
-            }
+            onToggleExpand = onToggleExpand,
+            onMoshafClick = onMoshafClick
     )
 }
 

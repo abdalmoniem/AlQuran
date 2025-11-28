@@ -1,5 +1,11 @@
 plugins {
-    `kotlin-dsl`
+    alias(libs.plugins.kotlin.dsl)
+}
+
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xwhen-guards")
+    }
 }
 
 gradlePlugin {
@@ -12,6 +18,6 @@ gradlePlugin {
 }
 
 dependencies {
-    implementation(libs.android.gradle.plugin)
     implementation(libs.kotlin.gradle.plugin)
+    implementation(libs.android.gradle.plugin)
 }

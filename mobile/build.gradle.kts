@@ -85,8 +85,8 @@ android {
 
         minSdk = 28
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.0.7.1"
+        versionCode = 9
+        versionName = "0.0.7.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -125,6 +125,9 @@ android {
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
+            isDebuggable = true
+
+            project.logger.lifecycle("INFO: $name isDebuggable: $isDebuggable")
 
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
 

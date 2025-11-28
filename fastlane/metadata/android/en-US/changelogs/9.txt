@@ -1,0 +1,53 @@
+- ### Refactor(Grids): Improve grid state restoration and scrolling
+   > This commit introduces several refinements to the Reciters and Surahs grids,
+   > focusing on state preservation, automatic scrolling to the currently playing Surah,
+   > support for predictive back gestures on Android 13+, and UI consistency.
+   > It also includes build script updates and minor refactoring of player controls.
+   > It also includes various refactorings and bug fixes.
+   > - **Predictive Back Gesture:**
+   >     - Enabled predictive back gestures for `MainActivity` and the application by setting `enableOnBackInvokedCallback="true"` in `AndroidManifest.xml`. This feature is targeted for API 33+.
+   > - **Grid State Preservation & Auto-Scroll:**
+   >     - **`RecitersGrid.kt` & `SurahsGrid.kt`:**
+   >         - Implemented `rememberSaveable` for the `LazyGridState` in both grids, allowing scroll position to be preserved across configuration changes.
+   >         - The search query is now also saved using `rememberSaveable`.
+   >         - Code within the grid item composables has been refactored for better clarity by extracting conditional logic into variables (e.g., `animationType`, `isExpanded`).
+   >     - **`SurahsGrid.kt`:**
+   >         - Introduced a new `LaunchedEffect` that automatically scrolls the grid to center the currently playing surah when the screen is first displayed or recomposed.
+   >         - This ensures the playing item is always visible without manual scrolling.
+   >         - Added logic to determine if scrolling is necessary by checking the item's visibility and position relative to the mini-player.
+   > - **Refactoring & UI Improvements:**
+   >     - **`MiniPlayer.kt` & `FullScreenPlayer.kt`:**
+   >         - Renamed `MiniPlayerControls` to a more generic `OverlayPlayerControls` as it's used as an overlay in the full-screen player when space is limited.
+   >         - The `PlayerControls` composable now accepts an `isOverlay` flag to adjust its layout, making its buttons distribute space evenly when used as an overlay.
+   >     - **`AnimatedAudioBars.kt`:**
+   >         - Changed the bar color to `MaterialTheme.colorScheme.tertiary`.
+   >         - Adjusted the animation duration to a faster `100..150` milliseconds range for a more responsive fell, faster, and subtle effect..
+   >     - **`RecitersGrid.kt`:**
+   >         - Extracted `rememberLazyGridState` logic into a new `rememberRecitersGridState` composable function for better readability.
+   >         - Introduced `when` guards for more concise conditional logic, enabled via the `-Xwhen-guards` compiler flag.
+   > - **Build & Tooling:**
+   >     - **`pre-build/build.gradle.kts`:**
+   >         - Enabled the `-Xwhen-guards` Kotlin compiler feature.
+   >         - Updated plugin aliases in `pre-build/build.gradle.kts` to use the version catalog (`libs.plugins.kotlin.dsl`).
+   >     - **`PreBuildPlugin.kt`:**
+   >         - Improved the handling of command-line process results by trimming whitespace from `stdout` and `stderr` to prevent spurious output.
+   >     - **`mobile/build.gradle.kts`:**
+   >         - Explicitly set `isDebuggable = true` for the debug build type.
+------------------------------
+- ### Refactor(Scripts): Improve network robustness and changelog generation
+   > Commit: c89593a
+   > 
+   > This commit introduces several improvements to the helper scripts, focusing on network request reliability and enhancing the changelog generation process.
+   > - **`helper-scripts/generateSampleData.py`**:
+   >     - Introduced a `sendRequest` function to handle HTTP requests with a robust retry mechanism.
+   >     - Requests now have a 3-second timeout and will be retried up to 3 times with an exponential backoff delay (250ms, 500ms, 1s) in case of failure.
+   >     - The script now gracefully handles network errors during data fetching for reciters and surahs, exiting with a non-zero status code upon failure.
+   >     - Updated type hints to use `get_origin` and `get_args` for better compatibility.
+   > - **`git_hooks/`**:
+   >     - Refactored `get_changelogs.sh` and `update_changelogs.sh` to improve the formatting of the generated changelogs.
+   >     - The output now uses Markdown headings (`###`) for commit subjects and blockquotes (`>`) for commit hashes, enhancing readability.
+   > - **`.idea/.gitignore`:**
+   >     - Added `statistic.xml` to the ignore file to exclude IDE-specific analytics files from version control.
+------------------------------
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/v0.0.7.1...v0.0.7.2

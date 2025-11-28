@@ -319,11 +319,13 @@ class PreBuildPlugin : Plugin<Project> {
 
             with(result) {
                 when (this) {
-                    is Result.Success -> logger.lifecycle(stdout)
-                    is Result.Error   -> {
+                    is Result.Success if stdout.trim().isNotEmpty() -> logger.lifecycle(stdout.trim())
+                    is Result.Success                        -> Unit
+                    is Result.Error                          -> {
                         logger.error("ERROR ${error.errorCode}: ${error.errorMessage}")
                         throw GradleException(errorMessage ?: error.errorMessage)
                     }
+
                 }
             }
         }
@@ -359,10 +361,10 @@ class PreBuildPlugin : Plugin<Project> {
 
             when (exitCode) {
                 0 -> Result.Success(stdout = stdout.trim())
-                else -> Result.Error(ExecutionError(exitCode, stderr))
+                else -> Result.Error(ExecutionError(errorCode = exitCode, errorMessage = stderr.trim()))
             }
         } catch (ex: IOException) {
-            Result.Error(ExecutionError(-2, ex.message.toString()))
+            Result.Error(ExecutionError(errorCode = -2, errorMessage = ex.message.toString()))
         }
     }
 
@@ -395,8 +397,8 @@ class PreBuildPlugin : Plugin<Project> {
 
         val process = processBuilder.start()
 
-        val stdout = process.inputStream.bufferedReader().use { it.readText() }
-        val stderr = process.errorStream.bufferedReader().use { it.readText() }
+        val stdout = process.inputStream.bufferedReader().use { it.readText() }.trim()
+        val stderr = process.errorStream.bufferedReader().use { it.readText() }.trim()
         val exitCode = process.waitFor()
 
         return ProcessMetadata(exitCode, stdout, stderr)
