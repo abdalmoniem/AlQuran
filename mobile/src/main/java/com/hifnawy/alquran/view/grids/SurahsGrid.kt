@@ -49,10 +49,10 @@ import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.ReciterId
 import com.hifnawy.alquran.shared.model.Surah
+import com.hifnawy.alquran.utils.ArabicPluralStringResource.arabicPluralStringResource
 import com.hifnawy.alquran.utils.LazyGridScopeEx.gridItems
 import com.hifnawy.alquran.utils.ModifierEx.AnimationType
 import com.hifnawy.alquran.utils.ModifierEx.animateItemPosition
-import com.hifnawy.alquran.utils.arabicPluralStringResource
 import com.hifnawy.alquran.view.SearchBar
 import com.hifnawy.alquran.view.ShimmerAnimation
 import com.hifnawy.alquran.view.gridItems.SurahCard
@@ -76,7 +76,7 @@ fun SurahsGrid(
         Column(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(10.dp)
+                    .padding(start = 10.dp, top = 10.dp, end = 10.dp)
         ) {
             var lazyGridHeight by remember { mutableIntStateOf(0) }
             var surahCardHeight by remember { mutableIntStateOf(0) }

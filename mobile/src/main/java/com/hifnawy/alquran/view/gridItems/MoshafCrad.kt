@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
-import com.hifnawy.alquran.utils.arabicPluralStringResource
+import com.hifnawy.alquran.utils.ArabicPluralStringResource.arabicPluralStringResource
 import com.hifnawy.alquran.utils.sampleReciters
 import com.hifnawy.alquran.view.player.AnimatedAudioBars
 import com.hifnawy.alquran.shared.R as Rs

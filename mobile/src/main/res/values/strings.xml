@@ -26,4 +26,8 @@
     <string name="surah_madaneyya">مدنية</string>
     <string name="reciters_loading_error">حدث خطأ أثناء تحميل القراء، برجاء المحاولة مرة أخرى.</string>
     <string name="surahs_loading_error">حدث خطأ أثناء تحميل السور، برجاء المحاولة مرة أخرى.</string>
+    <string name="navbar_reciters">القراء</string>
+    <string name="navbar_surahs">السور</string>
+    <string name="navbar_favorites">المفضلين</string>
+    <string name="navbar_settings">الإعدادات</string>
 </resources>
