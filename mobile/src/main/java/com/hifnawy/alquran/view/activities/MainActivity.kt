@@ -8,12 +8,8 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.lifecycle.lifecycleScope
 import com.hifnawy.alquran.view.NavGraph
 import com.hifnawy.alquran.view.theme.AppTheme
-import com.hifnawy.alquran.view.player.widgets.PlayerWidget
-import kotlinx.coroutines.launch
 
 /**
  * The main activity of the app.
@@ -34,8 +30,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        updateGlanceWidgets()
-
         enableEdgeToEdge()
 
         setContent {
@@ -44,21 +38,6 @@ class MainActivity : ComponentActivity() {
                     NavGraph()
                 }
             }
-        }
-    }
-
-    /**
-     * Update all glance widgets.
-     *
-     * @see [GlanceAppWidgetManager]
-     */
-    private fun updateGlanceWidgets() {
-        lifecycleScope.launch {
-            val manager = GlanceAppWidgetManager(this@MainActivity)
-
-            val glanceIds = manager.getGlanceIds(PlayerWidget::class.java)
-
-            glanceIds.forEach { glanceId -> PlayerWidget().update(this@MainActivity, glanceId) }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.hifnawy.alquran.view.player.widgets
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -10,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
+import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
@@ -25,6 +27,7 @@ import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.runComposition
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.appwidget.updateAll
 import androidx.glance.background
@@ -69,6 +72,11 @@ import com.hifnawy.alquran.view.player.widgets.PlayerWidgetBitmaps.defaultSurahB
 import com.hifnawy.alquran.view.player.widgets.PlayerWidgetBitmaps.defaultSurahBlurredBitmap
 import com.hifnawy.alquran.view.player.widgets.PlayerWidgetBitmaps.surahImages
 import com.hifnawy.alquran.view.theme.WidgetTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import com.hifnawy.alquran.shared.R as Rs
 
@@ -145,6 +153,7 @@ class PlayerWidget : GlanceAppWidget() {
          * @param context [Context] The application [Context], used to get the [GlanceAppWidgetManager].
          * @param status [ServiceStatus] The latest [ServiceStatus] from the media service. Only [ServiceStatus.MediaInfo] will trigger a state update.
          */
+        @OptIn(ExperimentalGlanceApi::class)
         suspend fun updateGlanceWidgets(context: Context, status: ServiceStatus) {
             val manager = GlanceAppWidgetManager(context)
             val glanceIds = manager.getGlanceIds(PlayerWidget::class.java)
@@ -177,7 +186,38 @@ class PlayerWidget : GlanceAppWidget() {
             if (!anyStateChanged) return /* Timber.debug("No state changes! Skipping UI update!") */
 
             try {
-                PlayerWidget().updateAll(context)
+
+                glanceIds.forEach { glanceId ->
+                    CoroutineScope(Dispatchers.Default).launch {
+                        async {
+                            /**
+                             * If we look at the update code inside the Glance library, it talks about session and lock,
+                             * the logs will also say something similar.
+                             *
+                             * - Once the widget is updated from the app or a new widget is created, the worker session
+                             * (produced by Glance lib) is locked and released after ***45-50*** sec.!!!
+                             * - Any updates made during that ***45-50*** second interval are ignored, so for a successful update,
+                             * the app needs to wait for that time window to pass. You can confirm this time window by watching the
+                             * for the following in logcat:
+                             *
+                             * ```
+                             * Worker result SUCCESS for Work [ id=69cc3029-d1b1-4e9a-9084-108baa942a49, tags={ androidx.glance.session.SessionWorker } ]
+                             *```
+                             *
+                             * - I don't know much about session and locks but all this is true as per my testing.
+                             *
+                             * so in short, the [PlayerWidget.updateAll] or even [PlayerWidget.update] will be very slow to update the UI in time.
+                             *
+                             * so the best way I found was to update the widget manually using [AppWidgetManager.updateAppWidget], but the trick is to get
+                             * the remote view from the [PlayerWidget.runComposition] method and then pass it to the [AppWidgetManager.updateAppWidget] method.
+                             */
+                            val remoteView = PlayerWidget().runComposition(context, glanceId).first()
+                            AppWidgetManager.getInstance(context).updateAppWidget(glanceId.appWidgetId, remoteView)
+                        }
+                    }
+                }
+                // PlayerWidget().updateAll(context)
+
                 Timber.debug("Updated $appWidgetIds glance widgets' states to ${newState.status?.javaClass?.simpleName}")
             } catch (ex: IllegalArgumentException) {
                 Timber.warn("Widgets update failed, probably a widget was deleted: ${ex.message}")
