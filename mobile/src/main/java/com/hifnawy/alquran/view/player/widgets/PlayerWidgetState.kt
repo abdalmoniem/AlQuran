@@ -60,8 +60,6 @@ data class PlayerWidgetState(
 
         if (status?.javaClass != other.status?.javaClass) return false
 
-        if (status is ServiceStatus.Stopped || status is ServiceStatus.Ended) return true
-
         if (status is ServiceStatus.MediaInfo && other.status is ServiceStatus.MediaInfo) {
             if (reciter != other.reciter || moshaf != other.moshaf || surah != other.surah) return false
         }

@@ -1,10 +1,12 @@
 package com.hifnawy.alquran.view.player.widgets
 
+import android.app.ActivityManager
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.widget.RemoteViews
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -19,6 +21,7 @@ import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.Action
 import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -53,16 +56,19 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import com.google.gson.Gson
 import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.BuildConfig
 import com.hifnawy.alquran.shared.domain.QuranMediaService
 import com.hifnawy.alquran.shared.domain.ServiceStatus
+import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.error
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.warn
+import com.hifnawy.alquran.shared.utils.SerializableExt.Companion.asJsonString
 import com.hifnawy.alquran.utils.sampleReciters
 import com.hifnawy.alquran.utils.sampleSurahs
 import com.hifnawy.alquran.view.activities.MainActivity
@@ -152,9 +158,9 @@ class PlayerWidget : GlanceAppWidget() {
          *
          * @param context [Context] The application [Context], used to get the [GlanceAppWidgetManager].
          * @param status [ServiceStatus] The latest [ServiceStatus] from the media service. Only [ServiceStatus.MediaInfo] will trigger a state update.
+         * @param forceUpdate [Boolean] Whether to force an update of all widgets, even if the state has not changed.
          */
-        @OptIn(ExperimentalGlanceApi::class)
-        suspend fun updateGlanceWidgets(context: Context, status: ServiceStatus) {
+        suspend fun updateGlanceWidgets(context: Context, status: ServiceStatus, forceUpdate: Boolean = false) {
             val manager = GlanceAppWidgetManager(context)
             val glanceIds = manager.getGlanceIds(PlayerWidget::class.java)
             val appWidgetIds = glanceIds.map { it.appWidgetId }.toTypedArray().contentToString()
@@ -179,48 +185,70 @@ class PlayerWidget : GlanceAppWidget() {
                 } catch (ex: IllegalArgumentException) {
                     // Log the error but ignore the dead widget, allowing others to update.
                     Timber.error(ex.toString())
-                    Timber.error("Failed to update state for appWidgetId ${glanceId.appWidgetId}. Widget likely deleted.")
+                    Timber.error("Failed to update state for appWidgetId ${glanceId.appWidgetId}. Widget is likely deleted!")
                 }
             }
 
-            if (!anyStateChanged) return /* Timber.debug("No state changes! Skipping UI update!") */
+            if (!anyStateChanged && !forceUpdate) return /* Timber.debug("No state changes! Skipping UI update!") */
 
-            try {
+            executeUpdate(context, glanceIds)
+            Timber.debug("Updated $appWidgetIds glance widgets' states to ${newState.status?.javaClass?.simpleName}")
+        }
 
-                glanceIds.forEach { glanceId ->
-                    CoroutineScope(Dispatchers.Default).launch {
-                        async {
-                            /**
-                             * If we look at the update code inside the Glance library, it talks about session and lock,
-                             * the logs will also say something similar.
-                             *
-                             * - Once the widget is updated from the app or a new widget is created, the worker session
-                             * (produced by Glance lib) is locked and released after ***45-50*** sec.!!!
-                             * - Any updates made during that ***45-50*** second interval are ignored, so for a successful update,
-                             * the app needs to wait for that time window to pass. You can confirm this time window by watching the
-                             * for the following in logcat:
-                             *
-                             * ```
-                             * Worker result SUCCESS for Work [ id=69cc3029-d1b1-4e9a-9084-108baa942a49, tags={ androidx.glance.session.SessionWorker } ]
-                             *```
-                             *
-                             * - I don't know much about session and locks but all this is true as per my testing.
-                             *
-                             * so in short, the [PlayerWidget.updateAll] or even [PlayerWidget.update] will be very slow to update the UI in time.
-                             *
-                             * so the best way I found was to update the widget manually using [AppWidgetManager.updateAppWidget], but the trick is to get
-                             * the remote view from the [PlayerWidget.runComposition] method and then pass it to the [AppWidgetManager.updateAppWidget] method.
-                             */
-                            val remoteView = PlayerWidget().runComposition(context, glanceId).first()
-                            AppWidgetManager.getInstance(context).updateAppWidget(glanceId.appWidgetId, remoteView)
-                        }
+        /**
+         * Executes a manual update for a list of Glance widgets.
+         *
+         * This function bypasses the standard `updateAll` or `update` methods of `GlanceAppWidget`,
+         * which can be slow and subject to locking delays (a "session lock" that can last up to 50 seconds),
+         * especially during frequent updates from a service.
+         *
+         * Instead, it manually recomposes each widget's UI to get a [RemoteViews] object and then
+         * uses the [AppWidgetManager] to apply this [RemoteViews] object directly to the widget instance.
+         * This results in a much faster and more reliable UI update.
+         *
+         * The process for each widget is:
+         * - Launch a new coroutine to process widgets concurrently.
+         * - Call [PlayerWidget.runComposition] to generate the [RemoteViews].
+         * - Use [AppWidgetManager.updateAppWidget]
+         *    to push the update to the specific widget on the home screen.
+         * - Catches, and logs [IllegalStateException] which can be thrown by [runComposition] if the widget is not in a
+         *    valid state to be composed, or is already in the middle of another update, preventing the app from crashing.
+         *
+         * If we look at the update code inside the Glance library, it talks about session and lock,
+         * the logs will also say something similar.
+         *
+         * - Once the widget is updated from the app or a new widget is created, the worker session
+         * (produced by Glance lib) is locked and released after ***45-50*** sec.!!!
+         * - Any updates made during that ***45-50*** second interval are ignored, so for a successful update,
+         * the app needs to wait for that time window to pass. You can confirm this time window by watching the
+         * for the following in logcat:
+         *
+         * ```
+         * Worker result SUCCESS for Work [ id=69cc3029-d1b1-4e9a-9084-108baa942a49, tags={ androidx.glance.session.SessionWorker } ]
+         *```
+         *
+         * - I don't know much about session and locks but all this is true as per my testing.
+         *
+         * so in short, the [PlayerWidget.updateAll] or even [PlayerWidget.update] will be very slow to update the UI in time.
+         *
+         * so the best way I found was to update the widget manually using [AppWidgetManager.updateAppWidget], but the trick is to get
+         * the remote view from the [PlayerWidget.runComposition] method and then pass it to the [AppWidgetManager.updateAppWidget] method.
+         *
+         * @param context [Context] The application [Context].
+         * @param glanceIds [List< GlanceId >][List] A [List] of [GlanceId]s for the widgets that need to be updated.
+         */
+        @OptIn(ExperimentalGlanceApi::class)
+        private fun executeUpdate(context: Context, glanceIds: List<GlanceId>) = glanceIds.forEach { glanceId ->
+            // PlayerWidget().updateAll(context)
+            CoroutineScope(Dispatchers.Default).launch {
+                async {
+                    try {
+                        val remoteView = PlayerWidget().runComposition(context, glanceId).first()
+                        AppWidgetManager.getInstance(context).updateAppWidget(glanceId.appWidgetId, remoteView)
+                    } catch (_: IllegalStateException) {
+                        Timber.warn("Failed to update state for appWidgetId ${glanceId.appWidgetId}. Widget is likely pending an update!")
                     }
                 }
-                // PlayerWidget().updateAll(context)
-
-                Timber.debug("Updated $appWidgetIds glance widgets' states to ${newState.status?.javaClass?.simpleName}")
-            } catch (ex: IllegalArgumentException) {
-                Timber.warn("Widgets update failed, probably a widget was deleted: ${ex.message}")
             }
         }
     }
@@ -534,7 +562,17 @@ class PlayerWidget : GlanceAppWidget() {
                 ),
                 contentDescription = "Toggle Media",
                 contentForegroundColor = contentForegroundColor,
-                onClick = actionRunCallback<ToggleMediaAction>()
+                onClick = actionRunCallback<ToggleMediaAction>(
+                        parameters = when (status) {
+                            is ServiceStatus.MediaInfo -> actionParametersOf(
+                                    ActionParameters.Key<String>(ToggleMediaAction.ActionParams.PARAM_RECITER.name) to status.reciter.asJsonString,
+                                    ActionParameters.Key<String>(ToggleMediaAction.ActionParams.PARAM_SURAH.name) to status.surah.asJsonString,
+                                    ActionParameters.Key<String>(ToggleMediaAction.ActionParams.PARAM_MOSHAF.name) to status.moshaf.asJsonString
+                            )
+
+                            else                       -> actionParametersOf()
+                        }
+                )
         )
 
         Spacer(modifier = GlanceModifier.width(buttonSpacing))
@@ -683,7 +721,7 @@ class SkipToPreviousAction : ActionCallback {
 
         Intent(context, QuranMediaService::class.java).run {
             action = QuranMediaService.Actions.ACTION_SKIP_TO_PREVIOUS.name
-            context.startService(this)
+            context.startForegroundService(this)
         }
     }
 }
@@ -717,10 +755,83 @@ class ToggleMediaAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         Timber.debug("ToggleMediaAction")
 
-        Intent(context, QuranMediaService::class.java).apply {
-            action = QuranMediaService.Actions.ACTION_TOGGLE_PLAY_PAUSE.name
-            context.startService(this)
+        val reciterJson = parameters.get<String>(ActionParameters.Key(ActionParams.PARAM_RECITER.name)) as String
+        val moshafJson = parameters.get<String>(ActionParameters.Key(ActionParams.PARAM_MOSHAF.name)) as String
+        val surahJson = parameters.get<String>(ActionParameters.Key(ActionParams.PARAM_SURAH.name)) as String
+
+        val reciter = Gson().fromJson(reciterJson, Reciter::class.java)
+        val moshaf = Gson().fromJson(moshafJson, Moshaf::class.java)
+        val surah = Gson().fromJson(surahJson, Surah::class.java)
+
+        // TODO: Remove this and expose the service status from the service as a static field
+        val isServiceRunning = isServiceRunning(context, QuranMediaService::class.java)
+
+        val intent = when {
+            isServiceRunning -> Intent(context, QuranMediaService::class.java).apply {
+                action = QuranMediaService.Actions.ACTION_TOGGLE_PLAY_PAUSE.name
+            }
+
+            else             -> Intent(context, QuranMediaService::class.java).run {
+                action = QuranMediaService.Actions.ACTION_START_PLAYBACK.name
+                putExtra(QuranMediaService.Extras.EXTRA_RECITER.name, reciter)
+                putExtra(QuranMediaService.Extras.EXTRA_MOSHAF.name, moshaf)
+                putExtra(QuranMediaService.Extras.EXTRA_SURAH.name, surah)
+            }
         }
+
+        context.startForegroundService(intent)
+    }
+
+    /**
+     * Checks if a service of a given class is currently running.
+     *
+     * This utility function queries the system's [ActivityManager] to get a list of all
+     * currently running services and then checks if any of them match the provided `serviceClass`.
+     *
+     * **Note:** This method uses [ActivityManager.getRunningServices], which is deprecated for applications
+     * targeting `API level 26` (`Android 8.0`) and above. It's intended here for internal logic
+     * where checking its own service's status is the goal, but its reliability might be
+     * limited on newer Android versions due to background restrictions.
+     *
+     * TODO: Replace this with a more reliable method.
+     *
+     * @param context [Context] The application [Context] used to access system services.
+     * @param serviceClass [Class<*>][Class] The class of the service to check (e.g., `MyService::class.java`).
+     * @return [Boolean] `true` if a service with the specified class name is found in the list
+     *         of running services, `false` otherwise.
+     */
+    private fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
+        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        @Suppress("DEPRECATION")
+        return manager.getRunningServices(Integer.MAX_VALUE).any { it.service.className == serviceClass.name }
+    }
+
+    /**
+     * Defines the keys for parameters passed to the [ToggleMediaAction].
+     *
+     * This enum provides a strongly-typed way to reference the names of parameters
+     * that are bundled into the [ActionParameters] when the play/pause button is clicked.
+     * These parameters are necessary to start playback if the service is not already running.
+     *
+     * @property [PARAM_RECITER]: The key for the JSON string representation of the [Reciter] object.
+     * @property [PARAM_SURAH]: The key for the JSON string representation of the [Surah] object.
+     * @property [PARAM_MOSHAF]: The key for the JSON string representation of the [Moshaf] object.
+     */
+    enum class ActionParams {
+        /**
+         * The key for the JSON string representation of the [Reciter] object.
+         */
+        PARAM_RECITER,
+
+        /**
+         * The key for the JSON string representation of the [Surah] object.
+         */
+        PARAM_SURAH,
+
+        /**
+         * The key for the JSON string representation of the [Moshaf] object.
+         */
+        PARAM_MOSHAF
     }
 }
 
@@ -755,7 +866,8 @@ class SkipToNextAction : ActionCallback {
 
         Intent(context, QuranMediaService::class.java).apply {
             action = QuranMediaService.Actions.ACTION_SKIP_TO_NEXT.name
-            context.startService(this)
+
+            context.startForegroundService(this)
         }
     }
 }

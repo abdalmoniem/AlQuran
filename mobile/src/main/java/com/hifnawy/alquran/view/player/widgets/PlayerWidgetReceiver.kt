@@ -4,15 +4,26 @@ import android.annotation.SuppressLint
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.Intent
 import androidx.glance.ExperimentalGlanceApi
+import androidx.glance.appwidget.AppWidgetId
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.state.getAppWidgetState
+import androidx.glance.session.Session
 import androidx.glance.session.SessionManagerScope
+import androidx.work.Operation
+import androidx.work.WorkManager
 import com.hifnawy.alquran.shared.domain.ServiceStatus
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
+import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.warn
+import com.hifnawy.alquran.utils.sampleReciters
+import com.hifnawy.alquran.utils.sampleSurahs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 /**
@@ -31,6 +42,25 @@ import timber.log.Timber
  */
 class PlayerWidgetReceiver(override val glanceAppWidget: GlanceAppWidget = PlayerWidget()) : GlanceAppWidgetReceiver() {
 
+    /**
+     * Called when the system sends a broadcast to the receiver.
+     *
+     * @param context [Context] The [Context] in which the receiver is running.
+     * @param intent [Intent] The [Intent] that was received.
+     */
+    @SuppressLint("RestrictedApi")
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
+
+        Timber.debug("onReceive called with action: ${intent.action} on appWidgetId: $appWidgetId")
+
+        if (appWidgetId == -1) return
+        when (intent.action) {
+            AppWidgetManager.ACTION_APPWIDGET_OPTIONS_CHANGED -> updateWidget(context = context, appWidgetId = appWidgetId)
+            else                                              -> Unit
+        }
+    }
     /**
      * Called when an instance of the AppWidget is added to the home screen for the first time.
      * This is a good place to perform one-time setup.
@@ -112,17 +142,43 @@ class PlayerWidgetReceiver(override val glanceAppWidget: GlanceAppWidget = Playe
             appWidgetIds: IntArray
     ) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
+        Timber.debug("onUpdate called for widget IDs: ${appWidgetIds.contentToString()}")
 
-        CoroutineScope(Dispatchers.IO).launch {
+        val coroutineScope = CoroutineScope(Dispatchers.Default)
+        lateinit var observer: (Operation.State) -> Unit
+
+        coroutineScope.launch {
             appWidgetIds.forEach { appWidgetId ->
-                PlayerWidget().getSessionManager(context).runWithLock { closeSession("appWidget-$appWidgetId") }
+                val sessionKey = "appWidget-$appWidgetId"
+                val sessionManager = PlayerWidget().getSessionManager(context)
+                var session: Session?
 
-                // TODO: Load the last status from the data store
-                PlayerWidget.updateGlanceWidgets(context, ServiceStatus.Stopped)
+                do {
+                    session = sessionManager.runWithLock { getSession(sessionKey) }
+                    Timber.warn("Waiting for session to be created for key: $sessionKey")
+                    delay(50)
+                } while (session == null)
+
+                Timber.warn("Closing session for key: $sessionKey...")
+                sessionManager.runWithLock { closeSession(sessionKey) }
+
+                Timber.warn("Canceling all WorkManager work for key: $sessionKey...")
+                val operation = WorkManager.getInstance(context).cancelUniqueWork(sessionKey)
+
+                observer = { state ->
+                    Timber.warn("WorkManager state: $state")
+
+                    if (state is Operation.State.SUCCESS) {
+                        Timber.warn("WorkManager work canceled successfully for key: $sessionKey!")
+                        operation.state.removeObserver(observer)
+
+                        updateWidget(context = context, appWidgetId = appWidgetId)
+                    }
+                }
+
+                withContext(Dispatchers.Main) { operation.state.observeForever(observer) }
             }
         }
-
-        Timber.debug("onUpdate called for widget IDs: ${appWidgetIds.contentToString()}")
     }
 
     /**
@@ -135,5 +191,42 @@ class PlayerWidgetReceiver(override val glanceAppWidget: GlanceAppWidget = Playe
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
         Timber.debug("Last widget instance removed from home screen")
+    }
+
+    /**
+     * Updates a specific widget instance with either the last known state or a default sample state.
+     *
+     * This function fetches the current state of the widget. If the widget has a previously saved
+     * status, it forces an update using that status. If the widget has no saved status (e.g., it's a
+     * new instance or the data was cleared), it updates the widget with a random sample state to
+     * provide a default view.
+     *
+     * The update process is executed within a coroutine on the [Dispatchers.Default] dispatcher.
+     *
+     * @param context [Context] The [Context] used to access widget state and perform updates.
+     * @param appWidgetId [Int] The ID of the specific app widget instance to update.
+     */
+    @SuppressLint("RestrictedApi")
+    private fun updateWidget(context: Context, appWidgetId: Int) = CoroutineScope(Dispatchers.Default).launch {
+        Timber.warn("Updating glance widget #$appWidgetId...")
+        val reciter = sampleReciters.random()
+        val moshaf = reciter.moshafList.first()
+        val surah = sampleSurahs.random()
+        val status = ServiceStatus.Paused(
+                reciter = sampleReciters.random(),
+                moshaf = moshaf,
+                surah = surah,
+                durationMs = 0,
+                currentPositionMs = 0,
+                bufferedPositionMs = 0
+        )
+
+        // TODO: Load the last status from the data store
+        val widgetState = PlayerWidget().getAppWidgetState<PlayerWidgetState>(context = context, glanceId = AppWidgetId(appWidgetId))
+        when {
+            widgetState.status == null -> PlayerWidget.updateGlanceWidgets(context = context, status = status)
+
+            else                       -> PlayerWidget.updateGlanceWidgets(context = context, status = widgetState.status, forceUpdate = true)
+        }
     }
 }
