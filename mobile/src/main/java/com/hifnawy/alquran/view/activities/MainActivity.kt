@@ -8,7 +8,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import com.hifnawy.alquran.view.NavGraph
+import com.hifnawy.alquran.view.navigation.NavGraph
 import com.hifnawy.alquran.view.theme.AppTheme
 
 /**
