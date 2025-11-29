@@ -145,6 +145,8 @@ object ModifierEx {
      * @param onSnapped [(shouldExpand: Boolean) -> Unit][onSnapped] A callback invoked when the drag gesture ends, providing a boolean indicating whether the component should
      *                  expand (`true`) or minimize (`false`). This is typically used to trigger an animation to the final state.
      * @param onHeight [(isExpanded: Boolean) -> Unit][onHeight] A callback invoked when the drag gesture ends, providing the target expansion state.
+     * @param onHeightChanged [(progress: Float) -> Unit][onHeightChanged] A callback invoked when the height is changed due to an active drag, providing the current
+     *                  progress (`0.0f` to `1.0f`).
      * @param onDragDirectionChanged [(isDraggingUp: Boolean, isDraggingDown: Boolean) -> Unit][onDragDirectionChanged] A debounced callback that indicates the current drag
      *                  direction (up or down).
      * @return [Modifier] A [Modifier] that applies the vertical drag gesture handling.
@@ -157,9 +159,10 @@ object ModifierEx {
             minimizeThreshold: Float,
             expandThreshold: Float,
             isExpanded: Boolean,
-            onSnapped: (shouldExpand: Boolean) -> Unit,
-            onHeight: (isExpanded: Boolean) -> Unit,
-            onDragDirectionChanged: (isDraggingUp: Boolean, isDraggingDown: Boolean) -> Unit
+            onSnapped: (shouldExpand: Boolean) -> Unit = {},
+            onHeight: (isExpanded: Boolean) -> Unit = {},
+            onHeightChanged: (progress: Float) -> Unit = {},
+            onDragDirectionChanged: (isDraggingUp: Boolean, isDraggingDown: Boolean) -> Unit = { _, _ -> }
     ) = run {
         data class DragDirection(val isDraggingUp: Boolean, val isDraggingDown: Boolean)
 
@@ -181,7 +184,11 @@ object ModifierEx {
                     val newHeight = (heightPx.value - delta).coerceIn(minHeightPx, maxHeightPx)
                     val draggingUp = newHeight >= oldHeight
 
-                    coroutineScope.launch { heightPx.snapTo(newHeight) }
+                    coroutineScope.launch {
+                        heightPx.snapTo(newHeight)
+                        val progress = ((heightPx.value - minHeightPx) / (maxHeightPx - minHeightPx)).coerceIn(0f, 1f)
+                        onHeightChanged(progress)
+                    }
                     dragEvents.tryEmit(DragDirection(isDraggingUp = draggingUp, isDraggingDown = !draggingUp))
                 },
                 onDragStopped = {

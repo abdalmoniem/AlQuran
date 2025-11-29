@@ -43,8 +43,8 @@ import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.asReciterId
+import com.hifnawy.alquran.utils.ArabicPluralStringResource.arabicPluralStringResource
 import com.hifnawy.alquran.utils.TextUtil.highlightMatchingText
-import com.hifnawy.alquran.utils.arabicPluralStringResource
 import com.hifnawy.alquran.utils.sampleReciters
 import com.hifnawy.alquran.view.ShimmerAnimation
 import com.hifnawy.alquran.view.player.AnimatedAudioBars

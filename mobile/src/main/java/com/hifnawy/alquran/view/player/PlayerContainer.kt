@@ -7,20 +7,14 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -41,7 +35,6 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.critical
@@ -67,6 +60,8 @@ import timber.log.Timber
  * between them based on the drag progress.
  *
  * @param state [PlayerState] The current state of the player, including visibility, expanded status, and media info.
+ * @param onHeightChanged [(progress: Float) -> Unit][onHeightChanged] A callback invoked when the height of the player is changed due to an active drag, providing the current
+ *                  progress (`0.0f` to `1.0f`).
  * @param onSnapped [(shouldExpand: Boolean) -> Unit][onSnapped] A callback invoked when the player snaps to either its minimized or expanded state after a drag gesture.
  *          The lambda receives a boolean indicating if the player should expand.
  * @param onDragDirectionChanged [(isDraggingUp: Boolean, isDraggingDown: Boolean) -> Unit = { _, _ -> }][onDragDirectionChanged] A callback that reports the current drag direction.
@@ -81,6 +76,7 @@ import timber.log.Timber
 @Composable
 fun BoxScope.PlayerContainer(
         state: PlayerState,
+        onHeightChanged: (progress: Float) -> Unit = {},
         onSnapped: (shouldExpand: Boolean) -> Unit = {},
         onDragDirectionChanged: (isDraggingUp: Boolean, isDraggingDown: Boolean) -> Unit = { _, _ -> },
         onCloseClicked: () -> Unit = {},
@@ -113,8 +109,8 @@ fun BoxScope.PlayerContainer(
     val heightPx = remember { Animatable(if (isExpanded) maxHeightPx else minHeightPx) }
 
     val progress = ((heightPx.value - minHeightPx) / (maxHeightPx - minHeightPx)).coerceIn(0f, 1f)
-    val horizontalPadding = lerp(20.dp, 0.dp, progress)
-    val verticalPadding = lerp(WindowInsets.statusBars.getBottom(density).dp + 30.dp, 0.dp, progress)
+    val horizontalPadding = lerp(10.dp, 0.dp, progress)
+    val verticalPadding = lerp(10.dp, 0.dp, progress)
     val cardRadius = lerp(25.dp, 0.dp, progress)
 
     var lastSurahSelectionTimeStamp by rememberSaveable { mutableStateOf(state.surahSelectionTimeStamp) }
@@ -128,15 +124,6 @@ fun BoxScope.PlayerContainer(
         }
     }
 
-    LaunchedEffect(maxHeightPx) {
-        val target = when {
-            isExpanded -> maxHeightPx
-            else       -> minHeightPx
-        }
-
-        heightPx.snapTo(target)
-    }
-
     Content(
             modifier = Modifier.verticalDraggable(
                     heightPx = heightPx,
@@ -146,6 +133,7 @@ fun BoxScope.PlayerContainer(
                     expandThreshold = expandThreshold,
                     isExpanded = isExpanded,
                     onHeight = { isExpanded = it },
+                    onHeightChanged = { onHeightChanged(it) },
                     onSnapped = { shouldExpand ->
                         isSnapped = !isSnapped
                         onSnapped(shouldExpand)
@@ -161,6 +149,7 @@ fun BoxScope.PlayerContainer(
             cardRadius = cardRadius,
             isExpanded = isExpanded,
             isSnapped = isSnapped,
+            onHeightChanged = { onHeightChanged(it) },
             onCloseClicked = onCloseClicked,
             onExpand = {
                 isExpanded = true
@@ -223,6 +212,8 @@ fun BoxScope.PlayerContainer(
  * @param cardRadius [Dp] The calculated corner radius for the card, which changes during transition.
  * @param isExpanded [Boolean] A boolean indicating if the player's target state is expanded.
  * @param isSnapped [Boolean] A boolean that acts as a trigger to re-run the height animation when a drag gesture finishes.
+ * @param onHeightChanged [(progress: Float) -> Unit][onHeightChanged] A callback invoked when the height of the player is changed due to an active drag, providing the current
+ *                  progress (`0.0f` to `1.0f`).
  * @param onCloseClicked [() -> Unit][onCloseClicked] Lambda to be invoked when the close button is clicked.
  * @param onExpand [() -> Unit][onExpand] Lambda to be invoked to signal an expansion request.
  * @param onExpandStarted [() -> Unit][onExpandStarted] Lambda to be invoked when the expansion animation starts.
@@ -249,6 +240,7 @@ private fun BoxScope.Content(
         cardRadius: Dp,
         isExpanded: Boolean,
         isSnapped: Boolean,
+        onHeightChanged: (Float) -> Unit = {},
         onCloseClicked: () -> Unit = {},
         onExpand: () -> Unit = {},
         onExpandStarted: () -> Unit = {},
@@ -264,14 +256,23 @@ private fun BoxScope.Content(
     val density = LocalDensity.current
 
     val heightAnimationDuration = 300
-    val miniPlayerAnimationDuration = 300
     val isBackHandlerEnabled = state.isVisible && heightPx.value isApproximately maxHeightPx within 5f
     val heightAnimationSpec = tween<Float>(durationMillis = heightAnimationDuration, easing = FastOutLinearInEasing)
-    val fadeAnimationSpec = tween<Float>(durationMillis = miniPlayerAnimationDuration, easing = FastOutLinearInEasing)
-    val slideAnimationSpec = tween<IntOffset>(durationMillis = miniPlayerAnimationDuration, easing = FastOutLinearInEasing)
 
-    LaunchedEffect(isExpanded, isSnapped) {
-        if (!state.isVisible) return@LaunchedEffect
+    LaunchedEffect(maxHeightPx) {
+        val target = when {
+            isExpanded -> maxHeightPx
+            else       -> minHeightPx
+        }
+
+        heightPx.snapTo(target)
+    }
+
+    LaunchedEffect(isExpanded, isSnapped, state.isVisible) {
+        if (!state.isVisible) {
+            heightPx.snapTo(0f)
+            return@LaunchedEffect
+        }
 
         val targetValue = when {
             isExpanded -> maxHeightPx
@@ -284,7 +285,10 @@ private fun BoxScope.Content(
             else        -> onMinimizeStarted()
         }
 
-        heightPx.animateTo(targetValue = targetValue, animationSpec = heightAnimationSpec)
+        heightPx.animateTo(targetValue = targetValue, animationSpec = heightAnimationSpec) {
+            val progress = ((value - minHeightPx) / (maxHeightPx - minHeightPx)).coerceIn(0f, 1f)
+            onHeightChanged(progress)
+        }
 
         when {
             isExpanding -> onExpandFinished()
@@ -305,40 +309,32 @@ private fun BoxScope.Content(
             }
     )
 
-    AnimatedVisibility(
+    Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
                 .padding(horizontal = horizontalPadding, vertical = verticalPadding)
                 .height(with(density) { heightPx.value.toDp() })
                 .then(modifier),
-            visible = state.isVisible,
-            enter = fadeIn(animationSpec = fadeAnimationSpec) + slideInVertically(animationSpec = slideAnimationSpec, initialOffsetY = { it }),
-            exit = fadeOut(animationSpec = fadeAnimationSpec) + slideOutVertically(animationSpec = slideAnimationSpec, targetOffsetY = { it })
+            shape = RoundedCornerShape(cardRadius),
+            elevation = CardDefaults.cardElevation(25.dp)
     ) {
-        Card(
+        CrossfadePlayer(
                 modifier = when {
                     !isExpanded -> Modifier.clickable { onExpand() }
                     else        -> Modifier
                 },
-                shape = RoundedCornerShape(cardRadius),
-                elevation = CardDefaults.cardElevation(25.dp)
-        ) {
-            if (!state.isVisible) return@Card
-
-            CrossfadePlayer(
-                    state = state,
-                    heightPx = heightPx,
-                    minHeightPx = minHeightPx,
-                    maxHeightPx = maxHeightPx,
-                    onCloseClicked = onCloseClicked,
-                    onMinimize = onMinimize,
-                    onSeekProgress = onSeekProgress,
-                    onSkipToPreviousSurah = onSkipToPreviousSurah,
-                    onTogglePlayback = onTogglePlayback,
-                    onSkipToNextSurah = onSkipToNextSurah
-            )
-        }
+                state = state,
+                heightPx = heightPx,
+                minHeightPx = minHeightPx,
+                maxHeightPx = maxHeightPx,
+                onCloseClicked = onCloseClicked,
+                onMinimize = onMinimize,
+                onSeekProgress = onSeekProgress,
+                onSkipToPreviousSurah = onSkipToPreviousSurah,
+                onTogglePlayback = onTogglePlayback,
+                onSkipToNextSurah = onSkipToNextSurah
+        )
     }
 }
 
@@ -357,6 +353,7 @@ private fun BoxScope.Content(
  * This approach ensures that only the relevant player UI is visible and intractable at the extremes
  * of the collapsed and expanded states, while providing a seamless visual blend during the transition.
  *
+ * @param modifier [Modifier] A [Modifier] to be applied to the crossfade player.
  * @param state [PlayerState] The current state of the player, containing information like the surah, reciter, and playback status.
  * @param heightPx [Animatable<Float, *>][Animatable] An [Animatable] float representing the current height of the player container in pixels.
  *                 This value drives the calculation of the crossfade progress.
@@ -374,6 +371,7 @@ private fun BoxScope.Content(
  */
 @Composable
 private fun CrossfadePlayer(
+        modifier: Modifier = Modifier,
         state: PlayerState,
         heightPx: Animatable<Float, *>,
         minHeightPx: Float,
@@ -407,7 +405,7 @@ private fun CrossfadePlayer(
     val miniPlayerAlpha = (miniPlayerProgress / thresholdRange).coerceIn(0f, 1f)
     val fullPlayerAlpha = (fullPlayerProgress / thresholdRange).coerceIn(0f, 1f)
 
-    Box {
+    Box(modifier = modifier) {
         Box(modifier = Modifier.alpha(miniPlayerAlpha)) {
             if (miniPlayerAlpha <= 0f) return@Box
 

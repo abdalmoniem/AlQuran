@@ -76,7 +76,7 @@ fun RecitersScreen(
                 is Result.Success -> {
                     reciters = result.data
                     dataError = null
-                    mediaViewModel.updateState { reciters = result.data }
+                    mediaViewModel.updateState { this@updateState.reciters = result.data }
                 }
 
                 is Result.Error   -> {
@@ -145,7 +145,11 @@ private fun Content(
             val reciterJson = reciter.asJsonString
             val moshafJson = moshaf.asJsonString
 
-            navController.navigate(Screen.Surahs.route + "?reciter=$reciterJson&moshaf=$moshafJson")
+            val route = Screen.Surahs.route + "?reciter=$reciterJson&moshaf=$moshafJson"
+            navController.navigate(route) {
+                popUpTo(route) { inclusive = false }
+                launchSingleTop = true
+            }
         }
     }
 }

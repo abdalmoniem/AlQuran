@@ -1,9 +1,11 @@
 package com.hifnawy.alquran.view.grids
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -24,10 +26,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -64,7 +69,7 @@ fun RecitersGrid(
         Column(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(10.dp)
+                    .padding(start = 10.dp, top = 10.dp, end = 10.dp)
         ) {
             var searchQuery by rememberSaveable { mutableStateOf("") }
             var lastAnimatedIndex by rememberSaveable { mutableIntStateOf(-1) }
@@ -173,18 +178,45 @@ private fun TitleBar(
 
     if (isSkeleton) {
         if (brush == null) return
-        Spacer(
-                modifier = Modifier
-                    .width(titleWidth)
-                    .height(titleHeight)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(brush)
-        )
-    } else Text(
-            text = titleText,
-            style = titleStyle,
-            color = MaterialTheme.colorScheme.onSurface
-    )
+        Row(
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(25.dp))
+                        .background(brush)
+            )
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Spacer(
+                    modifier = Modifier
+                        .width(titleWidth)
+                        .height(titleHeight)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(brush)
+            )
+        }
+    } else {
+        Row(
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                    modifier = Modifier.size(64.dp),
+                    bitmap = ImageBitmap.imageResource(R.drawable.app_icon),
+                    contentDescription = titleText
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                    text = titleText,
+                    style = titleStyle,
+                    color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
 }
 
 @Composable
