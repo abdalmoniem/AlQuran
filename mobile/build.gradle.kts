@@ -89,6 +89,9 @@ android {
         versionName = "0.0.7.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(Long::class.java.simpleName, "VERSION_CODE", "${defaultConfig.versionCode}")
+        buildConfigField(String::class.java.simpleName, "VERSION_NAME", "\"${defaultConfig.versionName}\"")
     }
 
     compileSdk {
@@ -176,6 +179,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     androidResources {

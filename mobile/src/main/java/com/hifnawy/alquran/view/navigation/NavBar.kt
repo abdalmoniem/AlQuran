@@ -166,11 +166,11 @@ fun NavBar(navController: NavHostController, navBarHeightProgress: Float) {
                     icon = painterResource(R.drawable.person_24px),
                     route = Screen.Reciters.route
             ),
-            NavigationItem(
-                    title = stringResource(R.string.navbar_favorites),
-                    icon = painterResource(R.drawable.favorite_24px),
-                    route = Screen.Favorites.route
-            ),
+            // NavigationItem(
+            //         title = stringResource(R.string.navbar_favorites),
+            //         icon = painterResource(R.drawable.favorite_24px),
+            //         route = Screen.Favorites.route
+            // ),
             NavigationItem(
                     title = stringResource(R.string.navbar_settings),
                     icon = painterResource(R.drawable.settings_24px),

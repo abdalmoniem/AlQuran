@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">AlQuran</string>
+    <string name="app_name">القرآن الكريم</string>
     <string name="search_reciters">بحث عن قارئ…</string>
     <string name="search_surahs">بحث عن سورة…</string>
-    <string name="loading">جاري التحميل…</string>
-    <string name="player_widget_description">AlQuran Surah Player</string>
+    <string name="loading">جارٍ التحميل…</string>
+    <string name="player_widget_description">مُشَغِل القرآن الكريم</string>
     <string name="surah_name">اسم السورة</string>
     <string name="reciter_name">اسم القارئ</string>
     <plurals name="moshaf_count">
@@ -30,4 +30,15 @@
     <string name="navbar_surahs">السور</string>
     <string name="navbar_favorites">المفضلين</string>
     <string name="navbar_settings">الإعدادات</string>
+    <string name="settings_appearance_section">المظهر</string>
+    <string name="settings_theme_label">السيم</string>
+    <string name="settings_theme_description">أسهل على الأعين</string>
+    <string name="settings_dynamic_colors_label">ألوان ديناميكية</string>
+    <string name="settings_dynamic_colors_description">ألوان مستوحاة من خلفية الشاشة</string>
+    <string name="settings_about_section">عن التطبيق</string>
+    <string name="settings_about_version_code">رمز الإصدار:\t\t\t%d</string>
+    <string name="settings_about_version_name">إسم الإصدار:\t\t\t%s</string>
+    <string name="settings_about_version_name_part">%d</string>
+    <string name="settings_about_developer_name">عبد المنعم الحفناوى</string>
+    <string name="settings_about_github_url">https://github.com/abdalmoniem/AlQuran</string>
 </resources>

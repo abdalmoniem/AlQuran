@@ -159,7 +159,7 @@ private fun TitleBar(
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
 
-    val titleText = stringResource(Rs.string.quran)
+    val titleText = stringResource(R.string.app_name)
     val titleStyle = TextStyle(
             fontSize = 50.sp,
             fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2))
