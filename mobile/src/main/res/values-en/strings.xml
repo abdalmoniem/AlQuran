@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">The Holy Quran</string>
+    <string name="search_reciters">Search for a Reciter…</string>
+    <string name="search_surahs">Search for a Surah…</string>
+    <string name="loading">Loading…</string>
+    <string name="player_widget_description">The Holy Quran Player</string>
+    <string name="surah_name">Surah Name</string>
+    <string name="reciter_name">Reciter Name</string>
+    <plurals name="moshaf_count">
+        <item quantity="one">One Recitation</item>
+        <item quantity="other">%d Recitations</item>
+    </plurals>
+    <plurals name="surah_count">
+        <item quantity="one">One Surah</item>
+        <item quantity="other">%d Surahs</item>
+    </plurals>
+    <string name="surah_makkia">Makkia</string>
+    <string name="surah_madaneyya">Madaneyya</string>
+    <string name="reciters_loading_error">An error occurred while loading reciters, please try again later.</string>
+    <string name="surahs_loading_error">An error occurred while loading surahs, please try again later.</string>
+    <string name="navbar_reciters">Reciters</string>
+    <string name="navbar_surahs">Surahs</string>
+    <string name="navbar_favorites">Favorites</string>
+    <string name="navbar_settings">Settings</string>
+    <string name="settings_appearance_section">Appearance</string>
+    <string name="settings_language_label">Language</string>
+    <string name="settings_language_description">The language used in the application</string>
+    <string name="settings_theme_label">Theme</string>
+    <string name="settings_theme_description">Easier on the eyes</string>
+    <string name="settings_dynamic_colors_label">Dynamic Colors</string>
+    <string name="settings_dynamic_colors_description">Colors inspired by the phone\'s wallpaper</string>
+    <string name="settings_about_section">About</string>
+    <string name="settings_notifications_label">Notifications</string>
+    <string name="settings_notifications_description">Change notifications settings</string>
+    <string name="settings_translation_label">Translations</string>
+    <string name="settings_translation_description">Help translate the application on Crowdin</string>
+    <string name="settings_privacy_policy_label">Privacy Policy</string>
+    <string name="settings_privacy_policy_description">Tap here to view the privacy policy</string>
+    <string name="settings_privacy_policy_content">&lt;!DOCTYPE html&gt;
+    &lt;html lang=&quot;ar&quot;&gt;
+      &lt;head&gt;
+        &lt;title&gt;The Holy Quran Privacy Notice&lt;/title&gt;
+        &lt;style&gt;
+          h1 {
+            margin-top: 20px;
+          }
+          h2 {
+            margin-top: 15px;
+          }
+          h3 {
+            margin-top: 10px;
+          }
+          p {
+            margin-bottom: 5px;
+          }
+        &lt;/style&gt;
+      &lt;/head&gt;
+
+      &lt;body&gt;
+        &lt;h1&gt;Introduction&lt;/h1&gt;
+        &lt;p&gt;
+          Welcome to The Holy Quran! This Privacy Notice explains how your personal information is collected, used, and protected.
+          By using The Holy Quran, you agree to the terms outlined in this Notice.
+        &lt;/p&gt;
+
+        &lt;h1&gt;Data Collection&lt;/h1&gt;
+        &lt;p&gt;
+          Notifications Access: The Holy Quran requests access to notifications to provide personalized updates on remaining time.
+          The Holy Quran does not store any notification content or Personally Identifiable Information (PII) outside your device.
+        &lt;/p&gt;
+
+        &lt;h1&gt;Information Use&lt;/h1&gt;
+        &lt;h2&gt;Personal Data&lt;/h2&gt;
+        &lt;p&gt;
+          The Holy Quran does not collect or store any personal data such as names, email addresses, or phone numbers.
+        &lt;/p&gt;
+
+        &lt;h1&gt;Usage Analytics&lt;/h1&gt;
+        &lt;p&gt;The Holy Quran does not track your usage behavior or collect analytics data.&lt;/p&gt;
+
+        &lt;h1&gt;Data Security&lt;/h1&gt;
+        &lt;h2&gt;On-Device Data Storage&lt;/h2&gt;
+        &lt;p&gt;
+          All data used by The Holy Quran remains on your device. The Holy Quran does not transfer or store any data externally.
+        &lt;/p&gt;
+
+        &lt;h1&gt;External Services&lt;/h1&gt;
+        &lt;h2&gt;Advertisements&lt;/h2&gt;
+        &lt;p&gt;The Holy Quran does not display third-party advertisements.&lt;/p&gt;
+
+        &lt;h2&gt;External Links&lt;/h2&gt;
+        &lt;p&gt;
+          The Holy Quran may contain links to external websites. Please note that The Holy Quran is not responsible for the privacy practices of these sites.
+        &lt;/p&gt;
+
+        &lt;h1&gt;Children\'s Privacy&lt;/h1&gt;
+        &lt;p&gt;
+          The Holy Quran is not intended for children under the age of 13. The Holy Quran does not knowingly collect any information from children.
+        &lt;/p&gt;
+
+        &lt;h1&gt;Changes to This Notice&lt;/h1&gt;
+        &lt;p&gt;
+          The Holy Quran may update this Privacy Notice from time to time. Any changes will be reflected in the app and on our website.
+        &lt;/p&gt;
+
+        &lt;h1&gt;Contact Us&lt;/h1&gt;
+        &lt;p&gt;
+          If you have any questions or concerns about this Privacy Notice, please contact me via email
+          on &lt;a href=&quot;mailto:hifnawy_moniem@hotmail.com&quot;&gt;hifnawy_moniem@hotmail.com&lt;/a&gt;
+        &lt;/p&gt;
+
+        &lt;h1&gt;Android Permissions&lt;/h1&gt;
+        &lt;p&gt;
+          The Holy Quran does not require any permissions
+        &lt;/p&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;
+
+    </string>
+    <string name="settings_contact_label">Contact</string>
+    <string name="settings_contact_description">Contact the developer by E-Mail</string>
+    <string name="settings_contact_android_version">Android Version: %s</string>
+    <string name="settings_contact_android_sdk">SDK Version: %s</string>
+    <string name="settings_contact_device_info">Device Type: %s</string>
+    <string name="settings_about_version_code">Version Code:\t\t\t%d</string>
+    <string name="settings_about_version_name">Version Name:\t\t\t%s</string>
+    <string name="settings_about_developer_name">AbdElMoniem ElHifnawy</string>
+</resources>
