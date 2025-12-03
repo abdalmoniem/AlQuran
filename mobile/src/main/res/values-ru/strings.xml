@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">القرآن الكريم</string>
+    <string name="search_reciters">بحث عن قارئ…</string>
+    <string name="search_surahs">بحث عن سورة…</string>
+    <string name="loading">جارٍ التحميل…</string>
+    <string name="player_widget_description">مُشَغِل القرآن الكريم</string>
+    <string name="surah_name">اسم السورة</string>
+    <string name="reciter_name">اسم القارئ</string>
+    <plurals name="moshaf_count">
+        <item quantity="one">مصحفٌ واحدٌ</item>
+        <item quantity="few">%d مصحف</item>
+        <item quantity="many">%d مصحف</item>
+        <item quantity="other">%d مصحف</item>
+    </plurals>
+    <plurals name="surah_count">
+        <item quantity="one">سورةٌ واحدةٌ</item>
+        <item quantity="few">%d سورة</item>
+        <item quantity="many">%d سورة</item>
+        <item quantity="other">%d سورة</item>
+    </plurals>
+    <string name="surah_makkia">مكية</string>
+    <string name="surah_madaneyya">مدنية</string>
+    <string name="reciters_loading_error">حدث خطأ أثناء تحميل القراء، برجاء المحاولة مرة أخرى.</string>
+    <string name="surahs_loading_error">حدث خطأ أثناء تحميل السور، برجاء المحاولة مرة أخرى.</string>
+    <string name="navbar_reciters">القراء</string>
+    <string name="navbar_surahs">السور</string>
+    <string name="navbar_favorites">المفضلين</string>
+    <string name="navbar_settings">الإعدادات</string>
+    <string name="settings_appearance_section">المظهر</string>
+    <string name="settings_language_label">اللغة</string>
+    <string name="settings_language_description">اللغة المستخدمة في التطبيق</string>
+    <string name="settings_theme_label">السيم</string>
+    <string name="settings_theme_description">أسهل على الأعين</string>
+    <string name="settings_dynamic_colors_label">ألوان ديناميكية</string>
+    <string name="settings_dynamic_colors_description">ألوان مستوحاة من خلفية الشاشة</string>
+    <string name="settings_about_section">عن التطبيق</string>
+    <string name="settings_notifications_label">الإشعارات</string>
+    <string name="settings_notifications_description">تغيير إعدادات الإشعارات</string>
+    <string name="settings_translation_label">الترجمات</string>
+    <string name="settings_translation_description">ساعد في ترجمة التطبيق على Crowdin</string>
+    <string name="settings_privacy_policy_label">سياسة الخصوصية</string>
+    <string name="settings_privacy_policy_description">اضغط هنا لعرض سياسة الخصوصية</string>
+    <string name="settings_privacy_policy_content">        &lt;!DOCTYPE html&gt;
+            &lt;html lang=&quot;ar&quot;&gt;
+                &lt;head&gt;
+                    &lt;title&gt;إشعار خصوصية القرآن الكريم&lt;/title&gt;
+                    &lt;style&gt;
+                        h1 {
+                            margin-top: 20px;
+                        }
+                        h2 {
+                            margin-top: 15px;
+                        }
+                        h3 {
+                            margin-top: 10px;
+                        }
+                        p {
+                            margin-bottom: 5px;
+                        }
+                    &lt;/style&gt;
+                &lt;/head&gt;
+
+                &lt;body&gt;
+                    &lt;h1&gt;المقدمة&lt;/h1&gt;
+                    &lt;p&gt;
+                        مرحباً بك فى القرآن الكريم! يوضح إشعار الخصوصية هذا كيفية جمع واستخدام وحماية معلوماتك الشخصية
+                        باستخدام القرآن الكريم، فإنك توافق على الشروط الموضحة فى هذا الإشعار.
+                    &lt;/p&gt;
+
+                    &lt;h1&gt;جمع البيانات&lt;/h1&gt;
+                    &lt;p&gt;
+                        الوصول إلى الإشعارات: يطلب القرآن الكريم الوصول إلى الإشعارات لتوفير تحديثات مخصصة عن الوقت المتبقى.
+                        القرآن الكريم لا يخزن أى محتوى إشعارات أو معلومات تعريفية شخصية (PII) خارج جهازك.
+                    &lt;/p&gt;
+
+                    &lt;h1&gt;استخدام المعلومات&lt;/h1&gt;
+                    &lt;h2&gt;البيانات الشخصية&lt;/h2&gt;
+                    &lt;p&gt;
+                        القرآن الكريم لا يجمع أو يخزن أى بيانات شخصية مثل الأسماء أو عناوين البريد الإلكترونى أو أرقام الهواتف.
+                    &lt;/p&gt;
+
+                    &lt;h1&gt;تحليلات الاستخدام&lt;/h1&gt;
+                    &lt;p&gt;القرآن الكريم لا يتتبع سلوك الاستخدام الخاص بك أو يجمع بيانات التحليلات.&lt;/p&gt;
+
+                    &lt;h1&gt;أمان البيانات&lt;/h1&gt;
+                    &lt;h2&gt;تخزين البيانات على الجهاز&lt;/h2&gt;
+                    &lt;p&gt;
+                        تظل جميع البيانات المستخدمة من قبل القرآن الكريم على جهازك. القرآن الكريم لا ينقل أو يخزن أى بيانات خارجياً.
+                    &lt;/p&gt;
+
+                    &lt;h1&gt;الخدمات الخارجية&lt;/h1&gt;
+                    &lt;h2&gt;الإعلانات&lt;/h2&gt;
+                    &lt;p&gt;القرآن الكريم لا يعرض إعلانات من أطراف ثالثة.&lt;/p&gt;
+
+                    &lt;h2&gt;الروابط الخارجية&lt;/h2&gt;
+                    &lt;p&gt;
+                        قد يحتوى القرآن الكريم على روابط لمواقع خارجية. يرجى ملاحظة أن كافينييت ليس مسؤولاً عن ممارسات الخصوصية لهذه المواقع.
+                    &lt;/p&gt;
+
+                    &lt;h1&gt;خصوصية الأطفال&lt;/h1&gt;
+                    &lt;p&gt;
+                        القرآن الكريم غير مخصص للأطفال دون سن ١٣ عاماً. القرآن الكريم لا يجمع أى معلومات عن علم من الأطفال.
+                    &lt;/p&gt;
+
+                    &lt;h1&gt;التغييرات على هذا الإشعار&lt;/h1&gt;
+                    &lt;p&gt;
+                        قد يقوم القرآن الكريم بتحديث إشعار الخصوصية هذا من وقت لآخر. سيتم عكس أى تغييرات فى التطبيق وعلى موقعنا.
+                    &lt;/p&gt;
+
+                    &lt;h1&gt;اتصل بنا&lt;/h1&gt;
+                    &lt;p&gt;
+                        إذا كانت لديك أي أسئلة أو مخاوف بشأن إشعار الخصوصية هذا، يرجى التواصل معى عبر البريد الإلكترونى
+                        على &lt;a href=&quot;mailto:hifnawy_moniem@hotmail.com&quot;&gt;hifnawy_moniem@hotmail.com&lt;/a&gt;
+                    &lt;/p&gt;
+
+                    &lt;h1&gt;أذونات أندرويد&lt;/h1&gt;
+                    &lt;p&gt;
+                        لا يتطلب القرآن الكريم أى أذونات
+                    &lt;/p&gt;
+                &lt;/body&gt;
+            &lt;/html&gt;
+
+    </string>
+    <string name="settings_contact_label">التواصل</string>
+    <string name="settings_contact_description">التواصل مع المطور عبر البريد الإلكترونى</string>
+    <string name="settings_contact_developer_email">hifnawy_moniem@hotmail.com</string>
+    <string name="settings_contact_android_version">إصدار أندرويد: %s</string>
+    <string name="settings_contact_android_sdk">إصدار SDK: %s</string>
+    <string name="settings_contact_device_info">نوع الجهاز: %s</string>
+    <string name="settings_about_version_code">رمز الإصدار:\t\t\t%d</string>
+    <string name="settings_about_version_name">إسم الإصدار:\t\t\t%s</string>
+    <string name="settings_about_developer_name">عبد المنعم الحفناوى</string>
+    <string name="locale_int">%d</string>
+</resources>
