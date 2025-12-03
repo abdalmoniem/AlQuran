@@ -18,7 +18,7 @@
 #   --commit_changes       : Commit the changes to the repository.                                      #
 #                                                                                                       #
 # The script generates the changelogs in the following directory:                                       #
-# <gitTopLevel>/fastlane/metadata/android/en-US/changelogs                                              #
+# <gitTopLevel>/fastlane/metadata/android/en/changelogs                                              #
 #                                                                                                       #
 # The changelog files has the following format:                                                         #
 #                                                                                                       #
@@ -40,7 +40,7 @@
 
 gitTopLevel="$(git rev-parse --show-toplevel)"
 versionCodeFilter="\(versionCode\s\+=\s\+\)\([[:digit:]]\+\)"
-changelogsPath="$gitTopLevel/fastlane/metadata/android/en-US/changelogs"
+changelogsPath="$gitTopLevel/fastlane/metadata/android/en/changelogs"
 # shellcheck disable=SC2207
 tags=($(git tag))
 changelogs=0
@@ -98,7 +98,7 @@ for index in $(seq $((${#tags[@]} - 1))   -1 0); do
   fi
 
   echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  versionCode=$(git show "$tag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
+  versionCode=$(git show "$tag:mobile/build.gradle.kts" | grep -e "versionCode\s*=\s*" | sed -e "s/$versionCodeFilter/\2/" | xargs)
 
   commitHashesBetweenTags=$(git log "$previousTag".."$tag" --pretty=format:"%h")
   commitHashCount=$(echo "$commitHashesBetweenTags" | wc -l)

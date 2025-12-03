@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
+import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.ReciterId
@@ -267,7 +268,10 @@ private fun TitleBar(
     val reciterText = reciter.name
     val reciterStyle = TextStyle(
             fontSize = 50.sp,
-            fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2))
+            fontFamily = when {
+                QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+                else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
+            }
     )
 
     val moshafText = "${moshaf.name} - ${arabicPluralStringResource(R.plurals.surah_count, moshaf.surahsCount)}"

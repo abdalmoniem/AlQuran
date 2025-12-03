@@ -63,7 +63,7 @@ object SettingsDataStore {
 
     suspend fun getLocale(context: Context) = context.dataStore.data.map { preferences ->
         Gson().fromJson(preferences[SettingsKey.Locale.key], LocaleInfo::class.java)
-    }.first() ?: QuranApplication.currentLocale
+    }.first() ?: QuranApplication.currentLocaleInfo
 
     suspend fun setLocale(context: Context, locale: LocaleInfo) {
         context.dataStore.edit { preferences ->

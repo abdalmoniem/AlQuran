@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
+import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.defaultSurahDrawableId
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
 import com.hifnawy.alquran.view.theme.AppTheme
@@ -194,7 +195,10 @@ private fun MiniPlayerSurahInfo(
                         modifier = Modifier.basicMarquee(),
                         text = state.surah?.name ?: stringResource(R.string.loading),
                         fontSize = textSize,
-                        fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                        fontFamily = when {
+                            QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+                            else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
+                        },
                         color = Color.White.copy(alpha = 0.8f)
                 )
 
@@ -204,7 +208,10 @@ private fun MiniPlayerSurahInfo(
                         modifier = Modifier.basicMarquee(),
                         text = state.reciter?.name ?: stringResource(R.string.loading),
                         fontSize = textSize * 0.5f,
-                        fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                        fontFamily = when {
+                            QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+                            else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
+                        },
                         color = Color.White.copy(alpha = 0.8f)
                 )
             }

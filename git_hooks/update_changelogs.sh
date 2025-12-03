@@ -7,7 +7,7 @@
 #              the changelog from the latest tag.                                                       #
 # --reference_tag <tag>: Specifies the tag to compare the commits with. If not specified, the script    #
 #                        compares the commits with the latest tag.                                      #
-# --write_changes: Writes the changelog to a file in the fastlane/metadata/android/en-US/changelogs     #
+# --write_changes: Writes the changelog to a file in the fastlane/metadata/android/en/changelogs     #
 #                  folder. The file name is the versionCode.txt.                                        #
 # --commit_changes: Commits the changelog file to the git repository.                                   #
 #                                                                                                       #
@@ -34,7 +34,7 @@ versionCodeFilter="\(versionCode\s\+=\s\+\)\([[:digit:]]\+\)"
 tag="HEAD"
 # Initialize referenceTag to the latest tag (might be empty if no tags exist)
 referenceTag=$(git describe --tags "$(git rev-list --tags --max-count=1)" 2> /dev/null)
-changelogsPath="$gitTopLevel/fastlane/metadata/android/en-US/changelogs"
+changelogsPath="$gitTopLevel/fastlane/metadata/android/en/changelogs"
 changelogs=0
 subjects=()
 bodies=()
@@ -116,12 +116,12 @@ commitHashCount=$(echo "$commitHashesBetweenTags" | wc -l)
 # and the build.gradle.kts file might not exist at that commit (e.g., if it's the root commit).
 # We conditionally try to extract the versionCode based on referenceTag not being the root commit.
 if [ "$referenceTag" != "$(git rev-list --max-parents=0 HEAD)" ]; then
-    referenceVersionCode=$(git show "$referenceTag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
+    referenceVersionCode=$(git show "$referenceTag:mobile/build.gradle.kts" | grep -e "versionCode\s*=\s*" | sed -e "s/$versionCodeFilter/\2/" | xargs)
 else
     referenceVersionCode="0" # Use a default for the very first commit reference
 fi
 
-tagVersionCode=$(git show "$tag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
+tagVersionCode=$(git show "$tag:mobile/build.gradle.kts" | grep -e "versionCode\s*=\s*" | sed -e "s/$versionCodeFilter/\2/" | xargs)
 
 echo "Tag: $tag, tagVersionCode: $tagVersionCode"
 echo "Reference Tag: $referenceTag, referenceVersionCode: $referenceVersionCode"

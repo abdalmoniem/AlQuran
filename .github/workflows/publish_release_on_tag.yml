@@ -24,13 +24,13 @@ jobs:
         run: |
           gitTopLevel="$(git rev-parse --show-toplevel)"
           versionCodeFilter="\(versionCode\s\+=\s\+\)\([[:digit:]]\+\)"
-          versionCode=$(git show "$tag:mobile/build.gradle.kts" | grep versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
+          versionCode=$(git show "$tag:mobile/build.gradle.kts" | grep -e "versionCode\s*=\s*" | sed -e "s/$versionCodeFilter/\2/" | xargs)
 
-          cat "$gitTopLevel/fastlane/metadata/android/en-US/changelogs/$versionCode.txt"
+          cat "$gitTopLevel/fastlane/metadata/android/en/changelogs/$versionCode.txt"
 
           {
               echo 'COMMIT_MESSAGE<<EOF'
-              cat "$gitTopLevel/fastlane/metadata/android/en-US/changelogs/$versionCode.txt"
+              cat "$gitTopLevel/fastlane/metadata/android/en/changelogs/$versionCode.txt"
               echo EOF
           } >> $GITHUB_ENV
 

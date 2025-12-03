@@ -174,13 +174,13 @@ private fun AppearanceSection() {
  * locale settings screen on Android 13 (Tiramisu) and above, or the general application
  * details screen on older versions, where the user can manage the language.
  *
- * The current locale is observed from [QuranApplication.currentLocale] and is updated
+ * The current locale is observed from [QuranApplication.currentLocaleInfo] and is updated
  * via a [LaunchedEffect]. When the item is clicked, haptic feedback is triggered,
  * and an [Intent] is fired to navigate the user to the appropriate system settings screen.
  * The current locale is also persisted using [SettingsDataStore].
  *
  * @see SettingsItemCard
- * @see QuranApplication.currentLocale
+ * @see QuranApplication.currentLocaleInfo
  * @see Settings.ACTION_APP_LOCALE_SETTINGS
  * @see Settings.ACTION_APPLICATION_DETAILS_SETTINGS
  */
@@ -199,15 +199,15 @@ private fun LanguageSettings() {
         data = "package:${activity?.packageName}".toUri()
     }
 
-    var currentLocale by rememberSaveable { mutableStateOf(QuranApplication.currentLocale) }
+    var currentLocale by rememberSaveable { mutableStateOf(QuranApplication.currentLocaleInfo) }
 
     val onClick = {
         haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
         activity?.startActivity(intent) ?: Unit
     }
 
-    LaunchedEffect(QuranApplication.currentLocale) {
-        currentLocale = QuranApplication.currentLocale
+    LaunchedEffect(QuranApplication.currentLocaleInfo) {
+        currentLocale = QuranApplication.currentLocaleInfo
         settingsDataStore.setLocale(context, currentLocale)
         Timber.debug("Current locale: ${currentLocale.language}")
     }

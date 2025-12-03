@@ -81,9 +81,11 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
+import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.defaultSurahDrawableId
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
 import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursLong
@@ -660,7 +662,10 @@ private fun RecitationInfo(
                             .basicMarquee(),
                         text = state.surah?.name ?: stringResource(R.string.loading),
                         fontSize = surahFontSize,
-                        fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                        fontFamily = when {
+                            QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+                            else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
+                        },
                         color = Color.White.copy(alpha = 0.8f),
                 )
             }
@@ -700,6 +705,134 @@ private fun AutoSizeText(
     }
 }
 
+// @Composable
+// @OptIn(ExperimentalMaterial3Api::class)
+// private fun PlayerProgress(
+//         modifier: Modifier = Modifier,
+//         state: PlayerState,
+//         bufferedProgress: Float,
+//         sliderPosition: Float,
+//         isChangingPosition: Boolean,
+//         onSeekStarted: () -> Unit = {},
+//         onSeekProgress: (Float) -> Unit = {},
+//         onSeekFinished: () -> Unit = {}
+// ) {
+//     BoxWithConstraints(
+//             modifier = modifier,
+//             contentAlignment = Alignment.TopCenter
+//     ) {
+//         val deviceConfiguration = currentWindowAdaptiveInfo().windowSizeClass.deviceConfiguration
+//
+//         val sizingFactor = when (deviceConfiguration) {
+//             DeviceConfiguration.COMPACT          -> 0f
+//
+//             DeviceConfiguration.PHONE_PORTRAIT,
+//             DeviceConfiguration.TABLET_PORTRAIT  -> 0.12f
+//
+//             DeviceConfiguration.PHONE_LANDSCAPE  -> 0.08f
+//             DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
+//         }
+//
+//         val sliderHeightFactor = when (deviceConfiguration) {
+//             DeviceConfiguration.COMPACT          -> 0f
+//
+//             DeviceConfiguration.PHONE_PORTRAIT,
+//             DeviceConfiguration.TABLET_PORTRAIT  -> 0.2f
+//
+//             DeviceConfiguration.PHONE_LANDSCAPE,
+//             DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
+//         }
+//
+//         val fontSize = (maxHeight.value * sizingFactor).sp.apply {
+//             when {
+//                 QuranApplication.currentLocaleInfo.isRTL -> this * 1.5f
+//                 else                                     -> this
+//             }
+//         }
+//         val fontFamily = when {
+//             QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+//             else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
+//         }
+//         val sliderHeight = (maxHeight.value * sliderHeightFactor).dp
+//
+//         Column(
+//                 horizontalAlignment = Alignment.CenterHorizontally,
+//                 verticalArrangement = Arrangement.Top
+//         ) {
+//             Box(
+//                     modifier = Modifier.fillMaxWidth(),
+//                     contentAlignment = Alignment.BottomCenter
+//             ) {
+//                 Row(
+//                         horizontalArrangement = Arrangement.Center,
+//                         verticalAlignment = Alignment.CenterVertically
+//                 ) {
+//                     val currentSliderPositionMs = if (isChangingPosition) sliderPosition.toLong() else state.currentPositionMs
+//                     val showHours = state.durationMs.milliseconds.hoursLong > 0
+//
+//                     Text(
+//                             text = currentSliderPositionMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
+//                             fontSize = fontSize,
+//                             fontFamily = fontFamily,
+//                             fontWeight = FontWeight.ExtraBold,
+//                             color = Color.White.copy(alpha = 0.8f)
+//                     )
+//
+//                     Spacer(Modifier.width(8.dp))
+//
+//                     Text(
+//                             text = "/",
+//                             fontSize = fontSize,
+//                             fontFamily = fontFamily,
+//                             fontWeight = FontWeight.ExtraBold,
+//                             color = Color.White.copy(alpha = 0.8f)
+//                     )
+//
+//                     Spacer(Modifier.width(8.dp))
+//
+//                     Text(
+//                             text = state.durationMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
+//                             fontSize = fontSize,
+//                             fontFamily = fontFamily,
+//                             fontWeight = FontWeight.ExtraBold,
+//                             color = Color.White.copy(alpha = 0.8f)
+//                     )
+//                 }
+//             }
+//
+//             Box(
+//                     modifier = Modifier.fillMaxWidth(),
+//                     contentAlignment = Alignment.TopCenter
+//             ) {
+//                 val trackGap = 5.dp
+//                 val trackHeight = sliderHeight
+//                 val trackActiveColor = Color.White
+//                 val trackInactiveColor = Color.White.copy(alpha = 0.5f)
+//                 val trackShape = RoundedCornerShape(15.dp)
+//
+//                 val thumbWidth = 10.dp
+//                 val thumbHeight = trackHeight + 10.dp
+//
+//                 LinearProgressIndicator(
+//                         state = state,
+//                         thumbWidth = thumbWidth,
+//                         thumbHeight = thumbHeight,
+//                         trackHeight = trackHeight,
+//                         trackGap = trackGap,
+//                         trackShape = trackShape,
+//                         trackActiveColor = trackActiveColor,
+//                         trackInactiveColor = trackInactiveColor,
+//                         sliderPosition = sliderPosition,
+//                         bufferedProgress = bufferedProgress,
+//                         onSeekStarted = onSeekStarted,
+//                         onSeekProgress = onSeekProgress,
+//                         onSeekFinished = onSeekFinished
+//                 )
+//             }
+//         }
+//     }
+// }
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun PlayerProgress(
@@ -716,30 +849,7 @@ private fun PlayerProgress(
             modifier = modifier,
             contentAlignment = Alignment.TopCenter
     ) {
-        val deviceConfiguration = currentWindowAdaptiveInfo().windowSizeClass.deviceConfiguration
-
-        val sizingFactor = when (deviceConfiguration) {
-            DeviceConfiguration.COMPACT          -> 0f
-
-            DeviceConfiguration.PHONE_PORTRAIT,
-            DeviceConfiguration.TABLET_PORTRAIT  -> 0.12f
-
-            DeviceConfiguration.PHONE_LANDSCAPE  -> 0.08f
-            DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
-        }
-
-        val sliderHeightFactor = when (deviceConfiguration) {
-            DeviceConfiguration.COMPACT          -> 0f
-
-            DeviceConfiguration.PHONE_PORTRAIT,
-            DeviceConfiguration.TABLET_PORTRAIT  -> 0.2f
-
-            DeviceConfiguration.PHONE_LANDSCAPE,
-            DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
-        }
-
-        val fontSize = (maxHeight.value * sizingFactor).sp
-        val sliderHeight = (maxHeight.value * sliderHeightFactor).dp
+        val config = playerProgressConfig(maxHeight = maxHeight)
 
         Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -749,41 +859,13 @@ private fun PlayerProgress(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.BottomCenter
             ) {
-                Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val currentSliderPositionMs = if (isChangingPosition) sliderPosition.toLong() else state.currentPositionMs
-                    val showHours = state.durationMs.milliseconds.hoursLong > 0
-
-                    Text(
-                            text = currentSliderPositionMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
-                            fontSize = fontSize,
-                            fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White.copy(alpha = 0.8f)
-                    )
-
-                    Spacer(Modifier.width(8.dp))
-
-                    Text(
-                            text = "\\",
-                            fontSize = fontSize,
-                            fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White.copy(alpha = 0.8f)
-                    )
-
-                    Spacer(Modifier.width(8.dp))
-
-                    Text(
-                            text = state.durationMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
-                            fontSize = fontSize,
-                            fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White.copy(alpha = 0.8f)
-                    )
-                }
+                PlayerDuration(
+                        state = state,
+                        sliderPosition = sliderPosition,
+                        isChangingPosition = isChangingPosition,
+                        fontSize = config.fontSize,
+                        fontFamily = config.fontFamily
+                )
             }
 
             Box(
@@ -791,7 +873,7 @@ private fun PlayerProgress(
                     contentAlignment = Alignment.TopCenter
             ) {
                 val trackGap = 5.dp
-                val trackHeight = sliderHeight
+                val trackHeight = config.sliderHeight
                 val trackActiveColor = Color.White
                 val trackInactiveColor = Color.White.copy(alpha = 0.5f)
                 val trackShape = RoundedCornerShape(15.dp)
@@ -817,6 +899,71 @@ private fun PlayerProgress(
             }
         }
     }
+}
+
+@Composable
+private fun PlayerDuration(
+        state: PlayerState,
+        sliderPosition: Float,
+        isChangingPosition: Boolean,
+        fontSize: TextUnit,
+        fontFamily: FontFamily
+) {
+    val showHours = state.durationMs.milliseconds.hoursLong > 0
+    val currentSliderPositionMs = if (isChangingPosition) sliderPosition.toLong() else state.currentPositionMs
+    val textStyle = androidx.compose.ui.text.TextStyle(
+            fontSize = fontSize,
+            fontFamily = fontFamily,
+            fontWeight = FontWeight.ExtraBold,
+            color = Color.White.copy(alpha = 0.8f)
+    )
+
+    Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = currentSliderPositionMs.milliseconds.toLocalizedFormattedTime(showHours = showHours), style = textStyle)
+        Spacer(Modifier.width(8.dp))
+        Text(text = "/", style = textStyle)
+        Spacer(Modifier.width(8.dp))
+        Text(text = state.durationMs.milliseconds.toLocalizedFormattedTime(showHours = showHours), style = textStyle)
+    }
+}
+
+@Composable
+private fun playerProgressConfig(maxHeight: Dp): PlayerProgressConfig {
+    val deviceConfiguration = currentWindowAdaptiveInfo().windowSizeClass.deviceConfiguration
+    val isRTL = QuranApplication.currentLocaleInfo.isRTL
+
+    val sizingFactor = when (deviceConfiguration) {
+        DeviceConfiguration.COMPACT          -> 0f
+        DeviceConfiguration.PHONE_PORTRAIT,
+        DeviceConfiguration.TABLET_PORTRAIT  -> 0.12f
+
+        DeviceConfiguration.PHONE_LANDSCAPE  -> 0.08f
+        DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
+    }
+
+    val sliderHeightFactor = when (deviceConfiguration) {
+        DeviceConfiguration.COMPACT          -> 0f
+        DeviceConfiguration.PHONE_PORTRAIT,
+        DeviceConfiguration.TABLET_PORTRAIT  -> 0.2f
+
+        DeviceConfiguration.PHONE_LANDSCAPE,
+        DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
+    }
+
+    val baseFontSize = (maxHeight.value * sizingFactor).sp
+    val fontSize = if (isRTL) baseFontSize * 1.5f else baseFontSize
+
+    val fontFamily = when {
+        isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+        else  -> FontFamily(Font(Rs.font.aref_ruqaa))
+    }
+
+    val sliderHeight = (maxHeight.value * sliderHeightFactor).dp
+
+    return PlayerProgressConfig(fontSize = fontSize, fontFamily = fontFamily, sliderHeight = sliderHeight)
 }
 
 @Composable
@@ -1151,3 +1298,5 @@ private fun FullScreenPlayerPreview() {
         }
     }
 }
+
+private data class PlayerProgressConfig(val fontSize: TextUnit, val fontFamily: FontFamily, val sliderHeight: Dp)

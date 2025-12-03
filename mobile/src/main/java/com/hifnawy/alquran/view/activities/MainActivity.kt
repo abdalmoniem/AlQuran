@@ -51,8 +51,8 @@ class MainActivity : ComponentActivity() {
 
             val localeDirection = remember {
                 when {
-                    QuranApplication.currentLocale.isRTL -> LayoutDirection.Rtl
-                    else                                 -> LayoutDirection.Ltr
+                    QuranApplication.currentLocaleInfo.isRTL -> LayoutDirection.Rtl
+                    else                                     -> LayoutDirection.Ltr
                 }
             }
 

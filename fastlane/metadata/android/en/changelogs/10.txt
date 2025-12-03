@@ -1,0 +1,441 @@
+- ### Fix(i18n): Improve font consistency and locale handling
+   > This commit introduces several internationalization (i18n) and localization (l10n) improvements. It enhances font rendering for non-Arabic locales, refactors locale handling to be more robust, and fixes a typo.
+   > - **Font Consistency for Non-Arabic Locales:**
+   >   - The `aref_ruqaa` font is now used for non-Arabic locales in several UI components to provide a more consistent and stylized appearance.
+   >   - This change affects the titles in `RecitersGrid` and `SurahsGrid`, the names in `ReciterCard` and `SurahCard`, and the text in the `MiniPlayer` and `FullScreenPlayer`.
+   >   - The `SearchBar`'s label and placeholder text now also use the `aref_ruqaa` font.
+   > - **Locale Handling Refactoring:**
+   >   - **`QuranApplication.kt`**:
+   >     - Introduced a new `currentLocaleInfo` property that provides a `LocaleInfo` data object. This replaces the previous `currentLocale` property and centralizes locale-related information (language, country, code, RTL status).
+   >     - This change simplifies locale data access and makes the code more robust and readable across the app.
+   >   - The rest of the application has been updated to use the new `QuranApplication.currentLocaleInfo` property, including `MainActivity`, `SettingsScreen`, `SettingsDataStore`, and `QuranRepository`.
+   > - **Refactoring & Fixes:**
+   >   - **`FullScreenPlayer.kt`**: The `PlayerProgress` composable has been refactored for better readability by extracting configuration logic into a `playerProgressConfig` function and duration display into a `PlayerDuration` composable.
+   >   - **`DurationEx.kt`**: The `toLocalizedFormattedTime` extension now correctly uses `QuranApplication.currentLocale` to ensure time is formatted according to the user's selected language.
+   >   - **`resources.properties`**: Changed the unqualified resource locale from `ar-EG` to `ar` for broader matching.
+   >   - **`strings.xml`**: Corrected a typo in the debug app name from "Holdy Quran" to "Holy Quran".
+------------------------------
+- ### New Crowdin updates (#2)
+   > Commit: 3f42cdf
+   > 
+   > * New translations strings.xml (English)
+   > * New translations strings.xml (English)
+   > * New translations strings.xml (English)
+   > * New translations strings.xml (English)
+   > * New translations strings.xml (English)
+   > * New translations full_description.txt (English)
+   > * New translations short_description.txt (English)
+   > * New translations title.txt (English)
+------------------------------
+- ### Fix(i18n): Improve localization and metadata handling
+   > Commit: 2a6f0a3
+   > 
+   > This commit introduces several internationalization (i18n) and metadata improvements to enhance translation management, update app naming, and enrich media notifications.
+   > - **Crowdin Configuration (`crowdin.yml`):**
+   >     - The `crowdin.yml` file has been updated to include string resources from the `automotive`, `shared`, and `fastlane` modules.
+   >     - This ensures that all user-facing strings across different app modules and store metadata are properly sourced for translation.
+   > - **String Resource Management:**
+   >     - **`mobile/src/main/res/values/strings.xml`:**
+   >         - The developer's email address has been moved to a non-translatable string resource to prevent it from being modified during translation.
+   >         - The `locale_int` string has also been marked as `translatable="false"` to avoid localization issues.
+   >     - **`shared/src/main/res/values/strings.xml`:**
+   >         - API-related strings (`API_BASE_URL`, `API_RECITERS`, `API_SURAHS`) have been marked as `translatable="false"` to protect them from translation.
+   >         - The `quran` string has been renamed to `notification_channel_name` for better clarity.
+   > - **App Naming:**
+   >     - **`automotive/src/main/res/values/strings.xml` & `automotive/src/debug/res/values/strings.xml`:**
+   >         - The `app_name` for the Automotive OS build has been updated to its Arabic equivalent (`القرآن الكريم`) for both release and debug variants, ensuring a consistent localized experience.
+   > - **Media Notification & Metadata:**
+   >     - **`QuranMediaService.kt`:**
+   >         - The content title for media notifications now uses the more specific `notification_channel_name` string.
+   >         - Media metadata has been enhanced to include the Moshaf name in the `METADATA_KEY_ALBUM` field, providing richer information to the media session and connected clients like Android Auto.
+------------------------------
+- ### Update Crowdin configuration file
+   > Commit: 7f88a9a
+   > 
+   >
+------------------------------
+- ### Update Crowdin configuration file
+   > Commit: b2a2c69
+   > 
+   >
+------------------------------
+- ### Feat(Settings): Overhaul settings screen, add privacy policy, and improve localization
+   > Commit: ab3f8bd
+   > 
+   > This commit significantly refactors the `SettingsScreen`, introduces an HTML-based privacy policy viewer, improves the localization asset structure, and refactors back gesture handling.
+   > - **Settings Screen Overhaul (`SettingsScreen.kt`):**
+   >     - **Privacy Policy:**
+   >         - Added a new `PrivacyPolicyCard` that displays the privacy policy in a `ModalBottomSheet` when tapped.
+   >         - Introduced a new `settings_privacy_policy_content` string resource containing the policy in HTML format.
+   >     - **HTML Utility (`HTML.kt`):**
+   >         - Created a new `HTML` utility object with a `MutableHtml` class to parse and style HTML content.
+   >         - It converts HTML strings to Compose `AnnotatedString`, handling various tags (color, style, links) and applying theme colors to headers.
+   >         - Added `jsoup` as a new dependency to support HTML parsing.
+   >     - **Code Refinements:**
+   >         - Refactored the entire `SettingsScreen` into modular composables (`AppearanceSection`, `AboutSection`, `LanguageSettings`, etc.) for better organization and readability.
+   >         - Added extensive KDoc documentation to all new and refactored composables, clarifying their purpose and functionality.
+   >         - The "Translate" and "Crowdin" links in the "About" section are now functional.
+   > - **Predictive Back Gesture Refactoring:**
+   >     - **`PredictiveBackHandler.kt`:**
+   >         - Extracted the predictive back gesture logic from `PlayerContainer.kt` into a new, reusable `PredictiveBackHandler` composable.
+   >         - This new handler centralizes the logic for responding to `OnBackPressedCallback` events (`onBackStarted`, `onBackProgressed`, `onBackPressed`).
+   >     - **`PlayerContainer.kt`:**
+   >         - Replaced the local `OnBackHandler` implementation with the new, shared `PredictiveBackHandler` composable, simplifying the player's code.
+   > - **Localization & Asset Management (`fastlane/metadata`):**
+   >     - Restructured the Fastlane metadata directories by removing region-specific codes.
+   >     - Renamed `ar-EG` to `ar` and `en-US` to `en`.
+   >     - Moved all associated store listing files (descriptions, titles, changelogs, images) to the new, more generic locale directories.
+   >     - Updated `README.md` to point to the new Crowdin project URL.
+------------------------------
+- ### Refactor(Settings): Introduce DataStore for settings persistence
+   > Commit: 88ea686
+   > 
+   > This commit introduces `SettingsDataStore` to persist user settings for theme, language, and dynamic colors using Jetpack DataStore Preferences. The `SettingsScreen` has been significantly refactored to use this new data store, and the app's theme and layout direction are now dynamically updated based on these saved preferences.
+   > - **DataStore & Settings Management:**
+   >     - **`SettingsDataStore.kt`**:
+   >         - Introduced a new singleton `SettingsDataStore` to manage app settings.
+   >         - Persists `locale`, `theme` (Light, System, Dark), and `dynamicColors` (Boolean) using `preferencesDataStore`.
+   >         - Provides `get`/`set` methods for each setting and uses an observer pattern (`SettingsDataObserver`) to notify the UI of changes.
+   >         - Settings are loaded asynchronously on app start.
+   >         - Added `SettingsObserver` composable which can be used by other composables to observe settings changes in real time.
+   >     - **`build.gradle.kts` & `libs.versions.toml`**:
+   >         - Added the `androidx.datastore:datastore-preferences:1.2.0` dependency.
+   >     - **`StringEx.kt`**:
+   >         - Added a `snakeCase` extension property for strings, used for naming the DataStore file.
+   > - **Theme & Layout Direction:**
+   >     - **`MainActivity.kt`**:
+   >         - Now observes `SettingsDataStore` to get the user's preferred theme and dynamic color settings.
+   >         - The `AppTheme` is configured dynamically based on these stored values.
+   >         - The root `CompositionLocalProvider`'s layout direction (`Rtl`/`Ltr`) is also updated based on the saved locale, ensuring UI consistency across app restarts.
+   >         - Uses `LaunchedEffect` to load initial settings and `SettingsObserver` to listen for runtime changes.
+   > - **Settings Screen Refactoring:**
+   >     - **`SettingsScreen.kt`**:
+   >         - The entire screen has been refactored for better structure and to integrate with `SettingsDataStore`.
+   >         - Introduced reusable composables `SettingsSectionCard` and `SettingsItemCard` to reduce boilerplate and create a consistent UI for settings categories and individual items.
+   >         - **Language Settings**: Now reads the current locale from `QuranApplication` and saves it to DataStore when it changes.
+   >         - **Theme & Dynamic Colors**: UI controls (segmented buttons, switch) now read their initial state from `SettingsDataStore` and write back user selections, triggering an app-wide theme update.
+   >         - UI state is now managed with `rememberSaveable` to survive configuration changes.
+   > - **Minor UI & Refactoring:**
+   >     - **`NavBar.kt`**: Removed rounded corners from the `NavigationBar` for a standard, full-width appearance.
+   >     - **`FavoritesScreen.kt` & `SettingsScreen.kt`**: Adjusted horizontal padding for better alignment with other screens.
+   >     - **`QuranApplication.kt`**: Made `LocaleInfo` data class `Serializable` to allow it to be stored as a JSON string in DataStore.
+------------------------------
+- ### Refactor(i18n): Add dynamic language and layout direction support
+   > Commit: 518fa41
+   > 
+   > This commit introduces comprehensive internationalization (i18n) support by enabling dynamic language switching and ensuring the UI layout direction (RTL/LTR) updates accordingly. The app now fetches API data in the selected language and directs users to the system's app locale settings for language changes.
+   > - **Dynamic Layout Direction:**
+   >     - **`MainActivity.kt`**:
+   >         - The `LocalLayoutDirection` is now dynamically provided based on the `QuranApplication.currentLocale`.
+   >         - A `rememberSaveable` state (`layoutDirection`) is used to hold the current `LayoutDirection` (Rtl/Ltr).
+   >         - A `LaunchedEffect` observes changes in `QuranApplication.currentLocale.isRTL` and updates the layout direction, triggering a recomposition of the UI to respect the new language direction.
+   > - **Language-Aware API Requests:**
+   >     - **`QuranRepository.kt`**:
+   >         - The `recitersURL` and `surahsURL` are now `get()` properties that dynamically construct the API endpoint URL.
+   >         - The `language` query parameter is now set using `QuranApplication.currentLocale.code`, ensuring that data (e.g., reciter and surah names) is fetched in the user's selected language.
+   > - **Settings Screen Enhancements:**
+   >     - **`SettingsScreen.kt`**:
+   >         - The language setting card now displays the currently configured application language and country (e.g., "English (United States)").
+   >         - The `DropdownMenu` for in-app language selection has been removed.
+   >         - Clicking the language setting now creates an `Intent` that opens the system's "App Languages" settings screen (for Android 13+) or the "App Info" screen (for older versions), guiding the user to the standard Android location for changing app-specific locales.
+   > - **Locale Management:**
+   >     - **`QuranApplication.kt`**:
+   >         - A new `currentLocale` property has been added to provide centralized access to the app's active locale information.
+   >         - It retrieves the current locale from `AppCompatDelegate.getApplicationLocales()` or falls back to the system configuration.
+   >         - A `LocaleInfo` data class was introduced to conveniently encapsulate the language name, country, language code, and RTL status.
+------------------------------
+- ### Feat(Settings): Implement settings screen with new options (UI Only)
+   > Commit: 452b0f7
+   > 
+   > This commit introduces a comprehensive and interactive settings screen, replacing the previous placeholder. The new screen adds several user-configurable options, including language selection, theme control, dynamic colors, and direct links for notifications, translations, privacy policy, and developer contact. The UI has been enhanced with clickable cards, haptic feedback, and improved layouts.
+   > - **New Settings Options:**
+   >     - **`SettingsScreen.kt`**:
+   >         - **Language:** Added a `LanguageSettings` card with a dropdown menu to select the app language.
+   >         - **Notifications:** Added a `NotificationsSettings` card that opens the app's notification settings in the Android system.
+   >         - **Translation:** A `TranslationCard` now links to the project's Crowdin page, inviting users to contribute.
+   >         - **Privacy Policy:** A `PrivacyPolicyCard` has been added (currently a placeholder for future implementation).
+   >         - **Contact:** A `ContactCard` was added, which opens the default email client with a pre-populated template containing the developer's email and relevant device/app version information for easier support.
+   > - **UI & UX Enhancements:**
+   >     - **`SettingsScreen.kt`**:
+   >         - Reworked `ThemeSettings` and `DynamicColorsSettings` to be fully interactive. Cards are now clickable, and controls like `SegmentedButton` and `Switch` respond to user input.
+   >         - Implemented haptic feedback (`HapticFeedbackType`) for all interactions (clicks, toggles) to improve tactile response.
+   >         - Replaced hardcoded font sizes with larger, more readable values (`20.sp` and `25.sp`) and used `basicMarquee` to handle text overflow gracefully.
+   >         - Text is now properly localized for version numbers using a new `locale_int` string resource, ensuring numbers are displayed correctly in Arabic.
+   >     - **`AppDetailsCard.kt`**:
+   >         - Replaced the previous launcher icon with a monochrome app icon (`app_icon_monochrome`).
+   >         - Added haptic feedback to the social media/link buttons.
+   > - **New Assets & Resources:**
+   >     - **Icons:** Added new vector drawables for the settings options:
+   >         - `language_24px.xml`
+   >         - `translate_24px.xml`
+   >         - `privacy_policy_24px.xml`
+   >         - `notifications_24px.xml`
+   >         - `mail_24px.xml`
+   >     - **Strings (`values/strings.xml`):**
+   >         - Added numerous new strings for labels, descriptions, URLs, and email templates for the new settings cards.
+   >         - Introduced a `locale_int` string for formatting integers according to the current locale.
+   > - **Intents & System Integration:**
+   >     - **`SettingsScreen.kt`**:
+   >         - Implemented `Intent`s to open external URLs (Crowdin, GitHub), the system's notification settings screen, and the user's email client.
+------------------------------
+- ### Feat(Settings): Implement settings screen with theme and about sections (UI Only)
+   > Commit: d6fad09
+   > 
+   > This commit introduces a new `SettingsScreen` with initial options for theme customization and detailed application information. It includes new UI components for selecting themes, toggling dynamic colors, and displaying "About" information like version details and developer links. The commit also adds numerous new icons and updates string resources to support these features.
+   > - **New Screens & Navigation:**
+   >     - **`SettingsScreen.kt`:**
+   >         - Created a new `SettingsScreen` with a structured layout, divided into "Appearance" and "About" sections.
+   >         - The title uses a large, stylized font (`aref_ruqaa`).
+   >         - The overall layout uses `OutlinedCard` to group related settings.
+   >     - **`NavBar.kt`:**
+   >         - Temporarily commented out the "Favorites" navigation item to focus on the new Settings screen.
+   > - **Appearance Settings:**
+   >     - **Theme Selection (`ThemeSettings`):**
+   >         - Added a `SingleChoiceSegmentedButtonRow` to allow users to switch between Light, Auto, and Dark themes.
+   >         - The selected theme's icon is filled, while others remain outlined, providing clear visual feedback.
+   >     - **Dynamic Colors (`DynamicColorsSettings`):**
+   >         - Implemented a `Switch` to enable or disable dynamic colors (Material You).
+   >         - The switch thumb displays a check or close icon to indicate its state.
+   >     - **New Icons:**
+   >         - Added vector assets for theme selection: `theme_24px`, `theme_light_mode_filled_24px`, `theme_light_mode_outlined_24px`, `theme_dark_mode_filled_24px`, `theme_dark_mode_outlined_24px`, `theme_auto_filled_24px`, `theme_auto_outlined_24px`.
+   >         - Added icons for the dynamic color switch (`dynamic_colors_24px`, `check_24px`).
+   > - **About Section:**
+   >     - **`AppDetailsCard.kt`:**
+   >         - Created a comprehensive card that displays the app's monochrome icon, name, and version information.
+   >         - Version code and name are now exposed via `buildConfigField` in `mobile/build.gradle.kts`.
+   >         - Version name is formatted to use Arabic numerals.
+   >         - Displays the developer's name.
+   >     - **Social & Repository Links:**
+   >         - Added `IconButton`s for GitHub, Crowdin, F-Droid, and IzzyOnDroid.
+   >         - The GitHub button is linked to the project's repository URL. Other buttons are currently disabled placeholders.
+   >     - **New Icons:**
+   >         - Added vector icons for external links: `github_icon.xml`, `crowdin_icon.xml`, `fdroid_icon.xml`, `izzyondroid_icon.xml`.
+   > - **Build & Resource Updates:**
+   >     - **`mobile/build.gradle.kts`:**
+   >         - Enabled `buildConfig` and added `VERSION_CODE` and `VERSION_NAME` as `buildConfigField`s to be accessible at runtime.
+   >     - **`values/strings.xml` & `debug/res/values/strings.xml`:**
+   >         - Updated the app name to Arabic (`القرآن الكريم`). The debug variant is now named `القرآن الكريم تجريبى`.
+   >         - Added numerous new string resources for the Settings screen, including section titles, labels, descriptions, and version information.
+   >     - **`RecitersGrid.kt`:**
+   >         - Changed the title text from a hardcoded "Quran" string to use the new `app_name` resource for consistency.
+------------------------------
+- ### Refactor(Nav): Enhance navigation animations and keyboard handling
+   > Commit: d0e8302
+   > 
+   > This commit introduces a major refactoring of the navigation system, replacing simple fade transitions with a highly sophisticated, context-aware animation system. It also improves keyboard handling on large screens, refines the player container's lifecycle, and enhances UI consistency across various screens.
+   > - **Advanced Navigation Animations (`NavGraph.kt`):**
+   >     - **Context-Aware Transitions:** Implemented a new, intricate animation system where transitions are dynamically determined by navigation direction and screen hierarchy.
+   >         - **Master-Detail Flow:** Navigating from `RecitersScreen` (master) to `SurahsScreen` (detail) now uses a vertical slide-up animation, while popping back slides down, reinforcing their relationship.
+   >         - **Sibling Screens:** Navigating between screens on the bottom navigation bar (e.g., `FavoritesScreen`, `SettingsScreen`) uses horizontal slide animations that respect their visual order.
+   >     - **Parallax Effect:** Exit transitions now use a slower slide speed (`EXIT_OFFSET_FACTOR = 0.5f`) than enter transitions, creating a parallax effect that adds depth to screen changes.
+   >     - **Directional Logic:** The animation direction (e.g., slide from start/end or top/bottom) is now conditional on the source and destination routes, creating a more intuitive and spatially aware user experience.
+   >     - **Code Refactoring:** The complex animation logic has been organized into a series of well-documented private extension properties and functions (e.g., `recitersEnterTransition`, `fadingSlideInTransition`) for clarity and maintainability.
+   > - **Keyboard & UI Padding Improvements:**
+   >     - **`ModifierEx.kt`:**
+   >         - Introduced a new `safeImePadding` modifier. This conditionally applies `imePadding()` only on non-compact devices (tablets, larger screens), preventing the UI from being pushed up unnecessarily on phones where screen space is limited.
+   >     - **`NavGraph.kt`:**
+   >         - The root `Column` now uses `safeImePadding` to intelligently adjust for the on-screen keyboard, improving the user experience on larger devices.
+   > - **UI Consistency & Enhancements:**
+   >     - **Screen Backgrounds:** Added a consistent `surfaceDim` background color to `RecitersScreen`, `SurahsScreen`, `FavoritesScreen`, and `SettingsScreen` to unify their appearance.
+   >     - **`NavBar.kt` (formerly `NavigationBar.kt`):**
+   >         - Renamed `NavigationBar.kt` to `NavBar.kt`.
+   >         - The logic for handling navigation bar item clicks, especially for the dual-purpose Reciters/Surahs item, has been extracted into a `handleRecitersNavigation` extension function.
+   >         - The `Surahs` route is now correctly remembered and restored, and the logic for updating the item's appearance (icon, label) has been refined and extracted into `getNavigationBarItemProperties`.
+   >         - Added extensive KDoc to document the component's complex state management and navigation logic.
+   > - **Player Container Lifecycle:**
+   >     - **`PlayerContainer.kt`:**
+   >         - Added checks (`if (!state.isVisible)`) to `LaunchedEffect` blocks to prevent animations and state changes from running when the player is hidden, improving performance.
+   >         - The back handling progress callback (`onBackProgress`) now correctly updates the player height progress, ensuring smoother animations when using predictive back gestures.
+   >         - Extracted the core height animation logic into a new private `animatePlayer` suspend function for better organization.
+   >     - **`MediaViewModel.kt`:**
+   >         - The default `isExpanded` state for the player is now correctly set to `false`.
+   > - **Build & Cleanup:**
+   >     - Added `/debug` to the `.gitignore` files for `pre-build`, `mobile`, `shared`, and `automotive` modules to ignore debug build outputs.
+------------------------------
+- ### Fix(CI): Trigger workflows on all branches
+   > Commit: 8b296e3
+   > 
+   > This commit updates the GitHub Actions workflow configurations to run on pushes and pull requests to all branches, not just the `main` branch.
+   > - **`.github/workflows/*.yml`**:
+   >   - Changed the branch filter from `[ "main" ]` to `[ "**" ]` in `build_debug_variant.yml`, `codacy_security_scan.yml`, and `codeql_security_scan.yml`.
+   >   - This ensures that CI checks are executed for all branches, improving integration and catching issues earlier in the development process.
+------------------------------
+- ### Feat(UI): Introduce bottom navigation and new screens
+   > Commit: 22c45e3
+   > 
+   > Initial feature/navBar commit. This introduces a bottom navigation bar, new screens for Favorites and Settings, and refactors the overall navigation structure. It also includes several UI enhancements and code improvements, such as a more robust player container and refined layouts.
+   > - **Navigation & New Screens:**
+   >     - **`NavigationBar.kt`:**
+   >         - Introduced a new bottom `NavigationBar` composable with three main destinations: Reciters, Favorites, and Settings.
+   >         - The navigation bar's height is animated and linked to the player's expansion progress, smoothly hiding it when the player is expanded.
+   >         - The "Reciters" item dynamically changes its icon and label to "Surahs" when on the `SurahsScreen`, providing better contextual navigation.
+   >         - Navigation actions now use `launchSingleTop = true` to prevent multiple instances of the same screen on the back stack.
+   >     - **`NavGraph.kt`:**
+   >         - Replaced the previous `Box`-based layout with a `Column` to accommodate the new bottom navigation bar.
+   >         - Added new routes and composables for the `FavoritesScreen` and `SettingsScreen`.
+   >     - **`FavoritesScreen.kt` & `SettingsScreen.kt`:**
+   >         - Added new placeholder screens for "Favorites" and "Settings" to establish the navigation flow.
+   >     - **`Screen.kt`:**
+   >         - Added `Favorites` and `Settings` to the sealed class of available screens.
+   > - **Player Container Enhancements:**
+   >     - **`PlayerContainer.kt`:**
+   >         - Removed `AnimatedVisibility` in favor of directly managing the `Card`'s height, making the show/hide animation smoother and more reliable. When not visible, its height is set to `0f`.
+   >         - Introduced an `onHeightChanged` callback that reports the player's expansion progress as a float from `0.0` to `1.0`. This progress is used to drive the navigation bar's hide animation.
+   >         - Refactored `Content` to always be present but contained within a `Card` whose visibility and layout are directly controlled, simplifying the animation logic.
+   >         - Updated horizontal and vertical padding for a tighter look.
+   >     - **`ModifierEx.kt`:**
+   >         - The `verticalDraggable` modifier now includes an `onHeightChanged` callback to report drag progress, which is used by the `PlayerContainer`.
+   > - **UI & Code Refinements:**
+   >     - **`RecitersGrid.kt`:**
+   >         - Enhanced the main title by displaying the app icon alongside the title text, providing a more branded look and distinguishing between debug and release variants. The skeleton loader now accurately reflects this new layout.
+   >     - **`arabicPluralStringResource.kt`:**
+   >         - The `arabicPluralStringResource` helper function was moved into an `ArabicPluralStringResource` object to act as a namespace.
+   >     - **`NavGraph.kt` (file deletion):**
+   >         - The old `NavGraph.kt` file was deleted and replaced by a new, more comprehensive implementation in `view/navigation/NavGraph.kt`.
+   >     - **`RecitersScreen.kt` & `MediaViewModel.kt`:**
+   >         - Ensured that `reciters` are correctly assigned in the `MediaViewModel` state update by explicitly using `this@updateState.reciters`.
+   > - **New Assets:**
+   >     - **Icons:** Added new vector drawables for the navigation bar: `person_24px` (Reciters), `favorite_24px` (Favorites), and `settings_24px` (Settings).
+   >     - **App Icon:** Added `app_icon.png` used in the `RecitersGrid` title.
+------------------------------
+- ### Fix(CI): Trigger workflows on all branches
+   > Commit: 379b29a
+   > 
+   > This commit updates the GitHub Actions workflow configurations to run on pushes and pull requests to all branches, not just the `main` branch.
+   > - **`.github/workflows/*.yml`**:
+   >   - Changed the branch filter from `[ "main" ]` to `[ "**" ]` in `build_debug_variant.yml`, `codacy_security_scan.yml`, and `codeql_security_scan.yml`.
+   >   - This ensures that CI checks are executed for all branches, improving integration and catching issues earlier in the development process.
+------------------------------
+- ### Refactor(Widget): Introduce `PlayerWidgetManager` for reliable updates
+   > Commit: c72a4ae
+   > 
+   > This commit introduces `PlayerWidgetManager`, a singleton object designed to centralize and improve the reliability of `PlayerWidget` updates. It addresses performance bottlenecks and race conditions in the Glance library's default update mechanism, ensuring that home screen widgets update quickly and consistently, especially upon initial placement.
+   > The previous approach suffered from slow updates due to Glance's session locking, often leaving new widgets blank for extended periods. This refactoring delegates all widget lifecycle and update logic to the new manager, which implements a faster, more direct update strategy.
+   > - **`PlayerWidgetManager.kt` (New File):**
+   >     - **Centralized Logic:** A new singleton `PlayerWidgetManager` is created to handle all widget update and lifecycle events (`onUpdate`, `onAppWidgetOptionsChanged`).
+   >     - **Faster Update Mechanism:**
+   >         - It bypasses Glance's slow, lock-prone session worker by manually rendering the widget's composable content into a `RemoteViews` object using `runComposition`.
+   >         - It then applies this `RemoteViews` object directly and immediately via the `AppWidgetManager`, ensuring timely UI updates.
+   >         - This new approach, encapsulated in `executeWidgetUpdate`, prevents the widget from appearing blank or updating slowly.
+   >     - **Initial Widget Setup:**
+   >         - In `onUpdate`, for newly added widgets, the manager programmatically closes the default Glance session and cancels its associated `WorkManager` job.
+   >         - This prevents the Glance library from spamming the `AppWidgetManager` with frequent, slow update requests and allows the manager to take full control.
+   >         - An immediate manual update is then triggered to display a default state.
+   >     - **State Management & Synchronization:**
+   >         - Uses a `Mutex` to synchronize update operations, preventing race conditions and ensuring that a widget is not updated concurrently.
+   >         - Manages the state of each widget session (`isCreated`, `isUpdating`) to orchestrate updates safely.
+   > - **Refactoring Existing Widget Code:**
+   >     - **`PlayerWidgetReceiver.kt`:**
+   >         - All logic in `onUpdate` and `onAppWidgetOptionsChanged` has been removed and delegated to the new `PlayerWidgetManager`.
+   >         - Removed the complex and problematic logic that attempted to manually close Glance sessions and cancel workers; this is now cleanly handled by the manager.
+   >     - **`PlayerWidget.kt`:**
+   >         - The `companion object` containing the `updateGlanceWidgets` and `executeUpdate` logic has been completely removed. This responsibility now lies entirely with `PlayerWidgetManager`.
+   >         - Updated logging to include moshaf details for better debugging.
+   >     - **`MobileApplication.kt`:**
+   >         - Calls to `PlayerWidget.updateGlanceWidgets` have been replaced with calls to `PlayerWidgetManager.updateGlanceWidgets`, ensuring widget updates are now processed through the new, reliable system.
+   >         - The update call now returns a `Job`, which is awaited to ensure completion.
+   > - **Utilities:**
+   >     - **`GlanceIdEx.kt` (New File):**
+   >         - Added a new utility to extract the `appWidgetId` from a `GlanceId` using reflection, centralizing this workaround for easier maintenance.
+------------------------------
+- ### Fix(Widget): Improve even more player widget reliability and startup
+   > Commit: 8d4f172
+   > 
+   > This commit overhauls the Glance player widget's lifecycle and update mechanism to fix significant reliability issues, including the widget appearing blank on startup or failing to update correctly. It also enables the widget to start playback directly, even when the media service is not running.
+   > The core of the fix involves programmatically managing Glance sessions and bypassing the library's slow default update worker.
+   > - **Widget Lifecycle & Update Overhaul:**
+   >     - **`PlayerWidgetReceiver.kt`**:
+   >         - In `onUpdate`, the default Glance session for a new widget is now programmatically located and closed. This prevents the Glance library's slow session worker from locking the widget and ignoring timely updates.
+   >         - After closing the session, `WorkManager` is used to cancel any pending work associated with that session, ensuring a clean slate for updates.
+   >         - A new `updateWidget` function is called, which immediately renders the widget with a default state, preventing it from appearing blank upon initial placement.
+   >         - The receiver now listens for `ACTION_APPWIDGET_OPTIONS_CHANGED` in `AndroidManifest.xml` to trigger updates when the widget is resized.
+   > - **Playback from Widget:**
+   >     - **`PlayerWidget.kt`**:
+   >         - The `ToggleMediaAction` (play/pause button) is now significantly more intelligent. It passes the current `Reciter`, `Moshaf`, and `Surah` as action parameters.
+   >         - It checks if the `QuranMediaService` is running.
+   >             - If running, it sends a `ACTION_TOGGLE_PLAY_PAUSE` intent.
+   >             - If not running, it starts the service with an `ACTION_START_PLAYBACK` intent, passing the necessary media info to begin playback directly from the widget.
+   >         - `startForegroundService` is now used for all playback-related actions to ensure reliability on modern Android versions.
+   >         - Added a dependency on `androidx.work:work-runtime-ktx` in `mobile/build.gradle.kts`.
+   > - **Refactoring & Fixes:**
+   >     - **`PlayerWidget.kt`**:
+   >         - Refined the `updateGlanceWidgets` function to support a `forceUpdate` flag, allowing it to bypass state change checks and re-render widgets on demand.
+   >         - Improved logging to provide clearer insights into widget state transitions and potential update failures.
+   >         - A `try-catch` block was added around `runComposition` to handle `IllegalStateException`, which can occur if a widget is already pending an update, preventing crashes.
+   >     - **`PlayerWidgetState.kt`**:
+   >         - Simplified the `equals` implementation to remove redundant checks for `Stopped` or `Ended` states, improving state comparison logic.
+------------------------------
+- ### Fix(Widget): Improve player widget update reliability
+   > Commit: 0054d52
+   > 
+   > This commit addresses a performance issue with the Glance player widget, where it would appear blank or update very slowly, especially upon initial placement on the home screen. The root cause was identified as excessive and slow update cycles managed by the Glance library's internal session worker.
+   > - **`PlayerWidgetReceiver.kt`**:
+   >     - In the `onUpdate` lifecycle method, the default Glance session is now programmatically closed for the newly added widget. This prevents the Glance library from spamming the `AppWidgetManager` with frequent, slow update requests.
+   >     - After closing the session, a manual update is triggered using `PlayerWidget.updateGlanceWidgets` to immediately display a default state, preventing the widget from appearing blank.
+   >     - Extensive comments have been added to `onUpdate` to document the issue and the rationale behind the fix.
+   > - **`PlayerWidget.kt`**:
+   >     - The `updateGlanceWidgets` function has been refactored to bypass the slow `PlayerWidget().updateAll(context)` method.
+   >     - It now manually renders the widget's composable content into a `RemoteViews` object using `PlayerWidget().runComposition()`.
+   >     - This `RemoteViews` object is then used to directly and immediately update the widget via `AppWidgetManager.getInstance(context).updateAppWidget()`, ensuring timely UI updates.
+   > - **`MainActivity.kt`**:
+   >     - Removed a call to `updateGlanceWidgets()` from the `onCreate` method, as it was a temporary workaround and is no longer necessary with the improved update mechanism.
+------------------------------
+- ### Refactor(UI): Improve Arabic plurals and enhance grid layouts
+   > Commit: 8eca853
+   > 
+   > This commit introduces several UI and localization improvements, focusing on correct Arabic pluralization, layout enhancements for the Surahs and Reciters grids, and a more robust auto-scroll mechanism.
+   > - **Arabic Pluralization:**
+   >     - **`values/strings.xml`**:
+   >         - Updated the Arabic plural strings for `moshaf_count` and `surah_count` to be more grammatically correct.
+   >     - **`utils/arabicPluralStringResource.kt`**:
+   >         - Introduced a new `arabicPluralStringResource` composable function to correctly handle complex Arabic pluralization rules that the standard Android `pluralStringResource` fails to address, specifically for numbers like 103-110. This ensures the correct grammatical form is used.
+   >     - **`ReciterCard.kt` & `MoshafCard.kt`**:
+   >         - Replaced `pluralStringResource` with the new `arabicPluralStringResource` helper for displaying counts.
+   >         - Updated the font for the moshaf count in `ReciterCard` to `aref_ruqaa` for better visual consistency.
+   > - **Surahs Grid Enhancements:**
+   >     - **`SurahsGrid.kt`**:
+   >         - Refactored the screen title to a `TitleBar` composable that now displays both the reciter's name and the selected moshaf's name and surah count.
+   >         - The shimmer loading effect for the title now more accurately reflects the final layout of the multi-line text.
+   >         - Improved the auto-scroll logic to be more precise. It now calculates the exact scroll distance needed to center the currently playing surah within the visible viewport, accounting for the mini-player's height. This provides a smoother and more reliable scroll animation.
+   >         - Updated the logic to correctly identify the playing item by checking `playingMoshafId` in addition to surah and reciter IDs.
+   >     - **`SurahsScreen.kt`**:
+   >         - Passed the `moshaf` and the necessary `PlayerState` flags to the `SurahsGrid` to support the improved title and playing item identification.
+   > - **Reciters Grid Enhancements:**
+   >     - **`RecitersGrid.kt`**:
+   >         - The shimmer effect for the main screen title (`Quran`) now dynamically calculates its size based on the text style, ensuring the placeholder size perfectly matches the final rendered text.
+------------------------------
+- ### Refactor(UI): Introduce `SearchBar` composable and improve UX
+   > Commit: 70891a1
+   > 
+   > This commit introduces a shared `SearchBar` composable, refactors grid screens to use it, and enhances the overall user experience with improved focus management, keyboard handling, and UI consistency. It also includes updates to the Gradle version and CI workflows.
+   > - **Refactoring & UI Improvements:**
+   >     - **`SearchTextField.kt`:**
+   >         - Introduced a new, reusable `SearchBar` composable.
+   >         - The new `SearchBar` includes a leading search icon and a trailing clear icon that appears only when text is entered.
+   >         - Implemented keyboard actions to dismiss the keyboard on search submission (`ImeAction.Search`).
+   >         - Added a `BackHandler` to clear focus from the search field when the back button is pressed, preventing unintended app closure.
+   >     - **`RecitersGrid.kt` & `SurahsGrid.kt`:**
+   >         - Replaced the local `TextField` implementation with the new shared `SearchBar` composable.
+   >         - Simplified filtering logic by removing dedicated `filterReciters` and `filterSurahs` functions in favor of inline filtering.
+   >         - Refactored the `gridItems` extension function into a new `LazyGridScopeEx.kt` file for better organization, and added a `mockCount` parameter for more flexible skeleton loading.
+   >     - **`RecitersScreen.kt` & `SurahsScreen.kt`:**
+   >         - Added `statusBarsPadding()` and `displayCutoutPadding()` to ensure content is not obscured by system UI elements like the status bar or screen cutouts.
+   >         - Added KDoc documentation to clarify the purpose and parameters of screen composables.
+   >     - **`NavGraph.kt` (previously `NavigationStack.kt`):**
+   >         - Renamed `NavigationStack.kt` to `NavGraph.kt` for better semantic clarity.
+   >         - Implemented a global touch handler on the root `Box` to clear focus from any active input field when the user taps outside of it.
+   >         - Added `imePadding()` to adjust the layout for the on-screen keyboard, but only on larger screen configurations.
+   >     - **`MainActivity.kt`:**
+   >         - Updated to use the renamed `NavGraph` composable.
+   >     - **`AndroidManifest.xml`:**
+   >         - Added `windowSoftInputMode="adjustResize"` and `configChanges` to the `MainActivity` to better handle keyboard visibility and configuration changes.
+   > - **Build & CI:**
+   >     - **Gradle:**
+   >         - Upgraded Gradle from version 8.13 to 9.2.0.
+   >         - Cleaned up `mobile/build.gradle.kts` by removing a redundant `archivesBaseName` property.
+   >         - Updated `pre-build/build.gradle.kts` to use the `kotlin-dsl` plugin directly and added a `gradleApi()` dependency.
+   >     - **GitHub Workflows:**
+   >         - Renamed the "Setup Xvfb Virtual Display" step to "Setup X Virtual Framebuffer" across all CI workflow files for clarity (`build_debug_variant.yml`, `build_release_variant.yml`, `publish_release_on_tag.yml`, `publish_release_by_tag.yml`, `codeql_security_scan.yml`).
+------------------------------
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/v0.0.7.2...v0.0.8

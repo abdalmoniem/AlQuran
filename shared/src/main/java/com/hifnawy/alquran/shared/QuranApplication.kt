@@ -124,7 +124,7 @@ open class QuranApplication : Application() {
      */
     companion object {
 
-        data class LocaleInfo(val language: String, val country: String, val code: String, val isRTL: Boolean): Serializable
+        data class LocaleInfo(val language: String, val country: String, val code: String, val isRTL: Boolean) : Serializable
 
         /**
          * Provides a global, static reference to the application's [Context].
@@ -147,14 +147,17 @@ open class QuranApplication : Application() {
                 when {
                     !isEmpty -> this[0]!!
                     else     -> applicationContext.resources.configuration.locales[0]
-                }.run {
-                    LocaleInfo(
-                            language = getDisplayLanguage(this),
-                            country = getDisplayCountry(this),
-                            code = language,
-                            isRTL = layoutDirection == LayoutDirection.RTL
-                    )
                 }
+            }
+
+        val currentLocaleInfo
+            get() = currentLocale.run {
+                LocaleInfo(
+                        language = getDisplayLanguage(this),
+                        country = getDisplayCountry(this),
+                        code = language,
+                        isRTL = layoutDirection == LayoutDirection.RTL
+                )
             }
     }
 }

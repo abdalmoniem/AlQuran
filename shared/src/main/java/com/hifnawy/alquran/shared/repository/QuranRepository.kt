@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit
 object QuranRepository {
 
     private val applicationContext by lazy { QuranApplication.applicationContext }
-    private val recitersURL get() = "${applicationContext.getString(R.string.API_BASE_URL)}/${applicationContext.getString(R.string.API_RECITERS)}?language=${QuranApplication.currentLocale.code}"
-    private val surahsURL get() = "${applicationContext.getString(R.string.API_BASE_URL)}/${applicationContext.getString(R.string.API_SURAHS)}?language=${QuranApplication.currentLocale.code}"
+    private val recitersURL get() = "${applicationContext.getString(R.string.API_BASE_URL)}/${applicationContext.getString(R.string.API_RECITERS)}?language=${QuranApplication.currentLocaleInfo.code}"
+    private val surahsURL get() = "${applicationContext.getString(R.string.API_BASE_URL)}/${applicationContext.getString(R.string.API_SURAHS)}?language=${QuranApplication.currentLocaleInfo.code}"
 
     /**
      * Sends a generic GET REST request and attempts to parse the response body.

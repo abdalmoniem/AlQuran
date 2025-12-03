@@ -26,9 +26,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.hifnawy.alquran.R
+import com.hifnawy.alquran.shared.R as Rs
 
 /**
  * A global [FocusManager] instance used to control focus within the composables of this file.
@@ -137,8 +140,13 @@ private fun SearchTextField(
             shape = RoundedCornerShape(20.dp),
             colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
             singleLine = true,
-            placeholder = { Text(placeholder) },
-            label = { Text(label) },
+            placeholder = {
+                Text(text = placeholder, fontFamily = FontFamily(Font(Rs.font.aref_ruqaa)))
+            },
+            label = {
+                Text(text = label, fontFamily = FontFamily(Font(Rs.font.aref_ruqaa)))
+
+            },
             leadingIcon = { Icon(painter = painterResource(id = R.drawable.search_24px), contentDescription = "Search Icon") },
             trailingIcon = {
                 if (query.isEmpty()) return@TextField

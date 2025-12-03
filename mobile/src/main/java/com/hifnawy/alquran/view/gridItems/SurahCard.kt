@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hifnawy.alquran.R
+import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.utils.TextUtil.highlightMatchingText
 import com.hifnawy.alquran.utils.sampleSurahs
@@ -137,8 +138,14 @@ private fun SurahName(
                             highlightColor = MaterialTheme.colorScheme.primary,
                             defaultColor = MaterialTheme.colorScheme.onSurface
                     ),
-                    fontSize = 45.sp,
-                    fontFamily = FontFamily(Font(Rs.font.decotype_thuluth_2)),
+                    fontSize = when {
+                        QuranApplication.currentLocaleInfo.isRTL -> 45.sp
+                        else                                     -> 30.sp
+                    },
+                    fontFamily = when {
+                        QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+                        else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
+                    },
             )
         }
     }

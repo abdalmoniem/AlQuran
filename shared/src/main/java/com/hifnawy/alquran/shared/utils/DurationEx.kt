@@ -1,5 +1,6 @@
 package com.hifnawy.alquran.shared.utils
 
+import com.hifnawy.alquran.shared.QuranApplication
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -36,6 +37,7 @@ object DurationExtensionFunctions {
 
         when {
             isInfinite() -> "Ꝏ"
+
             else         -> {
                 val format = when {
                     hideLegend -> if (!isHoursShown) "%02d:%02d" else "%02d:%02d:%02d"
@@ -62,10 +64,11 @@ object DurationExtensionFunctions {
      */
     fun Duration.toLocalizedFormattedTime(showHours: Boolean = true): String = toComponents { hours, minutes, seconds, _ ->
         val isHoursShown = showHours || hours > 0L
-        val locale = Locale.Builder().setLanguage("ar").setRegion("EG").build()
+        val locale = QuranApplication.currentLocale
 
         when {
             isInfinite() -> "∞"
+
             else         -> {
                 val format = when {
                     !isHoursShown -> "%02d:%02d"
@@ -79,7 +82,6 @@ object DurationExtensionFunctions {
             }
         }
     }
-
 
     /**
      * Returns a [String] representing the duration as a timestamp in the system's default time zone.

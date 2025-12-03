@@ -116,25 +116,24 @@ if [ "$1" ]; then
     versionNameFilter="\(versionName\s\+=\s\+\)\"\(.*\)\""
 
     # extract the current versionCode and versionName from the buildGradleFile
-    currentVersionCode=$(grep -m 1 versionCode < "$buildGradleFile" | sed -e "s/$versionCodeFilter/\2/" | xargs)
-    currentVersionCodeLineNumber=$(grep -nm 1 versionCode < "$buildGradleFile" | grep -oe '[[:digit:]]\+:' | sed -e 's/\([[:digit:]]\+\):/\1/' | xargs)
-    currentVersionName=$(grep -m 1 versionName < "$buildGradleFile" | sed -e "s/$versionNameFilter/\2/" | xargs)
-    currentVersionNameLineNumber=$(grep -nm 1 versionName < "$buildGradleFile" | grep -oe '[[:digit:]]\+:' | sed -e 's/\([[:digit:]]\+\):/\1/' | xargs)
+    currentVersionCode=$(grep -m 1 -e "versionCode\s*=\s*" < "$buildGradleFile" | sed -e "s/$versionCodeFilter/\2/" | xargs)
+    currentVersionCodeLineNumber=$(grep -nm 1 -e "versionCode\s*=\s*" < "$buildGradleFile" | grep -oe '[[:digit:]]\+:' | sed -e 's/\([[:digit:]]\+\):/\1/' | xargs)
+    currentVersionName=$(grep -m 1 -e "versionName\s*=\s*" < "$buildGradleFile" | sed -e "s/$versionNameFilter/\2/" | xargs)
+    currentVersionNameLineNumber=$(grep -nm 1 -e "versionName\s*=\s*" < "$buildGradleFile" | grep -oe '[[:digit:]]\+:' | sed -e 's/\([[:digit:]]\+\):/\1/' | xargs)
 
     # initialize match flags
     versionCodeMatch=false
     versionNameMatch=false
     newTagVersionNameMatch=true
 
-    # --- FIX START ---
     # Only perform version validation against a previous tag if a previous tag exists
     if [ -n "$prevTag" ]; then
         # extract the versionCode and versionName of the previous tag
         # Note: We must use quotes around $buildGradleFile in git show to handle potential spaces/special chars
-        prevTagVersionCode=$(git show "$prevTag:$buildGradleFile" | grep -m 1 versionCode | sed -e "s/$versionCodeFilter/\2/" | xargs)
-        prevTagVersionCodeLineNumber=$(git show "$prevTag:$buildGradleFile" | grep -nm 1 versionCode | grep -oe '[[:digit:]]\+:' | sed -e 's/\([[:digit:]]\+\):/\1/' | xargs)
-        prevTagVersionName=$(git show "$prevTag:$buildGradleFile" | grep -m 1 versionName | sed -e "s/$versionNameFilter/\2/" | xargs)
-        prevTagVersionNameLineNumber=$(git show "$prevTag:$buildGradleFile" | grep -nm 1 versionName | grep -oe '[[:digit:]]\+:' | sed -e 's/\([[:digit:]]\+\):/\1/' | xargs)
+        prevTagVersionCode=$(git show "$prevTag:$buildGradleFile" | grep -m 1 -e "versionCode\s*=\s*" | sed -e "s/$versionCodeFilter/\2/" | xargs)
+        prevTagVersionCodeLineNumber=$(git show "$prevTag:$buildGradleFile" | grep -nm 1 -e "versionCode\s*=\s*" | grep -oe '[[:digit:]]\+:' | sed -e 's/\([[:digit:]]\+\):/\1/' | xargs)
+        prevTagVersionName=$(git show "$prevTag:$buildGradleFile" | grep -m 1 -e "versionName\s*=\s*" | sed -e "s/$versionNameFilter/\2/" | xargs)
+        prevTagVersionNameLineNumber=$(git show "$prevTag:$buildGradleFile" | grep -nm 1 -e "versionName\s*=\s*" | grep -oe '[[:digit:]]\+:' | sed -e 's/\([[:digit:]]\+\):/\1/' | xargs)
 
         # validate versionCode
         # Note: Changed to check if currentVersionCode is NOT empty before comparison
@@ -156,7 +155,6 @@ if [ "$1" ]; then
           versionNameMatch=true
         fi
     fi
-    # --- FIX END ---
 
     # check if the new tag matches the current version name (always run this)
     if [ "$newTag" != "v$currentVersionName" ]; then
