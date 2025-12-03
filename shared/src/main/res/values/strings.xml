@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="API_BASE_URL">https://mp3quran.net/api/v3</string>
-    <string name="API_RECITERS">reciters</string>
-    <string name="API_SURAHS">suwar</string>
-    <string name="quran">القرآن الكريم</string>
+    <string name="notification_channel_name">القرآن الكريم</string>
     <string name="loading_surah">جارٍ تحميل سورة %1$s…</string>
+
+    <string translatable="false" name="API_SURAHS">suwar</string>
+    <string translatable="false" name="API_RECITERS">reciters</string>
+    <string translatable="false" name="API_BASE_URL">https://mp3quran.net/api/v3</string>
 </resources>

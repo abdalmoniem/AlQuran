@@ -724,7 +724,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
      */
     private fun buildNotification(reciter: Reciter?, surah: Surah?): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.quran))
+            .setContentTitle(getString(R.string.notification_channel_name))
             .setContentText(surah?.name)
             .setSubText(reciter?.name)
             .setSmallIcon(R.drawable.play_arrow_24px)
@@ -770,7 +770,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
         val metadata = MediaMetadataCompat.Builder().run {
             putText(MediaMetadataCompat.METADATA_KEY_TITLE, title)
             putText(MediaMetadataCompat.METADATA_KEY_ARTIST, currentReciter?.name)
-            putText(MediaMetadataCompat.METADATA_KEY_GENRE, getString(R.string.quran))
+            putText(MediaMetadataCompat.METADATA_KEY_ALBUM, currentMoshaf?.name)
             putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, surahDrawableBitmap)
             putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
 

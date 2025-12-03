@@ -3,23 +3,31 @@ files:
     translation: /mobile/src/main/res/values-%two_letters_code%/%original_file_name%
     translate_attributes: 0
     content_segmentation: 0
+
   - source: /mobile/src/debug/res/values/strings.xml
     translation: /mobile/src/debug/res/values-%two_letters_code%/%original_file_name%
     translate_attributes: 0
     content_segmentation: 0
+
   - source: /automotive/src/main/res/values/strings.xml
     translation: /automotive/src/main/res/values-%two_letters_code%/%original_file_name%
     translate_attributes: 0
     content_segmentation: 0
+
   - source: /automotive/src/debug/res/values/strings.xml
     translation: /automotive/src/debug/res/values-%two_letters_code%/%original_file_name%
     translate_attributes: 0
     content_segmentation: 0
+
   - source: /shared/src/main/res/values/strings.xml
     translation: /shared/src/main/res/values-%two_letters_code%/%original_file_name%
     translate_attributes: 0
     content_segmentation: 0
+
   - source: /shared/src/debug/res/values/strings.xml
     translation: /shared/src/debug/res/values-%two_letters_code%/%original_file_name%
+
   - source: /fastlane/metadata/android/ar/*.txt
     translation: /fastlane/metadata/android/%two_letters_code%/%original_file_name%
+    translate_attributes: 0
+    content_segmentation: 0
