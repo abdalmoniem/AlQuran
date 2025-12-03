@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notification_channel_name">The Holy Quran</string>
+    <string name="loading_surah">Loading surah: %1$s…</string>
+</resources>
