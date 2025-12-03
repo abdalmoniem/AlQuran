@@ -25,7 +25,3 @@ files:
     translation: /fastlane/metadata/android/%two_letters_code%/%original_file_name%
     translate_attributes: 0
     content_segmentation: 0
-  - source: /mobile/src/main/res/values-en/strings.xml
-    translation: /mobile/src/main/res/values-%two_letters_code%/%original_file_name%
-    translate_attributes: 0
-    content_segmentation: 0
