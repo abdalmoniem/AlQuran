@@ -1,0 +1,14 @@
+<h1>AlQuran</h1>
+<p>
+  AlQuran is an app that allows you to listen to chapters of the Quran, voiced
+  قراء مختلفين. It also supports Android Auto.
+</p>
+<h1>Features</h1>
+<ul>
+  <li>Listen to chapters of the Quran, voiced by different reciters.</li>
+  <li>Support for Android Auto.</li>
+  <li>التشغيل دون اتصال بالإنترنت.</li>
+  <li>إيقاف مؤقت واستئناف التشغيل.</li>
+  <li>Seek to a specific position in the chapter.</li>
+  <li>Choose your preferred reciter.</li>
+</ul>
