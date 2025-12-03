@@ -6,17 +6,16 @@
 
 [![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)
 
-[![Debug Build](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/build_debug_variant.yml?logo=github&label=Debug%20Build)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_debug_variant.yml)
-[![Release Build](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/build_release_variant.yml?logo=github&label=Release%20Build)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_release_variant.yml)
-[![New Release](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/publish_release_on_tag.yml?logo=github&label=New%20Release)](https://github.com/abdalmoniem/AlQuran/actions/workflows/publish_release_on_tag.yml)
-
 [![CodeFactor](https://www.codefactor.io/repository/github/abdalmoniem/AlQuran/badge)](https://www.codefactor.io/repository/github/abdalmoniem/AlQuran)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/0beba9b2841c40aa982513161d5febe5)](https://app.codacy.com/gh/abdalmoniem/AlQuran)
 
-[//]: # ([![Crowdin]&#40;https://badges.crowdin.net/AlQuran/localized.svg&#41;]&#40;https://crowdin.com/project/AlQuran&#41;)
-
+[![Crowdin](https://badges.crowdin.net/alquran/localized.svg)](https://crowdin.com/project/alquran)
 [![Views](https://views.whatilearened.today/views/github/abdalmoniem/AlQuran.svg)](https://github.com/abdalmoniem/AlQuran)
 [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/abdalmoniem/AlQuran/total?logo=github&logoSize=auto&label=GitHub%20Downloads)](https://github.com/abdalmoniem/AlQuran/releases/latest)
+
+[![Debug Build](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/build_debug_variant.yml?logo=github&label=Debug%20Build)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_debug_variant.yml)
+[![Release Build](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/build_release_variant.yml?logo=github&label=Release%20Build)](https://github.com/abdalmoniem/AlQuran/actions/workflows/build_release_variant.yml)
+[![New Release](https://img.shields.io/github/actions/workflow/status/abdalmoniem/AlQuran/publish_release_on_tag.yml?logo=github&label=New%20Release)](https://github.com/abdalmoniem/AlQuran/actions/workflows/publish_release_on_tag.yml)
 
 [//]: # ([![IzzyOnDroid]&#40;https://img.shields.io/endpoint?url=https://apt.izzysoft.de/fdroid/api/v1/shield/com.hifnawy.AlQuran&#41;]&#40;https://apt.izzysoft.de/fdroid/index/apk/com.hifnawy.AlQuran&#41;)
 </div>
@@ -114,7 +113,7 @@ from [GitHub Releases](https://github.com/abdalmoniem/AlQuran/releases/latest).
 # 🈵 Translations
 
 App strings and the app store description can be translated
-via [Crowdin](https://crowdin.com/project/AlQuran)
+via [Crowdin](https://crowdin.com/project/alquran)
 
 [//]: # ()
 

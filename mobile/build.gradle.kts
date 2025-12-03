@@ -195,6 +195,7 @@ android {
 
 dependencies {
     implementation(libs.gson)
+    implementation(libs.jsoup)
     implementation(libs.timber)
     implementation(libs.material)
     implementation(libs.hoko.blur)

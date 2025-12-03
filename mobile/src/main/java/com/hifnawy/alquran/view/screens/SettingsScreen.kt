@@ -3,6 +3,7 @@ package com.hifnawy.alquran.view.screens
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import android.text.Html
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -28,16 +29,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,6 +61,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Devices
@@ -68,10 +74,38 @@ import com.hifnawy.alquran.R
 import com.hifnawy.alquran.datastore.SettingsDataStore
 import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
+import com.hifnawy.alquran.utils.HTML.MutableHtml
+import com.hifnawy.alquran.utils.HTML.htmlBody
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import com.hifnawy.alquran.shared.R as Rs
 
+/**
+ * A Composable function that displays the main settings screen of the application.
+ *
+ * This screen provides a centralized location for users to configure various aspects of the app.
+ * It is structured vertically using a [Column] layout, which contains distinct sections for
+ * different categories of settings, such as "Appearance" and "About".
+ *
+ * Key Features:
+ * - **Main Title**: A prominent title `Settings` is displayed at the top using a custom font.
+ * - **Scrolling Content**: The main body of the settings is scrollable, ensuring all options
+ *   are accessible regardless of screen size.
+ * - **SafeArea Handling**: The layout respects the device's physical features by applying padding
+ *   for the status bar and display cutouts ([Modifier.statusBarsPadding] and [Modifier.displayCutoutPadding]).
+ * - **Modular Sections**: The screen is composed of modular sub-composables like [AppearanceSection]
+ *   and [AboutSection], promoting code reusability and clarity.
+ * - **Consistent Styling**: It uses [MaterialTheme] colors and typography to maintain a consistent
+ *   look and feel with the rest of the application.
+ *
+ * The overall structure consists of a main [Column] for the screen's background and padding,
+ * a [Text] for the title, and another nested [Column] that holds the scrollable settings sections.
+ * This separation ensures the title remains fixed at the top while the settings content can be
+ * scrolled independently.
+ *
+ * @see AppearanceSection
+ * @see AboutSection
+ */
 @Composable
 fun SettingsScreen() {
     Column(
@@ -94,6 +128,7 @@ fun SettingsScreen() {
                 fontFamily = FontFamily(Font(Rs.font.aref_ruqaa)),
                 color = MaterialTheme.colorScheme.onSurface
         )
+
         Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -105,6 +140,23 @@ fun SettingsScreen() {
     }
 }
 
+/**
+ * A Composable function that groups and displays settings related to the application's appearance.
+ *
+ * This function acts as a container for various visual settings, organized within a
+ * [SettingsSectionCard]. It provides a clear and structured way to present appearance-related
+ * options to the user.
+ *
+ * The section is titled `Appearance` and includes the following sub-settings:
+ * - [LanguageSettings]: Allows the user to change the application's language.
+ * - [ThemeSettings]: Provides options to switch between light, dark, and system default themes.
+ * - [DynamicColorsSettings]: Toggles the use of Material You dynamic colors based on the device's wallpaper.
+ *
+ * @see SettingsSectionCard
+ * @see LanguageSettings
+ * @see ThemeSettings
+ * @see DynamicColorsSettings
+ */
 @Composable
 private fun AppearanceSection() {
     SettingsSectionCard(title = stringResource(R.string.settings_appearance_section)) {
@@ -114,6 +166,24 @@ private fun AppearanceSection() {
     }
 }
 
+/**
+ * A Composable that displays the language settings item.
+ *
+ * This setting allows the user to change the application's language. It displays the
+ * current language and country code. Tapping this item opens the system's application-specific
+ * locale settings screen on Android 13 (Tiramisu) and above, or the general application
+ * details screen on older versions, where the user can manage the language.
+ *
+ * The current locale is observed from [QuranApplication.currentLocale] and is updated
+ * via a [LaunchedEffect]. When the item is clicked, haptic feedback is triggered,
+ * and an [Intent] is fired to navigate the user to the appropriate system settings screen.
+ * The current locale is also persisted using [SettingsDataStore].
+ *
+ * @see SettingsItemCard
+ * @see QuranApplication.currentLocale
+ * @see Settings.ACTION_APP_LOCALE_SETTINGS
+ * @see Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+ */
 @Composable
 private fun LanguageSettings() {
     val context = LocalContext.current
@@ -172,6 +242,26 @@ private fun LanguageSettings() {
     }
 }
 
+/**
+ * A Composable that displays the theme selection setting.
+ *
+ * This setting allows the user to choose between Light, Dark, and System Default themes.
+ * The UI consists of a [SingleChoiceSegmentedButtonRow] with icons representing each theme option:
+ * - Light Mode
+ * - Auto (System Default)
+ * - Dark Mode
+ *
+ * The current theme selection is retrieved from [SettingsDataStore] when the Composable is first
+ * displayed using a [LaunchedEffect]. When a user selects a new theme, haptic feedback is triggered,
+ * the UI state is updated, and the new preference is saved asynchronously to the [SettingsDataStore].
+ * The entire item is also clickable, cycling through the available themes.
+ *
+ * @see SettingsItemCard
+ * @see SingleChoiceSegmentedButtonRow
+ * @see SettingsDataStore.Theme
+ * @see SettingsDataStore.getTheme
+ * @see SettingsDataStore.setTheme
+ */
 @Composable
 private fun ThemeSettings() {
     val context = LocalContext.current
@@ -241,6 +331,31 @@ private fun ThemeSettings() {
     }
 }
 
+/**
+ * A Composable that provides a setting to enable or disable Material You dynamic colors.
+ *
+ * This setting is presented as an item within the `Appearance` section. It consists of a
+ * title, a description, and a [Switch] component to toggle the feature on or off. This
+ * feature is only available on Android 12 (API 31) and higher.
+ *
+ * State Management:
+ * - The `checked` state of the [Switch] is managed by a [rememberSaveable] state variable.
+ * - The initial state is loaded from [SettingsDataStore] using a [LaunchedEffect].
+ * - When the user toggles the switch, the new value is persisted to [SettingsDataStore]
+ *   asynchronously via a coroutine.
+ *
+ * User Interaction:
+ * - Tapping the item or the switch toggles the setting.
+ * - Haptic feedback ([HapticFeedbackType.ToggleOn] or [HapticFeedbackType.ToggleOff])
+ *   is provided upon interaction to enhance the user experience.
+ * - The switch's thumb displays a check icon when enabled and a close icon when disabled,
+ *   providing clear visual feedback.
+ *
+ * @see SettingsItemCard
+ * @see Switch
+ * @see SettingsDataStore.getDynamicColors
+ * @see SettingsDataStore.setDynamicColors
+ */
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun DynamicColorsSettings() {
@@ -291,6 +406,27 @@ private fun DynamicColorsSettings() {
     }
 }
 
+/**
+ * A Composable function that groups and displays settings and information related to the application.
+ *
+ * This function serves as a container for various `About` items, organized within a
+ * [SettingsSectionCard]. It provides a structured section for users to access notifications settings,
+ * contribute to translation, view the privacy policy, contact the developer, and see app details.
+ *
+ * The section is titled `About` and includes the following sub-composables:
+ * - [NotificationsSettings]: Navigates the user to the system's notification settings for the app.
+ * - [TranslationCard]: Provides a link to the project's translation platform (Crowdin).
+ * - [PrivacyPolicyCard]: Displays the app's privacy policy in a modal bottom sheet.
+ * - [ContactCard]: Opens an email client with a pre-filled template for contacting the developer.
+ * - [AppDetailsCard]: Shows application details like version, developer name, and links to external resources like GitHub.
+ *
+ * @see SettingsSectionCard
+ * @see NotificationsSettings
+ * @see TranslationCard
+ * @see PrivacyPolicyCard
+ * @see ContactCard
+ * @see AppDetailsCard
+ */
 @Composable
 private fun AboutSection() {
     SettingsSectionCard(title = stringResource(R.string.settings_about_section)) {
@@ -302,6 +438,20 @@ private fun AboutSection() {
     }
 }
 
+/**
+ * A Composable that displays the notification settings item.
+ *
+ * This setting provides a direct shortcut for the user to manage the application's
+ * notification settings in the Android system. When tapped, it triggers haptic feedback
+ * and launches an [Intent] with [Settings.ACTION_APP_NOTIFICATION_SETTINGS], which
+ * opens the app-specific notification channel settings screen.
+ *
+ * This allows the user to configure notification permissions, sounds, and other
+ * preferences without leaving the app context entirely.
+ *
+ * @see SettingsItemCard
+ * @see Settings.ACTION_APP_NOTIFICATION_SETTINGS
+ */
 @Composable
 private fun NotificationsSettings() {
     val activity = LocalActivity.current
@@ -322,6 +472,23 @@ private fun NotificationsSettings() {
     )
 }
 
+/**
+ * A Composable that displays a settings item for contributing to the app's translation.
+ *
+ * This card is part of the `About` section. It presents an option for users to help
+ * translate the application into different languages. When the user taps on this item,
+ * it performs the following actions:
+ * 1.  Triggers haptic feedback for a tactile response.
+ * 2.  Creates and launches an [Intent] with [Intent.ACTION_VIEW] to open a URL.
+ * 3.  The URL, retrieved from string resources, directs the user to the project's
+ *     translation platform (e.g., Crowdin).
+ *
+ * The card is built using the [SettingsItemCard] composable, providing a consistent look and
+ * feel with other settings items. It includes an icon, a title, and a description.
+ *
+ * @see SettingsItemCard
+ * @see Intent.ACTION_VIEW
+ */
 @Composable
 private fun TranslationCard() {
     val activity = LocalActivity.current
@@ -342,20 +509,117 @@ private fun TranslationCard() {
     )
 }
 
+/**
+ * A Composable that displays the Privacy Policy settings item.
+ *
+ * This function creates a card that, when clicked, reveals the application's privacy policy.
+ * The policy itself is displayed within a [ModalBottomSheet], providing a non-intrusive and
+ * easily dismissible overlay.
+ *
+ * Key Features:
+ * - **Clickable Item**: Encapsulated within a [SettingsItemCard], this Composable displays a
+ *   title ("Privacy Policy") and a brief description. Tapping it triggers haptic feedback and
+ *   opens the bottom sheet.
+ * - **Modal Bottom Sheet**: The visibility of the sheet is controlled by a `rememberSaveable`
+ *   state variable (`isBottomSheetVisible`), ensuring the state is preserved across configuration
+ *   changes.
+ * - **HTML Content Rendering**: The privacy policy content is loaded from a string resource
+ *   which contains HTML. It uses a custom utility ([MutableHtml]) to parse and style the HTML
+ *   (e.g., coloring headers) before converting it into an [AnnotatedString] for display.
+ * - **Scrollable Content**: The content within the bottom sheet is placed in a scrollable [Column],
+ *   ensuring the full text is accessible regardless of screen height.
+ * - **Styling**: The sheet and its content are styled using [MaterialTheme] colors and typography
+ *   to maintain a consistent look with the rest of the app.
+ *
+ * @see SettingsItemCard
+ * @see ModalBottomSheet
+ * @see MutableHtml
+ */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 private fun PrivacyPolicyCard() {
     val haptic = LocalHapticFeedback.current
+    var isBottomSheetVisible by rememberSaveable { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     SettingsItemCard(
             onClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                isBottomSheetVisible = true
             },
             icon = painterResource(id = R.drawable.privacy_policy_24px),
             title = stringResource(R.string.settings_privacy_policy_label),
             description = stringResource(R.string.settings_privacy_policy_description),
     )
+
+    if (!isBottomSheetVisible) return
+
+    ModalBottomSheet(
+            modifier = Modifier.fillMaxWidth(),
+            sheetState = sheetState,
+            onDismissRequest = { isBottomSheetVisible = false }
+    ) {
+        val privacyPolicyHtml = stringResource(R.string.settings_privacy_policy_content).trimIndent()
+        val privacyPolicyBody = privacyPolicyHtml.htmlBody?.run {
+            MutableHtml(this).run {
+                setHtmlTagColor("h1", MaterialTheme.colorScheme.primary)
+                setHtmlTagColor("h2", MaterialTheme.colorScheme.secondary)
+                setHtmlTagColor("h3", MaterialTheme.colorScheme.tertiary)
+
+                Html.fromHtml(content, Html.FROM_HTML_OPTION_USE_CSS_COLORS).annotatedString
+            }
+        } ?: AnnotatedString("")
+
+        Card(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceBright)
+        ) {
+            Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(10.dp)
+                        .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                        text = stringResource(R.string.settings_privacy_policy_label),
+                        fontSize = MaterialTheme.typography.displayLargeEmphasized.fontSize,
+                        fontFamily = FontFamily(Font(Rs.font.aref_ruqaa)),
+                        color = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                        text = privacyPolicyBody,
+                        fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                        fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+                )
+            }
+        }
+    }
 }
 
+/**
+ * A Composable that provides a way for the user to contact the developer via email.
+ *
+ * This function creates a settings item card that, when tapped, launches an email client.
+ * An [Intent] with the action [Intent.ACTION_SENDTO] and `mailto:` data is prepared.
+ *
+ * The email intent is pre-populated with:
+ * - The developer's email address in the "To" field.
+ * - A pre-formatted body containing useful diagnostic information, such as:
+ *   - App version code and name.
+ *   - Android OS version and SDK level.
+ *   - Device manufacturer and model.
+ *
+ * This pre-filled information helps the developer diagnose any issues the user might be reporting.
+ * Haptic feedback is triggered on click to improve user experience.
+ *
+ * @see SettingsItemCard
+ * @see Intent.ACTION_SENDTO
+ */
 @Composable
 private fun ContactCard() {
     val activity = LocalActivity.current
@@ -393,6 +657,30 @@ private fun ContactCard() {
     )
 }
 
+/**
+ * A Composable that displays detailed information about the application.
+ *
+ * This card, part of the `About` section, serves as a visual summary of the app.
+ * It is structured into two main vertical columns:
+ *
+ * - **Start Column (App Information)**:
+ *      - Displays the monochrome app icon.
+ *      - Shows the application name (`app_name`).
+ *      - Lists the version code and a localized version name.
+ *      - Credits the developer.
+ *
+ * - **End Column (External Links)**:
+ *      - Contains several Icon Buttons linking to external resources.
+ *      - The GitHub button is functional and opens the project's repository URL using an [Intent].
+ *      - Other buttons (Crowdin, F-Droid, IzzyOnDroid) are present as placeholders but are currently disabled.
+ *
+ * All text elements use a custom font and are styled with colors from the [MaterialTheme].
+ * User interactions, like clicking the GitHub icon, trigger haptic feedback.
+ *
+ * @see SettingsItemCard
+ * @see BuildConfig
+ * @see Intent.ACTION_VIEW
+ */
 @Composable
 private fun AppDetailsCard() {
     val activity = LocalActivity.current
@@ -403,6 +691,11 @@ private fun AppDetailsCard() {
     val githubIntent = Intent().apply {
         action = Intent.ACTION_VIEW
         data = activity?.getString(R.string.settings_about_github_url)?.toUri()
+    }
+
+    val crowdinIntent = Intent().apply {
+        action = Intent.ACTION_VIEW
+        data = stringResource(R.string.settings_translation_crowdin_url).toUri()
     }
 
     SettingsItemCard(cardContainerColor = MaterialTheme.colorScheme.primaryContainer) {
@@ -478,8 +771,8 @@ private fun AppDetailsCard() {
                     modifier = Modifier.size(80.dp),
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    },
-                    enabled = false
+                        activity?.startActivity(crowdinIntent)
+                    }
             ) {
                 Icon(
                         painter = painterResource(R.drawable.crowdin_icon),
@@ -488,37 +781,54 @@ private fun AppDetailsCard() {
                 )
             }
 
-            IconButton(
-                    modifier = Modifier.size(80.dp),
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    },
-                    enabled = false
-            ) {
-                Icon(
-                        painter = painterResource(R.drawable.fdroid_icon),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            IconButton(
-                    modifier = Modifier.size(80.dp),
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    },
-                    enabled = false
-            ) {
-                Icon(
-                        painter = painterResource(R.drawable.izzyondroid_icon),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                )
-            }
+            // IconButton(
+            //         modifier = Modifier.size(80.dp),
+            //         onClick = {
+            //             haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            //         }
+            // ) {
+            //     Icon(
+            //             painter = painterResource(R.drawable.fdroid_icon),
+            //             contentDescription = null,
+            //             tint = MaterialTheme.colorScheme.primary
+            //     )
+            // }
+            //
+            // IconButton(
+            //         modifier = Modifier.size(80.dp),
+            //         onClick = {
+            //             haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            //         }
+            // ) {
+            //     Icon(
+            //             painter = painterResource(R.drawable.izzyondroid_icon),
+            //             contentDescription = null,
+            //             tint = MaterialTheme.colorScheme.primary
+            //     )
+            // }
         }
     }
 }
 
+/**
+ * A reusable Composable that creates a styled card for grouping related settings.
+ *
+ * This function displays a prominent title above an [OutlinedCard]. The card itself
+ * contains content provided via a composable lambda. This structure helps organize the
+ * settings screen into visually distinct and logical sections.
+ *
+ * The layout consists of a vertical [Column] that holds:
+ * - A [Text] composable for the section [title].
+ * - An [OutlinedCard] that wraps the [content]. The card has a rounded shape,
+ *   elevation, a border, and specific background colors drawn from the [MaterialTheme].
+ *
+ * The [content] lambda is rendered inside a [Column] within the card, with vertical
+ * spacing applied between its children.
+ *
+ * @param title [String] The text to be displayed as the header for this settings section.
+ * @param content [@Composable ColumnScope.() -> Unit][content] A composable lambda that defines the
+ *   settings items to be displayed inside the card.
+ */
 @Composable
 private fun SettingsSectionCard(
         title: String,
@@ -555,6 +865,32 @@ private fun SettingsSectionCard(
     }
 }
 
+/**
+ * A flexible and reusable Composable for displaying a single setting item within a card.
+ *
+ * This function creates a styled [Card] that can be configured with an optional icon,
+ * title, and description. It also supports custom content and an [onClick] handler, making it
+ * a versatile building block for settings screens.
+ *
+ * The layout is a [Row] that arranges its children horizontally:
+ * - An optional [Icon] on the far left.
+ * - A [Column] containing an optional [title] and [description].
+ * - A flexible content slot provided by the [content] lambda, which is typically used
+ *   for interactive elements like switches, buttons, or segmented controls.
+ *
+ * If an [onClick] lambda is provided, the entire card becomes clickable. The card's
+ * background color can be customized via the [cardContainerColor] parameter.
+ *
+ * @param onClick [(() -> Unit)?][onClick] An optional lambda to be executed when the card is clicked. If `null`,
+ *   the card will not be clickable.
+ * @param icon [Painter?][Painter] An optional [Painter] for the icon to be displayed at the start of the card.
+ * @param title [String?][String] An optional [String] for the main title of the setting item.
+ * @param description [String?][String] An optional [String] for a brief description displayed below the title.
+ * @param cardContainerColor [Color] The background [Color] of the card. Defaults to
+ *   [MaterialTheme.colorScheme.surfaceBright][ColorScheme.surfaceBright].
+ * @param content [@Composable RowScope.() -> Unit][content] A composable lambda that defines custom content to be placed at the end
+ *   of the row. This slot is scoped to a [RowScope], allowing for flexible layout arrangements.
+ */
 @Composable
 private fun SettingsItemCard(
         onClick: (() -> Unit)? = null,
@@ -621,6 +957,24 @@ private fun SettingsItemCard(
     }
 }
 
+/**
+ * A Jetpack Compose Preview function for the [SettingsScreen].
+ *
+ * This Composable is annotated with [@Preview], allowing developers to visualize the
+ * [SettingsScreen] within Android Studio's design tools without needing to run the
+ * full application on a device or emulator.
+ *
+ * The preview is configured with specific parameters to simulate a realistic environment:
+ * - `device = Devices.PIXEL_9_PRO_XL`: Renders the preview on a screen size equivalent to a Pixel 9 Pro XL.
+ * - `locale = "ar"`: Displays the UI using the Arabic language locale to test right-to-left (RTL)
+ *   layouts and localized strings.
+ *
+ * This setup is crucial for verifying the layout, typography, and overall appearance of the
+ * settings screen in a common target configuration.
+ *
+ * @see SettingsScreen
+ * @see Preview
+ */
 @Composable
 @Preview(device = Devices.PIXEL_9_PRO_XL, locale = "ar")
 fun SettingsScreenPreview() {

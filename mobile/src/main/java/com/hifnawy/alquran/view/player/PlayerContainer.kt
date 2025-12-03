@@ -1,8 +1,5 @@
 package com.hifnawy.alquran.view.player
 
-import androidx.activity.BackEventCompat
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -20,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,14 +33,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
+import com.hifnawy.alquran.PredictiveBackHandler
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.critical
 import com.hifnawy.alquran.utils.ModifierEx.verticalDraggable
 import com.hifnawy.alquran.utils.sampleReciters
 import com.hifnawy.alquran.utils.sampleSurahs
 import com.hifnawy.alquran.viewModel.PlayerState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
@@ -284,7 +278,7 @@ private fun BoxScope.Content(
         )
     }
 
-    OnBackHandler(
+    PredictiveBackHandler(
             isBackHandlerEnabled = isBackHandlerEnabled,
             onBackStarted = onMinimizeStarted,
             onBackProgress = { progress ->
@@ -475,62 +469,6 @@ private fun CrossfadePlayer(
                     onSkipToNextSurah = onSkipToNextSurah
             )
         }
-    }
-}
-
-/**
- * A private composable that handles predictive back gestures for the player.
- * It integrates with [OnBackPressedCallback] to provide a responsive experience
- * when the user performs a back gesture, allowing the UI to react progressively
- * as the gesture unfolds.
- *
- * This handler is enabled only when the player is fully expanded. When a back gesture
- * starts, it triggers [onBackStarted] and then continuously calls [onBackProgress] with
- * the gesture's progress, allowing the caller (the `Content` composable) to animate
- * the player's height accordingly. If the gesture completes, [onBackPressed] is called
- * to finalize the minimization. If it's cancelled, the progress is reset to 0.
- *
- * @param isBackHandlerEnabled [Boolean] A boolean that controls whether the back handler is active.
- *        It should be `true` only when the player is fully expanded and ready to be minimized via a back gesture.
- * @param onBackStarted [() -> Unit][onBackStarted] A lambda invoked when the back gesture begins.
- * @param onBackProgress [suspend CoroutineScope.(Float) -> Unit][onBackProgress] A suspend lambda that receives the gesture's
- *        progress as a [Float] between 0.0 and 1.0. This is used to drive the minimization animation.
- * @param onBackPressed [() -> Unit][onBackPressed] A lambda invoked when the back gesture is completed, signaling
- *        that the player should be fully minimized.
- */
-@Composable
-private fun OnBackHandler(
-        isBackHandlerEnabled: Boolean,
-        onBackStarted: () -> Unit = {},
-        onBackProgress: suspend CoroutineScope.(Float) -> Unit = {},
-        onBackPressed: () -> Unit = {}
-) {
-    val onBackCallback = remember {
-        object : OnBackPressedCallback(isBackHandlerEnabled) {
-            private val coroutineScope = CoroutineScope(Dispatchers.Main)
-            override fun handleOnBackStarted(backEvent: BackEventCompat) = onBackStarted()
-
-            override fun handleOnBackProgressed(backEvent: BackEventCompat) {
-                coroutineScope.launch { onBackProgress(backEvent.progress) }
-            }
-
-            override fun handleOnBackPressed() = onBackPressed()
-
-            override fun handleOnBackCancelled() {
-                coroutineScope.launch { onBackProgress(0f) }
-            }
-        }
-    }
-
-    val backPressedDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
-
-    LaunchedEffect(isBackHandlerEnabled) {
-        onBackCallback.isEnabled = isBackHandlerEnabled
-    }
-
-    DisposableEffect(backPressedDispatcher) {
-        backPressedDispatcher?.addCallback(onBackCallback)
-        onDispose { onBackCallback.remove() }
     }
 }
 
