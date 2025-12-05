@@ -138,15 +138,14 @@ object CacheDataSource {
 
             if (!cacheDir.exists()) cacheDir.mkdirs()
 
-            Timber.debug("Cache directory: ${cacheDir.absolutePath}")
-            Timber.debug("Cache exists: ${cacheDir.exists()}")
+            Timber.debug("Cache directory: ${cacheDir.absolutePath}, Cache exists: ${cacheDir.exists()}")
 
             val cacheEvictor = LeastRecentlyUsedCacheEvictor(300L * 1024 * 1024) // 300 MB
             val databaseProvider = StandaloneDatabaseProvider(this)
 
             SimpleCache(cacheDir, cacheEvictor, databaseProvider).also {
                 mediaCache = it
-                Timber.debug("Cache initialized. Cached bytes: ${it.cacheSpace}")
+                Timber.debug("Cache initialized. Cached bytes: ${it.cacheSpace.asHumanReadableSize}")
             }
         }
 

@@ -27,7 +27,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.R
-import com.hifnawy.alquran.shared.domain.CacheDataSource.CacheInfo
 import com.hifnawy.alquran.shared.domain.CacheDataSource.cacheDataSourceFactory
 import com.hifnawy.alquran.shared.domain.CacheDataSource.getCacheInfo
 import com.hifnawy.alquran.shared.domain.CacheDataSource.releaseCache
@@ -393,16 +392,15 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
      */
     private val player by lazy {
         @UnstableApi
-        ExoPlayer.Builder(this)
-            .setLoadControl(loadControl)
-            .build()
-            .apply {
-                setAudioAttributes(this@QuranMediaService.audioAttributes, true)
-                setHandleAudioBecomingNoisy(true)
+        ExoPlayer.Builder(this).run {
+            setLoadControl(loadControl)
+            build()
+        }.apply {
+            setAudioAttributes(this@QuranMediaService.audioAttributes, true)
+            setHandleAudioBecomingNoisy(true)
 
-                @UnstableApi
-                skipSilenceEnabled = true
-            }
+            skipSilenceEnabled = true
+        }
     }
 
     /**
@@ -617,11 +615,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
         if (mediaSessionState == MediaSessionState.STOPPED.state) return
 
         Timber.error("Playback Error ${error.errorCode}: ${error.message}")
-        Timber.error("Error cause: ${error.cause?.message}")
-
-        val cacheKey = getCacheKey(currentReciter, currentMoshaf, currentSurah)
-        @UnstableApi
-        Timber.error("Content ${CacheInfo::class.java.simpleName}: ${getCacheInfo(cacheKey)}, but got network error")
+        Timber.error("Playback Error Cause: ${error.cause?.message}")
 
         setMediaSessionState(MediaSessionState.BUFFERING)
 
@@ -895,6 +889,19 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
         MediaManager.processSurah(reciter, moshaf, surah)
     }
 
+    /**
+     * Generates a unique cache key string for a given combination of a reciter, moshaf, and surah.
+     * This key is used by the caching mechanism to store and retrieve downloaded audio files,
+     * ensuring that each specific recitation is uniquely identified.
+     *
+     * The format of the key is: `reciter_#<reciter_id>_moshaf_#<moshaf_id>_surah_#<surah_id>`.
+     *
+     * @param reciter [Reciter] The [Reciter] object for the audio.
+     * @param moshaf [Moshaf] The [Moshaf] object for the audio.
+     * @param surah [Surah] The [Surah] object for the audio.
+     *
+     * @return [String] A unique [String] key for caching the audio media item.
+     */
     private fun getCacheKey(reciter: Reciter?, moshaf: Moshaf?, surah: Surah?) = "reciter_#${reciter?.id?.value}_moshaf_#${moshaf?.id}_surah_#${surah?.id}"
 
     /**
@@ -915,12 +922,14 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
 
             val cacheKey = getCacheKey(currentReciter, currentMoshaf, surah)
 
-            Timber.debug("${CacheInfo::class.java.simpleName}: ${getCacheInfo(cacheKey)}")
+            Timber.debug("${getCacheInfo(cacheKey)}")
 
-            val mediaItem = MediaItem.Builder()
-                .setUri(surahUri)
-                .setCustomCacheKey(cacheKey)
-                .build()
+            val mediaItem = MediaItem.Builder().run {
+                setUri(surahUri)
+                setCustomCacheKey(cacheKey)
+                build()
+            }
+
             val mediaSource = ProgressiveMediaSource.Factory(cacheDataSourceFactory).createMediaSource(mediaItem)
 
             setMediaSource(mediaSource)
