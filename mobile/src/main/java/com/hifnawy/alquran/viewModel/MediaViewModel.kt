@@ -14,7 +14,7 @@ import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.asSystemTimestamp
-import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursLong
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursComponent
 import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.toFormattedTime
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import timber.log.Timber
@@ -319,7 +319,7 @@ data class PlayerState(
         val surahSelectionTimeStamp: Long? = null
 ) {
 
-    private val showHours get() = durationMs.milliseconds.hoursLong > 0
+    private val showHours get() = durationMs.milliseconds.hoursComponent > 0
 
     /**
      * Provides a custom string representation of the [PlayerState] object, useful for logging

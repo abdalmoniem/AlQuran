@@ -74,6 +74,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -88,7 +89,7 @@ import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.defaultSurahDrawableId
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
-import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursLong
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursComponent
 import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.toLocalizedFormattedTime
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import com.hifnawy.alquran.utils.DeviceConfiguration
@@ -104,12 +105,28 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import com.hifnawy.alquran.shared.R as Rs
 
+/**
+ * A full-screen player composable that displays media controls and information for the currently playing surah.
+ * It adapts its layout based on the device's configuration (compact, portrait, landscape).
+ *
+ * @param state [PlayerState] The [PlayerState] containing all necessary information about the current playback,
+ *   such as the surah, reciter, duration, current position, and playback status.
+ * @param expandProgress [Float] A float value between `0f` and `1f` indicating the progress of the
+ *   full-screen player's expansion animation. Used to fade in the content.
+ * @param onMinimizeClicked [onMinimizeClicked: () -> Unit][onMinimizeClicked] A lambda function to be invoked when the user clicks the minimize or
+ *   close button on the player.
+ * @param onSeekProgress [onSeekProgress: (progress: Long) -> Unit][onSeekProgress] A lambda function that reports the new playback position (in milliseconds)
+ *   when the user seeks using the progress slider.
+ * @param onSkipToPreviousSurah [onSkipToPreviousSurah: () -> Unit][onSkipToPreviousSurah] A lambda function to be invoked when the user clicks the "skip to previous" button.
+ * @param onTogglePlayback [onTogglePlayback: () -> Unit][onTogglePlayback] A lambda function to be invoked when the user clicks the play/pause button.
+ * @param onSkipToNextSurah [onSkipToNextSurah: () -> Unit][onSkipToNextSurah] A lambda function to be invoked when the user clicks the "skip to next" button.
+ */
 @Composable
 fun FullScreenPlayer(
         state: PlayerState,
         expandProgress: Float,
         onMinimizeClicked: () -> Unit = {},
-        onSeekProgress: (Long) -> Unit = {},
+        onSeekProgress: (progress: Long) -> Unit = {},
         onSkipToPreviousSurah: () -> Unit = {},
         onTogglePlayback: () -> Unit = {},
         onSkipToNextSurah: () -> Unit = {}
@@ -222,16 +239,40 @@ fun FullScreenPlayer(
     }
 }
 
+/**
+ * A composable that displays the player content in a portrait orientation.
+ *
+ * This layout is optimized for portrait mode on phones and tablets. It arranges the surah image,
+ * recitation information (surah name and reciter), progress bar, and player controls vertically.
+ *
+ * It dynamically adjusts its layout based on the available screen height. If there isn't enough
+ * vertical space to show all components (e.g., on smaller screens), it hides the standard progress
+ * and control bars and instead shows a set of floating overlay controls at the bottom of the screen
+ * when the user interacts with the player.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the composable.
+ * @param state [PlayerState] The [PlayerState] containing the current playback information.
+ * @param surahDrawableId [Int] The resource ID for the surah's artwork.
+ * @param bufferedProgress [Float] The progress of the buffered media, as a float between `0.0` and `1.0`.
+ * @param sliderPosition [Float] The current position of the progress slider, controlled by user interaction.
+ * @param isChangingPosition [Boolean] A boolean indicating if the user is currently scrubbing the progress slider.
+ * @param onSeekStarted [() -> Unit][onSeekStarted] A lambda invoked when the user starts dragging the slider.
+ * @param onSeekProgress [(progress: Float) -> Unit][onSeekProgress] A lambda that reports the new slider position as the user drags it.
+ * @param onSeekFinished [() -> Unit][onSeekFinished] A lambda invoked when the user releases the slider.
+ * @param onSkipToNextSurah [() -> Unit][onSkipToNextSurah] A lambda to be invoked when the `skip to next` button is clicked.
+ * @param onTogglePlayback [() -> Unit][onTogglePlayback] A lambda to be invoked when the `play`/`pause` button is clicked.
+ * @param onSkipToPreviousSurah [() -> Unit][onSkipToPreviousSurah] A lambda to be invoked when the `skip to previous` button is clicked.
+ */
 @Composable
 private fun PlayerContentPortrait(
         modifier: Modifier = Modifier,
-        surahDrawableId: Int,
         state: PlayerState,
+        surahDrawableId: Int,
         bufferedProgress: Float,
         sliderPosition: Float,
         isChangingPosition: Boolean,
         onSeekStarted: () -> Unit = {},
-        onSeekProgress: (Float) -> Unit = {},
+        onSeekProgress: (progress: Float) -> Unit = {},
         onSeekFinished: () -> Unit = {},
         onSkipToNextSurah: () -> Unit = {},
         onTogglePlayback: () -> Unit = {},
@@ -340,16 +381,36 @@ private fun PlayerContentPortrait(
     }
 }
 
+/**
+ * A composable that displays the player content in a landscape orientation.
+ *
+ * This layout is optimized for landscape mode on phones and tablets. It arranges the surah image on the
+ * start, and the recitation information (surah name and reciter), progress bar, and player controls
+ * vertically on the end. The content animates into view with a slide and fade effect.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the composable.
+ * @param state [PlayerState] The [PlayerState] containing the current playback information.
+ * @param surahDrawableId [Int] The resource ID for the surah's artwork.
+ * @param bufferedProgress [Float] The progress of the buffered media, as a float between `0f` and `1f`.
+ * @param sliderPosition [Float] The current position of the progress slider, controlled by user interaction.
+ * @param isChangingPosition [Boolean] A boolean indicating if the user is currently scrubbing the progress slider.
+ * @param onSeekStarted [() -> Unit][onSeekStarted] A lambda invoked when the user starts dragging the slider.
+ * @param onSeekProgress [(progress: Float) -> Unit][onSeekProgress] A lambda that reports the new slider position as the user drags it.
+ * @param onSeekFinished [() -> Unit][onSeekFinished] A lambda invoked when the user releases the slider.
+ * @param onSkipToNextSurah [() -> Unit][onSkipToNextSurah] A lambda to be invoked when the `skip to next` button is clicked.
+ * @param onTogglePlayback [() -> Unit][onTogglePlayback] A lambda to be invoked when the `play`/`pause` button is clicked.
+ * @param onSkipToPreviousSurah [() -> Unit][onSkipToPreviousSurah] A lambda to be invoked when the `skip to previous` button is clicked.
+ */
 @Composable
 private fun PlayerContentLandScape(
         modifier: Modifier = Modifier,
-        surahDrawableId: Int,
         state: PlayerState,
+        surahDrawableId: Int,
         bufferedProgress: Float,
         sliderPosition: Float,
         isChangingPosition: Boolean,
         onSeekStarted: () -> Unit = {},
-        onSeekProgress: (Float) -> Unit = {},
+        onSeekProgress: (progress: Float) -> Unit = {},
         onSeekFinished: () -> Unit = {},
         onSkipToNextSurah: () -> Unit = {},
         onTogglePlayback: () -> Unit = {},
@@ -425,11 +486,30 @@ private fun PlayerContentLandScape(
     }
 }
 
+/**
+ * A composable that displays the player content in a compact, minimal layout.
+ *
+ * This layout is specifically designed for very small screen sizes or compact windows where
+ * space is extremely limited. It shows only the surah image and a set of overlay controls
+ * that appear on user interaction. There are no visible progress bars or recitation info text
+ * to maximize the visual area for the background artwork.
+ *
+ * The controls (`play`/`pause`, `next`, `previous`) are housed within a [MiniPlayerControlsContainer],
+ * which manages their visibility. The controls appear when the screen is tapped and
+ * automatically hide after a short delay if media is playing.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the composable.
+ * @param state [PlayerState] The [PlayerState] containing the current playback information.
+ * @param surahDrawableId [Int] The resource ID for the surah's artwork.
+ * @param onSkipToNextSurah [() -> Unit][onSkipToNextSurah] A lambda to be invoked when the `skip to next` button is clicked.
+ * @param onTogglePlayback [() -> Unit][onTogglePlayback] A lambda to be invoked when the `play`/`pause` button is clicked.
+ * @param onSkipToPreviousSurah [() -> Unit][onSkipToPreviousSurah] A lambda to be invoked when the `skip to previous` button is clicked.
+ */
 @Composable
 private fun PlayerContentCompact(
         modifier: Modifier = Modifier,
-        surahDrawableId: Int,
         state: PlayerState,
+        surahDrawableId: Int,
         onSkipToNextSurah: () -> Unit = {},
         onTogglePlayback: () -> Unit = {},
         onSkipToPreviousSurah: () -> Unit = {}
@@ -451,6 +531,18 @@ private fun PlayerContentCompact(
     }
 }
 
+/**
+ * A container composable that manages the visibility of its content, typically player controls.
+ * It shows its content when tapped and automatically hides it after a delay if media is playing.
+ * The content remains visible if the media is paused.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the container.
+ * @param state [PlayerState] The [PlayerState] used to determine visibility logic (e.g., [PlayerState.isPlaying]).
+ * @param isClickable [Boolean] A boolean to enable or disable the clickable behavior of the container. Defaults to `true`.
+ * @param contentAlignment [Alignment] The alignment of the content within the container. Defaults to [Alignment.Center].
+ * @param content [@Composable (areControlsVisible: Boolean) -> Unit][content] A composable lambda that receives a boolean `areControlsVisible` indicating whether the
+ *   content should be visible. This allows for animation within the content composable itself.
+ */
 @Composable
 private fun MiniPlayerControlsContainer(
         modifier: Modifier = Modifier,
@@ -499,6 +591,22 @@ private fun MiniPlayerControlsContainer(
     }
 }
 
+/**
+ * A composable that displays player controls (`previous`, `play`/`pause`, `next`) as a floating overlay.
+ *
+ * This is typically used in layouts where there is not enough space for the standard, permanently
+ * visible controls. The controls are housed within a [Card] to give them a distinct, elevated
+ * appearance. Their visibility is controlled by the [areControlsVisible] parameter, allowing for
+ * animations like sliding and fading in/out.
+ *
+ * @param state [PlayerState] The [PlayerState] containing the current playback information, used here to
+ *   determine the play/pause icon.
+ * @param areControlsVisible [Boolean] A boolean that determines whether the controls should be visible.
+ *   This is used to trigger the enter/exit animations.
+ * @param onSkipToNextSurah [() -> Unit][onSkipToNextSurah] A lambda to be invoked when the `skip to next` button is clicked.
+ * @param onTogglePlayback [() -> Unit][onTogglePlayback] A lambda to be invoked when the `play`/`pause` button is clicked.
+ * @param onSkipToPreviousSurah [() -> Unit][onSkipToPreviousSurah] A lambda to be invoked when the `skip to previous` button is clicked.
+ */
 @Composable
 private fun BoxScope.OverlayPlayerControls(
         state: PlayerState,
@@ -542,25 +650,41 @@ private fun BoxScope.OverlayPlayerControls(
     }
 }
 
+/**
+ * A composable that displays a blurred background image for the player.
+ * The image is conditionally rendered based on the `isVisible` parameter. When visible, it fills the
+ * entire available space, applies a blur effect, and has a slight transparency. This creates a
+ * visually appealing and non-distracting backdrop for the player controls and information.
+ *
+ * @param isVisible [Boolean] If `true`, the background image is displayed. If `false`, nothing is rendered.
+ * @param surahDrawableId [Int] The drawable resource ID for the image to be displayed as the background.
+ */
 @Composable
 private fun PlayerBackground(
         isVisible: Boolean,
         @DrawableRes
         surahDrawableId: Int
 ) {
-    if (isVisible) {
-        Image(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(radiusX = 25.dp, radiusY = 25.dp)
-                    .alpha(0.5f),
-                painter = painterResource(id = surahDrawableId),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-        )
-    }
+    if (!isVisible) return
+    Image(
+            modifier = Modifier
+                .fillMaxSize()
+                .blur(radiusX = 25.dp, radiusY = 25.dp)
+                .alpha(0.5f),
+            painter = painterResource(id = surahDrawableId),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+    )
 }
 
+/**
+ * A composable that displays the top bar for the full-screen player.
+ * It contains an icon button to minimize or close the full-screen view.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the top bar. Defaults to [Modifier].
+ * @param onMinimizeClicked [() -> Unit][onMinimizeClicked] A lambda function that is invoked when the minimize/close
+ *   button is clicked.
+ */
 @Composable
 private fun PlayerTopBar(
         modifier: Modifier = Modifier,
@@ -583,6 +707,18 @@ private fun PlayerTopBar(
     }
 }
 
+/**
+ * A composable that displays the artwork for a surah. It adapts its size based on the device
+ * configuration to ensure it fits well within different layouts (`portrait`, `landscape`, `compact`).
+ *
+ * The image is clipped to a rounded rectangle and has a drop shadow for a modern, elevated look.
+ * The size of the image is calculated as a percentage of the available minimum dimension (`width` or `height`)
+ * of its container, with a specific sizing factor applied for different device types.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the composable.
+ * @param surahDrawableId [Int] The resource ID for the surah's artwork.
+ * @param alignment [Alignment] The alignment of the image within its container. Defaults to [Alignment.BottomCenter].
+ */
 @Composable
 private fun SurahImage(
         modifier: Modifier = Modifier,
@@ -624,6 +760,20 @@ private fun SurahImage(
     }
 }
 
+/**
+ * A composable that displays information about the current recitation, including the surah name
+ * and the reciter's name. It is designed to be responsive, adjusting the font sizes of the text
+ * based on the device's screen size and orientation.
+ *
+ * For smaller screens or in compact layouts, the text size is reduced to fit the available space.
+ * The surah and reciter names are also configured with a marquee effect, which automatically scrolls
+ * the text if it is too long to fit in the allocated width.
+ *
+ * Font styles are chosen based on the current locale (e.g., specific Arabic fonts for RTL languages).
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the composable.
+ * @param state [PlayerState] The [PlayerState] containing the `surah` and `reciter` information to be displayed.
+ */
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun RecitationInfo(
@@ -688,6 +838,23 @@ private fun RecitationInfo(
     }
 }
 
+/**
+ * A wrapper composable that provides a consistent layout structure for text elements
+ * within different device configurations.
+ *
+ * This function's primary role is to apply a `modifier` to its content `Box` only when the
+ * device configuration is landscape (`PHONE_LANDSCAPE`, `TABLET_LANDSCAPE`). In `portrait` or
+ * `compact` modes, it acts as a simple `Box` without any additional modifiers, allowing the
+ * child content to define its own layout constraints.
+ *
+ * This is particularly useful in `RecitationInfo` where text elements need to be weighted
+ * in landscape to correctly share space, but should wrap their content in portrait to avoid
+ * taking up unnecessary vertical space.
+ *
+ * @param modifier [Modifier] The [Modifier] to be conditionally applied to the content `Box`.
+ *   It is only used in landscape configurations.
+ * @param content [@Composable BoxScope.() -> Unit][content] The composable content to be rendered inside the `Box`.
+ */
 @Composable
 private fun AutoSizeText(
         modifier: Modifier = Modifier,
@@ -705,136 +872,25 @@ private fun AutoSizeText(
     }
 }
 
-// @Composable
-// @OptIn(ExperimentalMaterial3Api::class)
-// private fun PlayerProgress(
-//         modifier: Modifier = Modifier,
-//         state: PlayerState,
-//         bufferedProgress: Float,
-//         sliderPosition: Float,
-//         isChangingPosition: Boolean,
-//         onSeekStarted: () -> Unit = {},
-//         onSeekProgress: (Float) -> Unit = {},
-//         onSeekFinished: () -> Unit = {}
-// ) {
-//     BoxWithConstraints(
-//             modifier = modifier,
-//             contentAlignment = Alignment.TopCenter
-//     ) {
-//         val deviceConfiguration = currentWindowAdaptiveInfo().windowSizeClass.deviceConfiguration
-//
-//         val sizingFactor = when (deviceConfiguration) {
-//             DeviceConfiguration.COMPACT          -> 0f
-//
-//             DeviceConfiguration.PHONE_PORTRAIT,
-//             DeviceConfiguration.TABLET_PORTRAIT  -> 0.12f
-//
-//             DeviceConfiguration.PHONE_LANDSCAPE  -> 0.08f
-//             DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
-//         }
-//
-//         val sliderHeightFactor = when (deviceConfiguration) {
-//             DeviceConfiguration.COMPACT          -> 0f
-//
-//             DeviceConfiguration.PHONE_PORTRAIT,
-//             DeviceConfiguration.TABLET_PORTRAIT  -> 0.2f
-//
-//             DeviceConfiguration.PHONE_LANDSCAPE,
-//             DeviceConfiguration.TABLET_LANDSCAPE -> 0.05f
-//         }
-//
-//         val fontSize = (maxHeight.value * sizingFactor).sp.apply {
-//             when {
-//                 QuranApplication.currentLocaleInfo.isRTL -> this * 1.5f
-//                 else                                     -> this
-//             }
-//         }
-//         val fontFamily = when {
-//             QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
-//             else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
-//         }
-//         val sliderHeight = (maxHeight.value * sliderHeightFactor).dp
-//
-//         Column(
-//                 horizontalAlignment = Alignment.CenterHorizontally,
-//                 verticalArrangement = Arrangement.Top
-//         ) {
-//             Box(
-//                     modifier = Modifier.fillMaxWidth(),
-//                     contentAlignment = Alignment.BottomCenter
-//             ) {
-//                 Row(
-//                         horizontalArrangement = Arrangement.Center,
-//                         verticalAlignment = Alignment.CenterVertically
-//                 ) {
-//                     val currentSliderPositionMs = if (isChangingPosition) sliderPosition.toLong() else state.currentPositionMs
-//                     val showHours = state.durationMs.milliseconds.hoursLong > 0
-//
-//                     Text(
-//                             text = currentSliderPositionMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
-//                             fontSize = fontSize,
-//                             fontFamily = fontFamily,
-//                             fontWeight = FontWeight.ExtraBold,
-//                             color = Color.White.copy(alpha = 0.8f)
-//                     )
-//
-//                     Spacer(Modifier.width(8.dp))
-//
-//                     Text(
-//                             text = "/",
-//                             fontSize = fontSize,
-//                             fontFamily = fontFamily,
-//                             fontWeight = FontWeight.ExtraBold,
-//                             color = Color.White.copy(alpha = 0.8f)
-//                     )
-//
-//                     Spacer(Modifier.width(8.dp))
-//
-//                     Text(
-//                             text = state.durationMs.milliseconds.toLocalizedFormattedTime(showHours = showHours),
-//                             fontSize = fontSize,
-//                             fontFamily = fontFamily,
-//                             fontWeight = FontWeight.ExtraBold,
-//                             color = Color.White.copy(alpha = 0.8f)
-//                     )
-//                 }
-//             }
-//
-//             Box(
-//                     modifier = Modifier.fillMaxWidth(),
-//                     contentAlignment = Alignment.TopCenter
-//             ) {
-//                 val trackGap = 5.dp
-//                 val trackHeight = sliderHeight
-//                 val trackActiveColor = Color.White
-//                 val trackInactiveColor = Color.White.copy(alpha = 0.5f)
-//                 val trackShape = RoundedCornerShape(15.dp)
-//
-//                 val thumbWidth = 10.dp
-//                 val thumbHeight = trackHeight + 10.dp
-//
-//                 LinearProgressIndicator(
-//                         state = state,
-//                         thumbWidth = thumbWidth,
-//                         thumbHeight = thumbHeight,
-//                         trackHeight = trackHeight,
-//                         trackGap = trackGap,
-//                         trackShape = trackShape,
-//                         trackActiveColor = trackActiveColor,
-//                         trackInactiveColor = trackInactiveColor,
-//                         sliderPosition = sliderPosition,
-//                         bufferedProgress = bufferedProgress,
-//                         onSeekStarted = onSeekStarted,
-//                         onSeekProgress = onSeekProgress,
-//                         onSeekFinished = onSeekFinished
-//                 )
-//             }
-//         }
-//     }
-// }
-
+/**
+ * A composable that displays the media playback progress, including a progress slider and duration text.
+ *
+ * This component visualizes the current playback time, total duration, and buffered amount.
+ * It includes a custom [Slider] that allows the user to seek to a different position in the media.
+ * The layout and styling of the progress bar and text are determined by [playerProgressConfig], which adapts
+ * to the device's configuration and screen size. While the user is scrubbing the slider, the current time
+ * text updates to reflect the slider's position.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the composable.
+ * @param state [PlayerState] The [PlayerState] containing current playback information like duration and buffering status.
+ * @param bufferedProgress [Float] The progress of the buffered media, as a float between `0f` and `1f`.
+ * @param sliderPosition [Float] The current position of the progress slider, controlled by user interaction.
+ * @param isChangingPosition [Boolean] A boolean indicating if the user is currently scrubbing the progress slider.
+ * @param onSeekStarted [() -> Unit][onSeekStarted] A lambda invoked when the user starts dragging the slider.
+ * @param onSeekProgress [(progress: Float) -> Unit][onSeekProgress] A lambda that reports the new slider position as the user drags it.
+ * @param onSeekFinished [() -> Unit][onSeekFinished] A lambda invoked when the user releases the slider, finalizing the seek action.
+ */
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 private fun PlayerProgress(
         modifier: Modifier = Modifier,
         state: PlayerState,
@@ -842,7 +898,7 @@ private fun PlayerProgress(
         sliderPosition: Float,
         isChangingPosition: Boolean,
         onSeekStarted: () -> Unit = {},
-        onSeekProgress: (Float) -> Unit = {},
+        onSeekProgress: (progress: Float) -> Unit = {},
         onSeekFinished: () -> Unit = {}
 ) {
     BoxWithConstraints(
@@ -901,6 +957,24 @@ private fun PlayerProgress(
     }
 }
 
+/**
+ * A composable that displays the current playback position and total duration of the media.
+ *
+ * This component shows the elapsed time and the total time of the recitation, separated by a slash.
+ * For example: `01:23 / 05:45`.
+ *
+ * The displayed current position updates in real-time. It reflects the [sliderPosition] when the user
+ * is actively scrubbing the progress bar ([isChangingPosition] is true), otherwise it shows the
+ * [PlayerState.currentPositionMs] from the [state].
+ *
+ * The time format automatically includes hours if the total duration is one hour or longer.
+ *
+ * @param state [PlayerState] The [PlayerState] containing the media's total duration and current playback position.
+ * @param sliderPosition [Float] The current position of the progress slider, used to display the time while the user is seeking.
+ * @param isChangingPosition [Boolean] A boolean indicating if the user is currently scrubbing the progress slider.
+ * @param fontSize [TextUnit] The font size to be applied to the duration text.
+ * @param fontFamily [FontFamily] The font family to be applied to the duration text.
+ */
 @Composable
 private fun PlayerDuration(
         state: PlayerState,
@@ -909,9 +983,17 @@ private fun PlayerDuration(
         fontSize: TextUnit,
         fontFamily: FontFamily
 ) {
-    val showHours = state.durationMs.milliseconds.hoursLong > 0
-    val currentSliderPositionMs = if (isChangingPosition) sliderPosition.toLong() else state.currentPositionMs
-    val textStyle = androidx.compose.ui.text.TextStyle(
+    val showHours = state.durationMs.milliseconds.hoursComponent > 0
+
+    val totalDuration = state.durationMs.milliseconds.toLocalizedFormattedTime(showHours = showHours)
+
+    val currentPosition = when {
+        state.durationMs.milliseconds.isInfinite() -> state.durationMs  // the duration is infinite when the player is in the buffering state
+        isChangingPosition                         -> sliderPosition.toLong()
+        else                                       -> state.currentPositionMs
+    }.milliseconds.toLocalizedFormattedTime(showHours = showHours)
+
+    val textStyle = TextStyle(
             fontSize = fontSize,
             fontFamily = fontFamily,
             fontWeight = FontWeight.ExtraBold,
@@ -922,14 +1004,33 @@ private fun PlayerDuration(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = currentSliderPositionMs.milliseconds.toLocalizedFormattedTime(showHours = showHours), style = textStyle)
+        Text(text = currentPosition, style = textStyle)
+
         Spacer(Modifier.width(8.dp))
+
         Text(text = "/", style = textStyle)
+
         Spacer(Modifier.width(8.dp))
-        Text(text = state.durationMs.milliseconds.toLocalizedFormattedTime(showHours = showHours), style = textStyle)
+
+        Text(text = totalDuration, style = textStyle)
     }
 }
 
+/**
+ * Calculates and provides a [PlayerProgressConfig] based on the current device configuration
+ * and available height. This function is responsible for determining the appropriate font size,
+ * font family, and slider height for the [PlayerProgress] composable to ensure a responsive and
+ * visually consistent layout across different screen sizes and orientations.
+ *
+ * The sizing factors are adjusted based on whether the device is in `portrait`, `landscape`, or a
+ * `compact` layout. It also selects an appropriate font family based on the current locale's
+ * text direction (`RTL` or `LTR`).
+ *
+ * @param maxHeight [Dp] The maximum available height for the container, used as a basis for calculating
+ *   the size of the UI elements.
+ * @return [PlayerProgressConfig] A data class containing the calculated [PlayerProgressConfig.fontSize], [PlayerProgressConfig.fontFamily],
+ *   and [PlayerProgressConfig.sliderHeight] to be used for styling the player progress components.
+ */
 @Composable
 private fun playerProgressConfig(maxHeight: Dp): PlayerProgressConfig {
     val deviceConfiguration = currentWindowAdaptiveInfo().windowSizeClass.deviceConfiguration
@@ -966,6 +1067,33 @@ private fun playerProgressConfig(maxHeight: Dp): PlayerProgressConfig {
     return PlayerProgressConfig(fontSize = fontSize, fontFamily = fontFamily, sliderHeight = sliderHeight)
 }
 
+/**
+ * A custom linear progress indicator that visually represents the playback progress,
+ * buffering state, and allows for user interaction to seek through the media.
+ *
+ * This composable acts as a container for several other components:
+ * - A [Slider] for user-controlled seeking.
+ * - A [BufferProgressIndicator] to show the amount of media that has been buffered.
+ * - A [BufferingIndicator] which displays a pulsing animation when the media is in a buffering state.
+ *
+ * It intelligently switches between the [Slider] and the [BufferingIndicator] based on [PlayerState.isBuffering].
+ * The underlying [Slider] is built using custom `thumb` and `track` composables ([SliderThumb] and [SliderTrack])
+ * to achieve a specific visual style.
+ *
+ * @param state [PlayerState] The current state of the player, used to determine duration, buffering status, and current position.
+ * @param thumbWidth [Dp] The width of the slider's thumb.
+ * @param thumbHeight [Dp] The height of the slider's thumb.
+ * @param trackHeight [Dp] The height of the slider's track.
+ * @param trackGap [Dp] The gap between the active and inactive parts of the track, around the thumb.
+ * @param trackShape [RoundedCornerShape] The shape applied to the slider track.
+ * @param trackActiveColor [Color] The color of the active (played) portion of the track.
+ * @param trackInactiveColor [Color] The color of the inactive (unplayed) portion of the track.
+ * @param sliderPosition [Float] The current position of the slider, controlled by user interaction or playback progress.
+ * @param bufferedProgress [Float] The amount of media that has been buffered.
+ * @param onSeekStarted [() -> Unit][onSeekStarted] A callback function that is called when the user starts seeking.
+ * @param onSeekProgress [(progress: Float) -> Unit][onSeekProgress] A callback function that is called when the user is seeking.
+ * @param onSeekFinished [() -> Unit][onSeekFinished] A callback function that is called when the user finishes seeking.
+ */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun BoxScope.LinearProgressIndicator(
@@ -980,7 +1108,7 @@ private fun BoxScope.LinearProgressIndicator(
         sliderPosition: Float,
         bufferedProgress: Float,
         onSeekStarted: () -> Unit = {},
-        onSeekProgress: (Float) -> Unit = {},
+        onSeekProgress: (progress: Float) -> Unit = {},
         onSeekFinished: () -> Unit = {}
 ) {
     // Safety Check: Ensure duration is at least 1f to prevent "0..0" range crash
@@ -1053,6 +1181,31 @@ private fun BoxScope.LinearProgressIndicator(
     }
 }
 
+/**
+ * A composable that visualizes the buffered portion of the media on top of the main progress slider.
+ * It is designed to be layered underneath the main interactive [Slider] but above the slider's track.
+ *
+ * This indicator shows a background segment that represents the amount of media that has been
+ * downloaded (buffered) but not yet played. It works by taking the [currentProgress] and [bufferProgress]
+ * and drawing a [Box] with a specified [trackColor] for the duration between these two points.
+ *
+ * It uses a [Row] with weighted [Box] components to represent three segments:
+ * - The space already covered by the played progress (an empty [Box]).
+ * - The [SliderThumb]'s position.
+ * - The buffered segment (a [Box] with the [trackColor]).
+ * - The unbuffered, inactive segment (an empty [Box]).
+ *
+ * This composable is intended for visual feedback only and does not handle user interaction.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the composable.
+ * @param currentProgress [Float] The current playback progress, as a float between `0f` and `1f`.
+ * @param bufferProgress [Float] The current buffer progress, as a float between `0f` and `1f`.
+ * @param thumbWidth [Dp] The width of the slider's thumb. This is used to correctly offset the progress segments.
+ * @param trackGap [Dp] The gap between the played portion and the buffered portion of the track.
+ * @param trackHeight [Dp] The height of the buffer indicator track.
+ * @param trackColor [Color] The color of the buffer indicator track.
+ * @param trackShape [Shape] The shape of the buffer indicator track.
+ */
 @Composable
 private fun BufferProgressIndicator(
         modifier: Modifier = Modifier,
@@ -1106,10 +1259,23 @@ private fun BufferProgressIndicator(
     }
 }
 
+
+/**
+ * A custom composable for the thumb of a [Slider]. It renders a simple [Box] with a
+ * specified width, height, color, and shape.
+ *
+ * This composable is used within the `thumb` lambda of the [Slider] component to provide a
+ * custom visual representation for the slider's handle, replacing the default circular thumb.
+ *
+ * @param thumbWidth [Dp] The width of the slider's `thumb`.
+ * @param thumbHeight [Dp] The height of the slider's `thumb`.
+ * @param thumbColor [Color] The color of the slider's `thumb`.
+ * @param thumbShape [Shape] The shape of the slider's `thumb`.
+ */
 @Composable
 private fun SliderThumb(
-        thumbHeight: Dp = 60.dp,
         thumbWidth: Dp = 10.dp,
+        thumbHeight: Dp = 60.dp,
         thumbColor: Color = Color.White,
         thumbShape: Shape = RoundedCornerShape(5.dp)
 ) {
@@ -1121,6 +1287,24 @@ private fun SliderThumb(
     )
 }
 
+/**
+ * A custom track composable for a [Slider], responsible for drawing the active and inactive
+ * segments of the progress bar.
+ *
+ * It uses the [sliderState] to calculate the current progress and divides the track into two
+ * [Box] components: one for the `active` (`played`) portion and one for the `inactive` (`unplayed`)
+ * portion. A gap is added between these segments to accommodate the slider's `thumb`. The padding
+ * applied to the `active` and `inactive` segments ensures that they don't overlap with the `thumb`, creating
+ * a visually clean separation.
+ *
+ * @param sliderState [SliderState] The state of the parent [Slider], which contains the current value and value range.
+ * @param thumbWidth [Dp] The width of the slider's `thumb`. Used to calculate the padding around the track segments.
+ * @param trackGap [Dp] The gap between the `active` and `inactive` track segments, centered around the `thumb`.
+ * @param trackHeight [Dp] The height of the track.
+ * @param trackShape [Shape] The shape of the track segments.
+ * @param trackActiveColor [Color] The color of the `active` (`played`) part of the track.
+ * @param trackInactiveColor [Color] The color of the `inactive` (`unplayed`) part of the track.
+ */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun SliderTrack(
@@ -1178,6 +1362,20 @@ private fun SliderTrack(
     }
 }
 
+/**
+ * A composable that displays an animated indicator when the media is buffering.
+ *
+ * This indicator is typically shown in place of the interactive progress slider when the player
+ * is in a buffering state. It consists of a simple [Box] with a specified [trackHeight], [trackColor],
+ * and [trackShape]. It uses an `infinite transition` to continuously animate the `alpha` (`opacity`)
+ * of the box, creating a `pulsing` or `breathing` effect that visually signals to the user
+ * that content is being loaded.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the composable.
+ * @param trackHeight [Dp] The height of the indicator's track.
+ * @param trackColor [Color] The color of the indicator.
+ * @param trackShape [Shape] The shape of the indicator.
+ */
 @Composable
 private fun BufferingIndicator(
         modifier: Modifier = Modifier,
@@ -1204,6 +1402,25 @@ private fun BufferingIndicator(
     )
 }
 
+/**
+ * A composable that displays the primary playback controls: `skip to previous`, `play`/`pause`, and `skip to next`.
+ *
+ * This component arranges the control buttons in a [Row]. The central `play`/`pause` button is styled
+ * as a prominent [Card] to draw attention, and its icon dynamically changes based on the [PlayerState.isPlaying]
+ * status. The `skip to previous` and `skip to next` buttons are standard [IconButton]s.
+ *
+ * The layout can be adapted for different contexts using the [isOverlay] flag. When `true`, the buttons
+ * are given equal weight, causing them to spread out evenly across the available width. This is suitable
+ * for floating or overlay control panels. When `false`, the buttons take their default size.
+ *
+ * @param modifier [Modifier] The [Modifier] to be applied to the control row. Defaults to [Modifier].
+ * @param state [PlayerState] The current player state, used to determine the icon for the `play`/`pause` button.
+ * @param isOverlay [Boolean] If `true`, the control buttons will be weighted to fill the available width evenly.
+ *   Defaults to `false`.
+ * @param onSkipToPreviousSurah [() -> Unit][onSkipToPreviousSurah] A lambda to be invoked when the `skip to previous` button is clicked.
+ * @param onTogglePlayback [() -> Unit][onTogglePlayback] A lambda to be invoked when the `play`/`pause` button is clicked.
+ * @param onSkipToNextSurah [() -> Unit][onSkipToNextSurah] A lambda to be invoked when the `skip to next` button is clicked.
+ */
 @Composable
 private fun PlayerControls(
         modifier: Modifier = Modifier,
@@ -1266,6 +1483,19 @@ private fun PlayerControls(
     }
 }
 
+/**
+ * A preview composable for the [FullScreenPlayer].
+ *
+ * This function sets up a [Scaffold] and displays the [FullScreenPlayer] with sample data
+ * to demonstrate its appearance and layout in different configurations. It includes multiple
+ * [@Preview][Preview] annotations to render the player in various device formats:
+ * - A standard phone in portrait orientation.
+ * - A tablet in landscape orientation.
+ * - A compact square layout (400x400 dp).
+ *
+ * The previews use sample `reciter` and `surah` data, along with mock playback progress,
+ * to provide a realistic representation of the player UI.
+ */
 @Composable
 @Preview(name = "FullScreenPlayerPreview - Portrait", device = Devices.PHONE, showSystemUi = true, locale = "ar")
 @Preview(name = "FullScreenPlayerPreview - Landscape", device = Devices.TABLET, showSystemUi = true, locale = "ar")
@@ -1299,4 +1529,14 @@ private fun FullScreenPlayerPreview() {
     }
 }
 
+/**
+ * Configuration data class for the visual properties of the player progress UI.
+ *
+ * This class holds layout and styling parameters for the player's progress bar and duration text,
+ * which are calculated based on the current device configuration and screen size.
+ *
+ * @param fontSize [TextUnit] The calculated font size for the current and total duration text.
+ * @param fontFamily [FontFamily] The font family to be used for the duration text.
+ * @param sliderHeight [Dp] The calculated height for the progress slider track.
+ */
 private data class PlayerProgressConfig(val fontSize: TextUnit, val fontFamily: FontFamily, val sliderHeight: Dp)

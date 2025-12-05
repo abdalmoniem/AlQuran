@@ -3,7 +3,7 @@ package com.hifnawy.alquran.shared.domain
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
-import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursLong
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursComponent
 import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.toFormattedTime
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -53,7 +53,7 @@ sealed class ServiceStatus {
          * @return [String] A formatted string detailing the current state and media information.
          */
         final override fun toString(): String {
-            val showHours = durationMs.milliseconds.hoursLong > 0
+            val showHours = durationMs.milliseconds.hoursComponent > 0
 
             return "${this::class.simpleName}(" +
                    "reciter=(${reciter.id.value}, ${reciter.name}), " +

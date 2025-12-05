@@ -798,23 +798,13 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
     private fun updateMetadata(surah: Surah) {
         val surahDrawableBitmap = (AppCompatResources.getDrawable(this@QuranMediaService, surah.surahDrawableId) as BitmapDrawable).bitmap
 
-        val title = when (mediaSessionState) {
-            MediaSessionState.STOPPED.state -> surah.name
-            else                            -> when (player.playbackState) {
-                Player.STATE_IDLE,
-                Player.STATE_BUFFERING -> getString(R.string.loading_surah, surah.name)
-
-                else                   -> surah.name
-            }
-        }
-
         val duration = when (player.playbackState) {
             Player.STATE_READY -> player.duration
             else               -> 0
         }
 
         val metadata = MediaMetadataCompat.Builder().run {
-            putText(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+            putText(MediaMetadataCompat.METADATA_KEY_TITLE, surah.name)
             putText(MediaMetadataCompat.METADATA_KEY_ARTIST, currentReciter?.name)
             putText(MediaMetadataCompat.METADATA_KEY_ALBUM, currentMoshaf?.name)
             putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, surahDrawableBitmap)

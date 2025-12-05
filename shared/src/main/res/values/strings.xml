@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notification_channel_name">القرآن الكريم</string>
-    <string name="loading_surah">جارٍ تحميل سورة %1$s…</string>
 
     <string translatable="false" name="API_SURAHS">suwar</string>
     <string translatable="false" name="API_RECITERS">reciters</string>

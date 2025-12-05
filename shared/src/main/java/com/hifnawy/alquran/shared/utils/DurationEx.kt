@@ -1,6 +1,12 @@
 package com.hifnawy.alquran.shared.utils
 
 import com.hifnawy.alquran.shared.QuranApplication
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.hoursComponent
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.microsecondsComponent
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.millisecondsComponent
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.minutesComponent
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.nanosecondsComponent
+import com.hifnawy.alquran.shared.utils.DurationExtensionFunctions.secondsComponent
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -8,18 +14,137 @@ import java.util.Locale
 import kotlin.time.Duration
 
 /**
- * Provides extension functions for [Duration] that provide human-readable representations of the duration.
+ * An object that groups together extension functions for the [Duration] class.
+ *
+ * These extensions provide convenient ways to format durations into human-readable strings,
+ * extract time components (like `hours`, `minutes`, `seconds`, etc...), and convert `durations` to `timestamps`.
+ * The functions are designed to handle different formatting requirements, such as localization
+ * and the inclusion or exclusion of specific time parts.
+ *
+ * This object acts as a namespace, so its members are accessed on [Duration] instances
  *
  * @author AbdAlMoniem AlHifnawy
  */
 object DurationExtensionFunctions {
 
-    val Duration.hoursLong: Long get() = toComponents { hours, _, _, _ -> hours }
-    val Duration.minutesInt: Int get() = toComponents { _, minutes, _, _ -> minutes }
-    val Duration.secondsInt: Int get() = toComponents { _, _, seconds, _ -> seconds }
-    val Duration.millisecondsInt: Int get() = toComponents { _, _, _, _, nanoseconds -> nanoseconds / 1_000_000 }
-    val Duration.microsecondsInt: Int get() = toComponents { _, _, _, _, nanoseconds -> nanoseconds / 1_000 }
-    val Duration.nanosecondsInt: Int get() = toComponents { _, _, _, _, nanoseconds -> nanoseconds }
+    /**
+     * The number of hours in the time component of this duration.
+     *
+     * This value is always in the range `0..23`.
+     *
+     * This is different from `inWholeHours` which returns the total number of full hours in the entire duration.
+     * For example, for a duration of 37 hours, [hoursComponent] would be `13` (as in 1 day and 13 hours),
+     * whereas `inWholeHours` would be `37`.
+     *
+     * @return [Long] the number of hours in the time component of this duration.
+     *
+     * @see toComponents
+     * @see minutesComponent
+     * @see secondsComponent
+     * @see millisecondsComponent
+     * @see microsecondsComponent
+     * @see nanosecondsComponent
+     */
+    val Duration.hoursComponent get() = toComponents { hours, _, _, _ -> hours }
+
+    /**
+     * The number of minutes in the time component of this duration.
+     *
+     * This value is always in the range `0..59`.
+     *
+     * This is different from `inWholeMinutes` which returns the total number of full minutes in the entire duration.
+     * For example, for a duration of 90 minutes, [minutesComponent] would be `30` (as in 1 hour and 30 minutes),
+     * whereas `inWholeMinutes` would be `90`.
+     *
+     * @return [Int] the number of minutes in the time component of this duration.
+     *
+     * @see toComponents
+     * @see hoursComponent
+     * @see secondsComponent
+     * @see millisecondsComponent
+     * @see microsecondsComponent
+     * @see nanosecondsComponent
+     */
+    val Duration.minutesComponent get() = toComponents { _, minutes, _, _ -> minutes }
+
+    /**
+     * The number of seconds in the time component of this duration.
+     *
+     * This value is always in the range `0..59`.
+     *
+     * This is different from `inWholeSeconds` which returns the total number of full seconds in the entire duration.
+     * For example, for a duration of 90 seconds, [secondsComponent] would be `30` (as in 1 minute and 30 seconds),
+     * whereas `inWholeSeconds` would be `90`.
+     *
+     * @return [Int] the number of seconds in the time component of this duration.
+     *
+     * @see toComponents
+     * @see hoursComponent
+     * @see minutesComponent
+     * @see millisecondsComponent
+     * @see microsecondsComponent
+     * @see nanosecondsComponent
+     */
+    val Duration.secondsComponent get() = toComponents { _, _, seconds, _ -> seconds }
+
+
+    /**
+     * The number of milliseconds in the time component of this duration.
+     *
+     * This value is always in the range `0..999`.
+     *
+     * This is different from `inWholeMilliseconds` which returns the total number of full milliseconds in the entire duration.
+     * For example, for a duration of `1234` milliseconds, [millisecondsComponent] would be `234` (as in 1 second and 234 milliseconds),
+     * whereas `inWholeMilliseconds` would be `1234`.
+     *
+     * @return [Int] the number of milliseconds in the time component of this duration.
+     *
+     * @see toComponents
+     * @see hoursComponent
+     * @see minutesComponent
+     * @see secondsComponent
+     * @see microsecondsComponent
+     * @see nanosecondsComponent
+     */
+    val Duration.millisecondsComponent get() = toComponents { _, _, _, nanoseconds -> nanoseconds / 1_000_000 }
+
+    /**
+     * The number of microseconds in the time component of this duration.
+     *
+     * This value is always in the range `0..999`.
+     *
+     * This is different from `inWholeMicroseconds` which returns the total number of full microseconds in the entire duration.
+     *
+     * @return [Int] the number of microseconds in the time component of this duration.
+     *
+     * @see toComponents
+     * @see hoursComponent
+     * @see minutesComponent
+     * @see secondsComponent
+     * @see millisecondsComponent
+     * @see nanosecondsComponent
+     */
+    val Duration.microsecondsComponent get() = toComponents { _, _, _, nanoseconds -> nanoseconds / 1_000 }
+
+    /**
+     * The number of nanoseconds in the time component of this duration.
+     *
+     * This value is always in the range `0..999_999_999`.
+     *
+     * This is different from `inWholeNanoseconds` which returns the total number of nanoseconds in the entire duration.
+     * For example, for a duration of 1 second and 123 nanoseconds, [nanosecondsComponent] would be `123`,
+     * whereas `inWholeNanoseconds` would be `1_000_000_123`.
+     *
+     * @return [Int] the number of nanoseconds in the time component of this duration.
+     *
+     * @see toComponents
+     * @see hoursComponent
+     * @see minutesComponent
+     * @see secondsComponent
+     * @see millisecondsComponent
+     * @see microsecondsComponent
+     */
+    val Duration.nanosecondsComponent get() = toComponents { _, _, _, nanoseconds -> nanoseconds }
 
     /**
      * Converts the duration to a formatted string suitable for display to the user.
@@ -36,7 +161,7 @@ object DurationExtensionFunctions {
         val isHoursShown = showHours || hours > 0L
 
         when {
-            isInfinite() -> "Ꝏ"
+            isInfinite() -> "--"
 
             else         -> {
                 val format = when {
@@ -67,7 +192,7 @@ object DurationExtensionFunctions {
         val locale = QuranApplication.currentLocale
 
         when {
-            isInfinite() -> "∞"
+            isInfinite() -> "--"
 
             else         -> {
                 val format = when {
