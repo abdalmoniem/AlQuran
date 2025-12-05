@@ -1,0 +1,96 @@
+- ### bump app version to 0.0.8.1
+   > Refactor(Media): Improve media service and caching logic
+   > This commit introduces several refactorings and improvements to the media playback service and caching layer. The changes focus on enhancing code clarity, improving logging, and adding documentation.
+   > - **`QuranMediaService.kt`:**
+   >     - Refactored the `ExoPlayer` and `MediaItem` builder chains using `.run { ... }` for better readability.
+   >     - Simplified error logging in `onPlayerError` by removing a redundant log line.
+   >     - Added KDoc documentation for the `getCacheKey` function to clarify its purpose and format.
+   > - **`CacheDataSource.kt`:**
+   >     - Consolidated multiple `Timber.debug` calls into a single line for cleaner logging during cache initialization.
+   >     - Improved cache size logging by using a human-readable format (e.g., "300 MB") instead of raw bytes.
+------------------------------
+- ### Refactor(Media): Improve media service and caching logic
+   > Commit: fc8b43f
+   > 
+   > This commit introduces several refactorings and improvements to the media playback service and caching layer. The changes focus on enhancing code clarity, improving logging, and adding documentation.
+   > - **`QuranMediaService.kt`:**
+   >     - Refactored the `ExoPlayer` and `MediaItem` builder chains using `.run { ... }` for better readability.
+   >     - Simplified error logging in `onPlayerError` by removing a redundant log line.
+   >     - Added KDoc documentation for the `getCacheKey` function to clarify its purpose and format.
+   > - **`CacheDataSource.kt`:**
+   >     - Consolidated multiple `Timber.debug` calls into a single line for cleaner logging during cache initialization.
+   >     - Improved cache size logging by using a human-readable format (e.g., "300 MB") instead of raw bytes.
+------------------------------
+- ### Refactor(Data): Sort reciters and surahs at the data source
+   > Commit: 07c8905
+   > 
+   > This commit moves the sorting logic for reciters and surahs from the UI layer to the data repository, ensuring that the data is consistently ordered from its source. It also includes a minor fix to prevent unnecessary media playback restarts.
+   > - **Data Sorting in `QuranRepository`:**
+   >   - **`getReciters()`**: The list of reciters is now sorted alphabetically by name directly within the repository, immediately after being fetched and parsed.
+   >   - **`getSurahs()`**: The list of surahs is now sorted by their ID within the repository.
+   >   - This change eliminates the need for sorting in `RecitersScreen`, simplifying the view-layer logic.
+   > - **Playback Logic Fix in `QuranMediaService`:**
+   >   - The condition to prevent restarting media playback now checks `isMediaReady` instead of `player.isPlaying`. This correctly avoids interruptions when the player is paused but the media is already loaded for the selected reciter, moshaf, and surah.
+------------------------------
+- ### Refactor: Implement Media3 caching and improve buffering state
+   > Commit: cf2deb5
+   > 
+   > This commit introduces media caching using Media3's `SimpleCache` to improve playback performance and reduce network usage. It also refactors the buffering state to provide more detailed information to the UI.
+   > - **Media Caching (`CacheDataSource.kt`)**:
+   >     - A new `CacheDataSource` singleton has been created to manage media caching.
+   >     - It configures a `SimpleCache` with a `LeastRecentlyUsedCacheEvictor` and a size limit of `300 MB` per item, stored in the `exoplayer_cache` directory.
+   >     - ExoPlayer is now configured to use `CacheDataSource.Factory`, which enables caching for all streamed media.
+   >     - Media items are assigned a custom cache key based on the reciter, moshaf, and surah IDs.
+   > - **Playback & Buffering Logic (`QuranMediaService.kt`)**:
+   >     - The `ExoPlayer` instance is now built with a custom `DefaultLoadControl` to increase buffer durations (5 minutes min, 10 minutes max), improving playback stability on slow networks.
+   >     - The `playMedia` function now uses a `ProgressiveMediaSource` with the caching data source factory.
+   >     - The `ServiceStatus.Buffering` state is now a `data class` that includes detailed media info (`reciter`, `moshaf`, `surah`, `durationMs`, `currentPositionMs`, `bufferedPositionMs`). This provides the UI with context even while buffering.
+   >     - On player errors, the service now logs cache info for the failed item to aid in debugging.
+   >     - A retry mechanism on playback error now properly re-prepares the media.
+   >     - Cache resources are now properly released in `onDestroy`.
+   > - **UI State (`MediaViewModel.kt`)**:
+   >     - The ViewModel now updates its state with the detailed media information provided by the new `ServiceStatus.Buffering` data class, ensuring the UI can reflect the current track details during buffering.
+   > - **Utilities (`LongEx.kt`)**:
+   >     - Added a new `LongEx.asHumanReadableSize` extension property to format byte counts into a human-readable string (e.g., `KB`, `MB`, `GB`), used for logging cache sizes and for the future use by the UI.
+------------------------------
+- ### Refactor(Search): Improve search filtering and state handling
+   > Commit: 495118d
+   > 
+   > This commit enhances the search functionality across the app and improves state management, particularly for scroll position and search queries. It introduces new string utilities to handle special characters and ensures that the user's view is preserved across interactions.
+   > - **Search & Filtering Logic:**
+   >     - **`StringEx.kt`:**
+   >         - A new `StringEx` utility object has been introduced.
+   >         - Added a `stripFormattingChars` extension function to remove invisible formatting and control characters (e.g., zero-width spaces, soft hyphens) from strings. This makes search matching more robust and reliable.
+   >         - Added a `snakeCase` extension property to convert camelCase or PascalCase strings to snake_case.
+   >         - Extensive KDoc documentation was added to explain the purpose and usage of these new utilities.
+   >     - **`RecitersGrid.kt` & `SurahsGrid.kt`:**
+   >         - Search filtering logic in both grids now uses `stripFormattingChars` on both the query and the item names. This prevents mismatches caused by invisible characters in the data, particularly in Non-Arabic text.
+   > - **State Restoration & Scrolling:**
+   >     - **`RecitersGrid.kt`:**
+   >         - When a moshaf is selected for a reciter, the reciter's ID (`selectedReciterId`) is now saved.
+   >         - If a search is performed while a reciter is selected, a `LaunchedEffect` automatically scrolls the grid to ensure the selected reciter remains visible in the filtered list.
+   >     - **`RecitersScreen.kt`:**
+   >         - Reciters fetched from `MediaManager` are now sorted alphabetically by name before being displayed and stored in the `MediaViewModel`.
+   > - **UI & Animation Refinements:**
+   >     - **`SurahsGrid.kt`:**
+   >         - The animation duration for auto-scrolling to the currently playing surah has been increased from 300ms to 700ms for a smoother, less abrupt transition.
+   >     - **`SearchTextField.kt`:**
+   >         - Minor code cleanup in the `SearchBar` composable.
+------------------------------
+- ### Update Crowdin configuration file
+   > Commit: cc4156e
+   > 
+   >
+------------------------------
+- ### Update Crowdin configuration file
+   > Commit: 58805c2
+   > 
+   >
+------------------------------
+- ### Update Crowdin configuration file
+   > Commit: 9785e30
+   > 
+   >
+------------------------------
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/v0.0.8...v0.0.8.1
