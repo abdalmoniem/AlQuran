@@ -8,8 +8,8 @@
     <string name="surah_name">Surah Name</string>
     <string name="reciter_name">Reciter Name</string>
     <plurals name="moshaf_count">
-        <item quantity="one">One Recitation</item>
-        <item quantity="other">%d Recitations</item>
+        <item quantity="one">One Narration</item>
+        <item quantity="other">%d Narrations</item>
     </plurals>
     <plurals name="surah_count">
         <item quantity="one">One Surah</item>
