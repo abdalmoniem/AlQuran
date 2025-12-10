@@ -126,7 +126,6 @@
     <string name="settings_about_version_code">Version Code:\t\t\t%d</string>
     <string name="settings_about_version_name">Version Name:\t\t\t%s</string>
     <string name="settings_about_developer_name">AbdElMoniem ElHifnawy</string>
-
     <string name="downloading_surahs">Downloading Surahs…</string>
     <string name="downloading_surah">Downloading Surah %1$d: %2$s…</string>
     <string name="download_cancel">Cancel Download</string>
