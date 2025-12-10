@@ -136,6 +136,13 @@
     <string name="settings_about_version_name">إسم الإصدار:\t\t\t%s</string>
     <string name="settings_about_developer_name">عبد المنعم الحفناوى</string>
 
+    <string name="downloading_surahs">جارٍ تحميل السور…</string>
+    <string name="downloading_surah">جارٍ تحميل سورة %1$d: %2$s…</string>
+    <string name="download_cancel">إلغاء التحميل</string>
+    <string name="download_percentage">%1$06.2f٪</string>
+    <string translatable="false" name="download_count">%1$d / %2$d</string>
+    <string translatable="false" name="download_progress">%1$s / %2$s</string>
+
     <string translatable="false" name="locale_int">%d</string>
     <string translatable="false" name="settings_contact_developer_email">hifnawy_moniem@hotmail.com</string>
     <string translatable="false" name="settings_about_github_url">https://github.com/abdalmoniem/AlQuran</string>

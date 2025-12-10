@@ -2,6 +2,7 @@ package com.hifnawy.alquran.shared.domain
 
 import android.graphics.drawable.Drawable
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -17,6 +18,7 @@ import com.hifnawy.alquran.shared.repository.Result
 import com.hifnawy.alquran.shared.utils.DrawableResUtil.surahDrawableId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
 
 object MediaManager : LifecycleOwner {
 
@@ -47,43 +49,61 @@ object MediaManager : LifecycleOwner {
         mediaReadyListeners.clear()
     }
 
-    fun whenRecitersReady(onReady: (result: Result<List<Reciter>, DataError>) -> Unit) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val result = QuranRepository.getReciters()
+    fun whenRecitersReady(onReady: (result: Result<List<Reciter>, DataError>) -> Unit) = lifecycleScope.launch(Dispatchers.IO) {
+        val result = QuranRepository.getReciters()
 
-            onReady(result)
+        onReady(result)
 
-            if (result !is Result.Success) return@launch
-            reciters = result.data
+        if (result !is Result.Success) return@launch
+        reciters = result.data
+    }
+
+    fun whenSurahsReady(onReady: (result: Result<List<Surah>, DataError>) -> Unit) = lifecycleScope.launch(Dispatchers.IO) {
+        val result = QuranRepository.getSurahs()
+
+        onReady(result)
+
+        if (result !is Result.Success) return@launch
+        surahs = result.data
+    }
+
+    fun whenSurahsReady(
+            reciter: Reciter,
+            moshaf: Moshaf,
+            onReady: (result: Result<List<Surah>, DataError>) -> Unit
+    ) = lifecycleScope.launch(Dispatchers.IO) {
+        val result = QuranRepository.getSurahs()
+
+        when (result) {
+            is Result.Success -> {
+                surahs = result.data.filter { it.id in moshaf.surahIds }.sortedBy { surah -> surah.id }
+                surahs = moshaf.getMoshafSurahs(reciter, surahs)
+
+                onReady(result.copy(data = surahs))
+            }
+
+            is Result.Error   -> onReady(result)
         }
     }
 
-    fun whenSurahsReady(onReady: (result: Result<List<Surah>, DataError>) -> Unit) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val result = QuranRepository.getSurahs()
+    fun whenReady(
+            reciterID: ReciterId,
+            onReady: (reciter: Reciter, moshaf: Moshaf, surahs: List<Surah>) -> Unit
+    ) = lifecycleScope.launch(Dispatchers.IO) {
+        val recitersResult = QuranRepository.getReciters()
+        val surahsResult = QuranRepository.getSurahs()
 
-            onReady(result)
+        if (recitersResult !is Result.Success) return@launch
+        if (surahsResult !is Result.Success) return@launch
 
-            if (result !is Result.Success) return@launch
-            surahs = result.data
-        }
-    }
+        reciters = recitersResult.data
 
-    fun whenReady(reciterID: ReciterId, onReady: (reciter: Reciter, moshaf: Moshaf, surahs: List<Surah>) -> Unit) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val recitersResult = QuranRepository.getReciters()
-            val surahsResult = QuranRepository.getSurahs()
+        val reciter = reciters.firstOrNull { it.id == reciterID } ?: return@launch
+        val (moshaf, moshafSurahIds) = reciterID.moshafSurahs
+        surahs = surahsResult.data.filter { it.id in moshafSurahIds }.sortedBy { surah -> surah.id }
+        surahs = moshaf.getMoshafSurahs(reciter, surahs)
 
-            if (recitersResult !is Result.Success) return@launch
-            if (surahsResult !is Result.Success) return@launch
-
-            reciters = recitersResult.data
-            val (moshaf, moshafSurahIds) = reciterID.moshafSurahs
-            surahs = surahsResult.data.filter { it.id in moshafSurahIds }.sortedBy { surah -> surah.id }
-            surahs = moshaf.getMoshafSurahs(surahs)
-
-            reciters.find { reciter -> reciter.id == reciterID }?.let { reciter -> onReady(reciter, moshaf, surahs) }
-        }
+        onReady(reciter, moshaf, surahs)
     }
 
     fun processSurah(reciter: Reciter, moshaf: Moshaf, surah: Surah) {
@@ -95,7 +115,7 @@ object MediaManager : LifecycleOwner {
             listener.onMediaReady(
                     reciter = reciter,
                     moshaf = moshaf,
-                    surah = surah.toSurahWithUri(moshaf),
+                    surah = surah.toSurahWithUri(reciter, moshaf),
                     surahDrawable = AppCompatResources.getDrawable(applicationContext, surah.surahDrawableId)
             )
         }
@@ -105,7 +125,7 @@ object MediaManager : LifecycleOwner {
         val surah = currentSurah ?: return
 
         surahs = surahs.filter { it.id in moshaf.surahIds }.sortedBy { surah -> surah.id }
-        surahs = moshaf.getMoshafSurahs(surahs)
+        surahs = moshaf.getMoshafSurahs(reciter, surahs)
 
         val currentSurahIndex = surahs.indexOfFirst { it.id == surah.id }
         val nextSurahIndex = (currentSurahIndex + 1) % surahs.size
@@ -118,7 +138,7 @@ object MediaManager : LifecycleOwner {
         val surah = currentSurah ?: return
 
         surahs = surahs.filter { it.id in moshaf.surahIds }.sortedBy { surah -> surah.id }
-        surahs = moshaf.getMoshafSurahs(surahs)
+        surahs = moshaf.getMoshafSurahs(reciter, surahs)
 
         val currentSurahIndex = surahs.indexOfFirst { it.id == surah.id }
         val previousSurahIndex = (currentSurahIndex - 1 + surahs.size) % surahs.size
@@ -127,15 +147,20 @@ object MediaManager : LifecycleOwner {
         processSurah(reciter, moshaf, newSurah)
     }
 
-    private fun Moshaf.getMoshafSurahs(surahs: List<Surah>): List<Surah> = surahs.map { surah ->
-        val surahNum = surah.id.toString().padStart(3, '0')
+    private fun Moshaf.getMoshafSurahs(reciter: Reciter, surahs: List<Surah>): List<Surah> = surahs.map { surah -> surah.toSurahWithUri(reciter, this) }
 
-        surah.copy().apply { url = "$server$surahNum.mp3" }
-    }
-
-    private fun Surah.toSurahWithUri(moshaf: Moshaf): Surah = copy().apply {
+    private fun Surah.toSurahWithUri(reciter: Reciter, moshaf: Moshaf): Surah = copy().apply {
         val surahNum = id.toString().padStart(3, '0')
-        url = "${moshaf.server}$surahNum.mp3"
+
+        val downloadsDir = File(applicationContext.filesDir, "downloads")
+        val surahFile = File(downloadsDir, "reciter_#${reciter.id.value}/moshaf_#${moshaf.id}/surah_#$surahNum.mp3")
+
+        val surahUrl = when {
+            surahFile.exists() -> surahFile.toUri().toString()
+            else               -> "${moshaf.server}$surahNum.mp3"
+        }
+
+        url = surahUrl
     }
 
     private val ReciterId.moshafSurahs: MoshafSurahs

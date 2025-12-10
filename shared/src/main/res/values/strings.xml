@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notification_channel_name">القرآن الكريم</string>
+    <string name="gb_unit">جب</string>
+    <string name="mb_unit">مب</string>
+    <string name="kb_unit">كب</string>
+    <string name="b_unit">ب</string>
 
+    <string translatable="false" name="unit_format">%1$.2f %2$s</string>
     <string translatable="false" name="API_SURAHS">suwar</string>
     <string translatable="false" name="API_RECITERS">reciters</string>
     <string translatable="false" name="API_BASE_URL">https://mp3quran.net/api/v3</string>

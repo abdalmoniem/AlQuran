@@ -2,9 +2,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission
-        android:name="android.permission.FOREGROUND_SERVICE"
-        tools:ignore="ForegroundServicesPolicy" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application android:appCategory="audio">
@@ -20,6 +20,25 @@
             tools:ignore="ExportedService">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name="com.hifnawy.alquran.shared.domain.QuranDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="androidx.media3.exoplayer.downloadService.action.INIT" />
+                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
+                <action android:name="androidx.media3.exoplayer.downloadService.action.ADD_DOWNLOAD" />
+                <action android:name="androidx.media3.exoplayer.downloadService.action.REMOVE_DOWNLOAD" />
+                <action android:name="androidx.media3.exoplayer.downloadService.action.REMOVE_ALL_DOWNLOADS" />
+                <action android:name="androidx.media3.exoplayer.downloadService.action.RESUME_DOWNLOADS" />
+                <action android:name="androidx.media3.exoplayer.downloadService.action.PAUSE_DOWNLOADS" />
+                <action android:name="androidx.media3.exoplayer.downloadService.action.SET_STOP_REASON" />
+                <action android:name="androidx.media3.exoplayer.downloadService.action.SET_REQUIREMENTS" />
             </intent-filter>
         </service>
     </application>

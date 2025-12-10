@@ -73,7 +73,7 @@ fun SurahsScreen(
         if (!isLoading) cancel("No longer loading!")
         if (dataError != null) delay(3.seconds) // for testing
 
-        MediaManager.whenSurahsReady { result ->
+        MediaManager.whenSurahsReady(reciter = reciter, moshaf = moshaf) { result ->
             when (result) {
                 is Result.Success -> {
                     reciterSurahs = result.data.filter { surah -> surah.id in moshaf.surahIds }

@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -69,6 +68,7 @@ var focusManager: FocusManager? = null
  */
 @Composable
 fun SearchBar(
+        modifier: Modifier = Modifier,
         isSkeleton: Boolean,
         brush: Brush?,
         query: String,
@@ -81,8 +81,7 @@ fun SearchBar(
         isSkeleton -> {
             if (brush == null) return
             Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
+                    modifier = modifier
                         .height(50.dp)
                         .clip(RoundedCornerShape(20.dp))
                         .background(brush)
@@ -90,6 +89,7 @@ fun SearchBar(
         }
 
         else       -> SearchTextField(
+                modifier = modifier,
                 query = query,
                 placeholder = placeholder,
                 label = label,
@@ -115,6 +115,7 @@ fun SearchBar(
  */
 @Composable
 private fun SearchTextField(
+        modifier: Modifier = Modifier,
         query: String,
         placeholder: String = "",
         label: String = "",
@@ -129,8 +130,7 @@ private fun SearchTextField(
     }
 
     TextField(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = modifier
                 .onFocusChanged { focusState ->
                     isFocused = focusState.isFocused
                     if (!isFocused) keyboardController?.hide()

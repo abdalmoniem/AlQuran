@@ -118,6 +118,7 @@ fun RecitersGrid(
             Spacer(modifier = Modifier.size(5.dp))
 
             SearchBar(
+                    modifier = Modifier.fillMaxWidth(),
                     isSkeleton = isSkeleton,
                     brush = brush,
                     query = searchQuery,

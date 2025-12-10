@@ -1,5 +1,11 @@
 package com.hifnawy.alquran.shared.utils
 
+import com.hifnawy.alquran.shared.QuranApplication
+import com.hifnawy.alquran.shared.R
+import com.hifnawy.alquran.shared.utils.LongEx.asHumanReadableSize
+import com.hifnawy.alquran.shared.utils.NumberExt.GB
+import com.hifnawy.alquran.shared.utils.NumberExt.KB
+import com.hifnawy.alquran.shared.utils.NumberExt.MB
 import java.util.Locale
 
 /**
@@ -21,6 +27,7 @@ import java.util.Locale
  * @author AbdElMoniem ElHifnawy
  */
 object LongEx {
+
     /**
      * Converts a [Long] value representing a size in bytes into a human-readable string.
      *
@@ -51,13 +58,60 @@ object LongEx {
      *
      * @receiver [Long] The [Long] value to be formatted.
      *
-     * @return A [String] representing the size in a human-readable format (e.g., `1.50 MB`, `2.00 GB`, `512 bytes`).
+     * @return A [String] representing the size in a human-readable format.
      */
     val Long.asHumanReadableSize
         get() = when {
-            this >= 1024 * 1024 * 1024 -> String.format(Locale.ENGLISH, "%.2f GB", this / (1024.0 * 1024.0 * 1024.0))
-            this >= 1024 * 1024        -> String.format(Locale.ENGLISH, "%.2f MB", this / (1024.0 * 1024.0))
-            this >= 1024               -> String.format(Locale.ENGLISH, "%.2f KB", this / 1024.0)
-            else                       -> "$this bytes"
+            this >= 1.0.GB -> String.format(Locale.ENGLISH, "%.2f GB", this / 1.0.GB)
+            this >= 1.0.MB -> String.format(Locale.ENGLISH, "%.2f MB", this / 1.0.MB)
+            this >= 1.0.KB -> String.format(Locale.ENGLISH, "%.2f KB", this / 1.0.KB)
+            else           -> "$this bytes"
+        }
+
+    /**
+     * Converts a [Long] value representing a size in bytes into a localized, human-readable string.
+     *
+     * This extension property is similar to [asHumanReadableSize] but utilizes Android string
+     * resources to provide a localized representation of the size and its unit. It's suitable for
+     * displaying file sizes to the user in a way that respects their device's language settings.
+     *
+     * The logic determines the appropriate unit (`GB`, `MB`, `KB`, or bytes) and then uses to combine the
+     * numeric value and the unit. The units themselves are also fetched from string resources, allowing for
+     * full internationalization.
+     *
+     * - Values >= `1 GB` are formatted using the [R.string.gb_unit].
+     * - Values >= `1 MB` are formatted using the [R.string.mb_unit].
+     * - Values >= `1 KB` are formatted using the [R.string.kb_unit].
+     * - Values < `1 KB` are formatted using the [R.string.b_unit].
+     *
+     * The formatting uses [R.string.unit_format], to produce outputs such as `10.50 مب` or `1.25 GB` depending
+     * on the locale.
+     *
+     * Example usage:
+     * ```kotlin
+     * import com.hifnawy.alquran.shared.utils.LongEx.asLocalizedHumanReadableSize
+     *
+     * val fileSizeInBytes: Long = 10485760L // 10 MB
+     * val formattedSize = fileSizeInBytes.asLocalizedHumanReadableSize // "10.00 MB" // "10.00 مب"
+     * println(formattedSize)
+     *
+     * val smallFileSize: Long = 512L
+     * val smallFormattedSize = smallFileSize.asLocalizedHumanReadableSize // "512 bytes" // "512 ب"
+     * println(smallFormattedSize)
+     * ```
+     *
+     * @receiver [Long] The [Long] value to be formatted.
+     *
+     * @return A [String] representing the size in a localized, human-readable format.
+     */
+    val Long.asLocalizedHumanReadableSize
+        get() = when {
+            this >= 1.0.GB -> 1.0.GB to QuranApplication.applicationContext.getString(R.string.gb_unit)
+            this >= 1.0.MB -> 1.0.MB to QuranApplication.applicationContext.getString(R.string.mb_unit)
+            this >= 1.0.KB -> 1.0.KB to QuranApplication.applicationContext.getString(R.string.kb_unit)
+            else           -> 1.0 to QuranApplication.applicationContext.getString(R.string.b_unit)
+        }.let { (divisor, unit) ->
+
+            QuranApplication.applicationContext.getString(R.string.unit_format, this@asLocalizedHumanReadableSize / divisor, unit)
         }
 }

@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notification_channel_name">The Holy Quran</string>
+
+    <string name="gb_unit">GB</string>
+    <string name="mb_unit">MB</string>
+    <string name="kb_unit">KB</string>
+    <string name="b_unit">Bytes</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.hifnawy.alquran.view.grids
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -8,6 +9,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +22,11 @@ import androidx.compose.foundation.lazy.grid.LazyGridItemInfo
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,11 +37,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
@@ -42,15 +52,22 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.hifnawy.alquran.QuranDownloadServiceObserver
 import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.QuranApplication
+import com.hifnawy.alquran.shared.domain.QuranDownloadService
+import com.hifnawy.alquran.shared.domain.QuranDownloadService.DownloadState
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.ReciterId
 import com.hifnawy.alquran.shared.model.Surah
+import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
+import com.hifnawy.alquran.shared.utils.LongEx.asLocalizedHumanReadableSize
 import com.hifnawy.alquran.utils.ArabicPluralStringResource.arabicPluralStringResource
 import com.hifnawy.alquran.utils.LazyGridScopeEx.gridItems
 import com.hifnawy.alquran.utils.ModifierEx.AnimationType
@@ -59,6 +76,7 @@ import com.hifnawy.alquran.utils.StringEx.stripFormattingChars
 import com.hifnawy.alquran.view.SearchBar
 import com.hifnawy.alquran.view.ShimmerAnimation
 import com.hifnawy.alquran.view.gridItems.SurahCard
+import timber.log.Timber
 import kotlin.math.abs
 import kotlin.math.sign
 import com.hifnawy.alquran.shared.R as Rs
@@ -94,24 +112,27 @@ fun SurahsGrid(
         playingReciterId: ReciterId? = null,
         onSurahCardClick: (surah: Surah) -> Unit
 ) {
+    var lazyGridHeight by remember { mutableIntStateOf(0) }
+    var surahCardHeight by remember { mutableIntStateOf(0) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var lastAnimatedIndex by rememberSaveable { mutableIntStateOf(-1) }
+
+    var areDownloadsPaused by rememberSaveable { mutableStateOf(false) }
+    var isDownloadProgressDialogShown by rememberSaveable { mutableStateOf(false) }
+
+    val listState = rememberSurahsGridState()
+    val filteredSurahs = rememberSaveable(reciterSurahs, searchQuery) {
+        reciterSurahs.filter { surah ->
+            surah.name.stripFormattingChars.trim().lowercase().contains(searchQuery.stripFormattingChars.trim().lowercase())
+        }
+    }
+
     SurahsGridContainer(isSkeleton = isSkeleton) { brush ->
         Column(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(start = 10.dp, top = 10.dp, end = 10.dp)
         ) {
-            var lazyGridHeight by remember { mutableIntStateOf(0) }
-            var surahCardHeight by remember { mutableIntStateOf(0) }
-            var searchQuery by rememberSaveable { mutableStateOf("") }
-            var lastAnimatedIndex by rememberSaveable { mutableIntStateOf(-1) }
-
-            val listState = rememberSurahsGridState()
-            val filteredSurahs = rememberSaveable(reciterSurahs, searchQuery) {
-                reciterSurahs.filter { surah ->
-                    surah.name.stripFormattingChars.trim().lowercase().contains(searchQuery.stripFormattingChars.trim().lowercase())
-                }
-            }
-
             TitleBar(
                     isSkeleton = isSkeleton,
                     brush = brush,
@@ -121,15 +142,30 @@ fun SurahsGrid(
 
             Spacer(modifier = Modifier.size(5.dp))
 
-            SearchBar(
-                    isSkeleton = isSkeleton,
-                    brush = brush,
-                    query = searchQuery,
-                    placeholder = stringResource(R.string.search_surahs),
-                    label = stringResource(R.string.search_surahs),
-                    onQueryChange = { newQuery -> searchQuery = newQuery },
-                    onClearQuery = { searchQuery = "" }
-            )
+            Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+            ) {
+                SearchBar(
+                        modifier = Modifier.weight(1f),
+                        isSkeleton = isSkeleton,
+                        brush = brush,
+                        query = searchQuery,
+                        placeholder = stringResource(R.string.search_surahs),
+                        label = stringResource(R.string.search_surahs),
+                        onQueryChange = { newQuery -> searchQuery = newQuery },
+                        onClearQuery = { searchQuery = "" }
+                )
+
+                Spacer(modifier = Modifier.size(5.dp))
+
+                DownloadButton(
+                        modifier = Modifier.fillMaxSize(),
+                        isSkeleton = isSkeleton,
+                        brush = brush,
+                        onClick = { isDownloadProgressDialogShown = true }
+                )
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -174,6 +210,17 @@ fun SurahsGrid(
                     lazyGridHeight = lazyGridHeight,
                     surahCardHeight = surahCardHeight
             )
+
+            if (!isDownloadProgressDialogShown) return@Column
+            DownloadProgressDialog(
+                    reciter = reciter,
+                    moshaf = moshaf,
+                    reciterSurahs = reciterSurahs,
+                    areDownloadsPaused = areDownloadsPaused,
+                    onDownloadsPaused = { areDownloadsPaused = true },
+            ) {
+                isDownloadProgressDialogShown = false
+            }
         }
     }
 }
@@ -194,6 +241,27 @@ private fun rememberSurahsGridState(
         firstVisibleItemScrollOffset: Int = 0
 ) = rememberSaveable(saver = LazyGridState.Saver) {
     LazyGridState(firstVisibleItemIndex = firstVisibleItemIndex, firstVisibleItemScrollOffset = firstVisibleItemScrollOffset)
+}
+
+/**
+ * A container Composable that conditionally applies a shimmer animation.
+ *
+ * If [isSkeleton] is `true`, it wraps the [content] within a [ShimmerAnimation],
+ * providing a [Brush] that can be used to draw shimmering placeholder UI.
+ * If [isSkeleton] is `false`, it simply renders the [content] directly, passing `null`
+ * for the brush.
+ *
+ * @param isSkeleton [Boolean] A [Boolean] indicating whether to show the shimmer effect.
+ * @param content [@Composable (brush: Brush?) -> Unit][content] A composable lambda that receives an optional [Brush].
+ *   The brush is non-null only when [isSkeleton] is `true`.
+ */
+@Composable
+private fun SurahsGridContainer(
+        isSkeleton: Boolean,
+        content: @Composable (brush: Brush?) -> Unit
+) = when {
+    isSkeleton -> ShimmerAnimation { brush -> content(brush) }
+    else       -> content(null)
 }
 
 /**
@@ -470,23 +538,160 @@ private fun TitleBar(
     }
 }
 
-/**
- * A container Composable that conditionally applies a shimmer animation.
- *
- * If [isSkeleton] is `true`, it wraps the [content] within a [ShimmerAnimation],
- * providing a [Brush] that can be used to draw shimmering placeholder UI.
- * If [isSkeleton] is `false`, it simply renders the [content] directly, passing `null`
- * for the brush.
- *
- * @param isSkeleton [Boolean] A [Boolean] indicating whether to show the shimmer effect.
- * @param content [@Composable (brush: Brush?) -> Unit][content] A composable lambda that receives an optional [Brush].
- *   The brush is non-null only when [isSkeleton] is `true`.
- */
 @Composable
-private fun SurahsGridContainer(
+private fun DownloadButton(
+        modifier: Modifier = Modifier,
         isSkeleton: Boolean,
-        content: @Composable (brush: Brush?) -> Unit
-) = when {
-    isSkeleton -> ShimmerAnimation { brush -> content(brush) }
-    else       -> content(null)
+        brush: Brush?,
+        onClick: () -> Unit = {}
+) = IconButton(onClick = if (!isSkeleton) onClick else { -> }) {
+    when {
+        isSkeleton -> {
+            if (brush == null) return@IconButton
+            Spacer(modifier = modifier.background(brush))
+        }
+
+        else       ->
+            Icon(
+                    modifier = modifier,
+                    painter = painterResource(id = R.drawable.download_24px),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    contentDescription = null
+            )
+    }
+}
+
+@Composable
+@SuppressLint("UnsafeOptInUsageError")
+private fun DownloadProgressDialog(
+        reciter: Reciter,
+        moshaf: Moshaf,
+        reciterSurahs: List<Surah>,
+        areDownloadsPaused: Boolean,
+        onDownloadsPaused: () -> Unit = {},
+        onDismissRequest: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    var downloadStatus by rememberSaveable { mutableStateOf<DownloadState?>(null) }
+    var downloadedSurahsCount by rememberSaveable { mutableIntStateOf(0) }
+    var downloadSurah by rememberSaveable { mutableStateOf<Surah?>(null) }
+
+    val progressIndicatorHeight = 25.dp
+    val fontSize = 25.sp
+
+    LaunchedEffect(areDownloadsPaused) {
+        when {
+            areDownloadsPaused -> QuranDownloadService.resumeDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
+            else               -> QuranDownloadService.queueDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
+        }
+    }
+
+    QuranDownloadServiceObserver { downloadState ->
+        downloadStatus = downloadState
+
+        downloadSurah = downloadState.data.surah
+
+        if (downloadState.state == DownloadState.State.COMPLETED) downloadedSurahsCount++
+
+        Timber.debug("$downloadState")
+    }
+
+    val downloadState = downloadStatus ?: return
+    val surah = downloadSurah ?: return
+    val downloadedSize = downloadState.downloaded.asLocalizedHumanReadableSize
+    val totalSize = downloadState.total.asLocalizedHumanReadableSize
+    val downloadPercentage = downloadState.percentage
+
+    if (downloadedSurahsCount >= reciterSurahs.size) QuranDownloadService.removeDownloads(context = context)
+
+    Dialog(onDismissRequest = onDismissRequest) {
+        Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(25.dp))
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.downloading_surahs),
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = fontSize,
+                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+            )
+
+            Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.download_count, downloadedSurahsCount, reciterSurahs.size),
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = fontSize,
+                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+            )
+
+            LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(progressIndicatorHeight),
+                    progress = { downloadedSurahsCount / reciterSurahs.size.toFloat() }
+            )
+
+            Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.downloading_surah, surah.id, surah.name),
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = fontSize,
+                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+            )
+
+            Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = "${stringResource(R.string.download_progress, downloadedSize, totalSize)} " +
+                           "(${stringResource(R.string.download_percentage, downloadPercentage)})",
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = fontSize,
+                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+            )
+
+            LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(progressIndicatorHeight),
+                    progress = {
+                        if (downloadState.total == 0L) return@LinearProgressIndicator 0f
+
+                        downloadState.downloaded.toFloat() / downloadState.total.toFloat()
+                    }
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                    onClick = {
+                        QuranDownloadService.pauseDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
+                        onDownloadsPaused()
+                        onDismissRequest()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+            ) {
+                Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        text = stringResource(R.string.download_cancel),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontSize = fontSize,
+                        fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+                )
+            }
+        }
+    }
 }
