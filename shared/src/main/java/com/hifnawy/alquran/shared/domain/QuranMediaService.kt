@@ -39,8 +39,8 @@ import com.hifnawy.alquran.shared.domain.QuranMediaService.Actions.ACTION_SKIP_T
 import com.hifnawy.alquran.shared.domain.QuranMediaService.Actions.ACTION_START_PLAYBACK
 import com.hifnawy.alquran.shared.domain.QuranMediaService.Actions.ACTION_STOP_PLAYBACK
 import com.hifnawy.alquran.shared.domain.QuranMediaService.Actions.ACTION_TOGGLE_PLAY_PAUSE
-import com.hifnawy.alquran.shared.domain.QuranMediaService.Companion.CHANNEL_ID
 import com.hifnawy.alquran.shared.domain.QuranMediaService.Companion.NOTIFICATION_ID
+import com.hifnawy.alquran.shared.domain.QuranMediaService.Companion.PLAYBACK_NOTIFICATION_CHANNEL_ID
 import com.hifnawy.alquran.shared.domain.QuranMediaService.Extras.EXTRA_MOSHAF
 import com.hifnawy.alquran.shared.domain.QuranMediaService.Extras.EXTRA_RECITER
 import com.hifnawy.alquran.shared.domain.QuranMediaService.Extras.EXTRA_SEEK_POSITION
@@ -309,7 +309,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
      * not exposed to other parts of the application.
      *
      * @property NOTIFICATION_ID [Int] A random integer used as the unique ID for the foreground service notification.
-     * @property CHANNEL_ID [String] The string identifier for the notification channel used for media playback notifications.
+     * @property PLAYBACK_NOTIFICATION_CHANNEL_ID [String] The string identifier for the notification channel used for media playback notifications.
      *
      * @author AbdElMoniem ElHifnawy
      */
@@ -323,22 +323,15 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
         /**
          * The string identifier for the notification channel used for media playback notifications.
          */
-        private const val CHANNEL_ID = "Quran Playback"
+        private const val PLAYBACK_NOTIFICATION_CHANNEL_ID = "Quran Playback"
     }
-
-    /**
-     * A [Job] for the scope of the [QuranMediaService].
-     *
-     * This job is used to control the lifecycle of coroutines launched by the service.
-     */
-    private val serviceJob = Job()
 
     /**
      * A [CoroutineScope] that is scoped to the lifecycle of the [QuranMediaService].
      *
      * This coroutine scope is used to launch coroutines that need to be tied to the lifecycle of the service.
      */
-    private val serviceScope by lazy { CoroutineScope(Dispatchers.Main + serviceJob) }
+    private val serviceScope by lazy { CoroutineScope(Dispatchers.Main + Job()) }
 
     /**
      * A reference to the [QuranApplication] instance.
@@ -753,10 +746,11 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
      * @see NotificationManager
      */
     private fun createNotificationChannel() {
-        val name = "Quran Player"
-        val descriptionText = "Shows controls for current Quran playback"
+        val name = getString(R.string.playback_channel_name)
+        val descriptionText = getString(R.string.playback_channel_description)
         val importance = NotificationManager.IMPORTANCE_LOW
-        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply { description = descriptionText }
+
+        val channel = NotificationChannel(PLAYBACK_NOTIFICATION_CHANNEL_ID, name, importance).apply { description = descriptionText }
         val notificationManager: NotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         notificationManager.createNotificationChannel(channel)
@@ -771,8 +765,8 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
      * @return [Notification] The notification for the Quran player service.
      */
     private fun buildNotification(reciter: Reciter?, surah: Surah?): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.notification_channel_name))
+        return NotificationCompat.Builder(this, PLAYBACK_NOTIFICATION_CHANNEL_ID)
+            .setContentTitle(getString(R.string.playback_channel_name))
             .setContentText(surah?.name)
             .setSubText(reciter?.name)
             .setSmallIcon(R.drawable.play_arrow_24px)

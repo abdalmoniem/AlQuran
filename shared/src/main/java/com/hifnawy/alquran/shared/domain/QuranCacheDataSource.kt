@@ -22,9 +22,9 @@ import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.error
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.warn
 import com.hifnawy.alquran.shared.utils.LongEx.asHumanReadableSize
+import com.hifnawy.alquran.shared.utils.NumberExt.KB
 import com.hifnawy.alquran.shared.utils.NumberExt.MB
 import timber.log.Timber
-import java.io.ByteArrayOutputStream
 import java.io.File
 
 /**
@@ -64,6 +64,13 @@ object QuranCacheDataSource {
     @JvmInline
     value class CacheKey(val value: String) {
 
+        /**
+         * A companion object for the [CacheKey] value class.
+         *
+         * This object holds utility functions and extension properties related to [CacheKey].
+         *
+         * @author AbdElMoniem ElHifnawy
+         */
         companion object {
 
             /**
@@ -274,91 +281,45 @@ object QuranCacheDataSource {
         }
 
     /**
-     * Retrieves the complete byte content of a cached media item.
+     * Moves the cached content of the [CacheKey] to a new file location and removes it from the cache.
      *
-     * This function reads all the cached segments ([CacheSpan]) associated with the receiver's [CacheKey]
-     * and concatenates their raw byte data into a single [ByteArray]. It iterates through each segment,
-     * reads its corresponding file from the cache, and appends the bytes to an in-memory stream.
+     * This is useful for `exporting` or `saving` a fully cached audio file to a permanent location outside the cache.
+     * The operation is synchronized to ensure thread safety.
      *
-     * This is useful for accessing the full, downloaded content directly, for example, to save it to a
-     * different location or to process it.
+     * @receiver [CacheKey] The [CacheKey] instance from which to move the content.
      *
-     * **WARNING**: This operation can be memory-intensive for large files, as it loads the entire
-     * cached content into a byte array in memory.
+     * @param destinationFile [File] The target [File] where the concatenated content will be saved.
      *
-     * @receiver [CacheKey] The [CacheKey] for which to retrieve the full content.
-     *
-     * @return [ByteArray] A [ByteArray] containing the complete data of the cached item, or `null` if the item
-     *         is not found in the cache or has no content.
+     * @return [Long] The total number of bytes written to the [destinationFile], or `0L` if the content was not found in the cache or an error occurred.
      */
     context(context: Context)
-    val CacheKey.contents
-        get() = synchronized(cacheLock) {
-            cacheMap[this@contents]?.run {
-                val spans = getCachedSpans(this@contents.value)
-                val cacheKeyBytes = ByteArrayOutputStream()
+    fun CacheKey.moveContentsTo(destinationFile: File) = synchronized(cacheLock) {
+        cacheMap[this@moveContentsTo]?.run {
+            val spans = getCachedSpans(this@moveContentsTo.value)
 
+            if (destinationFile.parentFile?.exists() != true) destinationFile.parentFile?.mkdirs()
+
+            var bytesWritten = 0L
+
+            destinationFile.outputStream().use { output ->
                 spans.forEach { span ->
                     val spanFile = span?.file
-                    val spanFileBytes = spanFile?.readBytes() ?: return@forEach
 
                     when {
-                        span.isCached -> cacheKeyBytes.write(spanFileBytes)
-                        else          -> Timber.error("Span is not cached or span file is null")
+                        span.isCached && spanFile != null -> spanFile.inputStream().use { input -> bytesWritten += input.copyTo(out = output, bufferSize = 8.KB) }
+                        else                              -> Timber.error("Span is not cached or span file is null")
                     }
                 }
-
-                cacheKeyBytes.toByteArray()
-            } ?: run {
-                Timber.warn("Cache for key '${this@contents.value}' not found!")
-                null
-            }
-        }
-
-    /**
-     * Retrieves the complete byte content of a cached item for a specific key.
-     *
-     * This function reads all the cached segments ([CacheSpan]) associated with the provided [key]
-     * and concatenates their raw byte data into a single [ByteArray]. It iterates through each segment,
-     * reads its corresponding file from the cache, and appends the bytes to an in-memory stream.
-     *
-     * This is useful for accessing the full, downloaded content directly, for example, to save it to a
-     * different location or to process it.
-     *
-     * If the cache for the receiver [CacheKey] doesn't exist, or if no cached content is found
-     * for the specified [key], it returns `null`.
-     *
-     * **WARNING**: This operation can be memory-intensive for large files, as it loads the entire
-     * cached content into a byte array in memory.
-     *
-     * @receiver [CacheKey] The context of the [CacheKey] instance to search within.
-     *
-     * @param key [String] The specific [String] key of the content to retrieve.
-     *
-     * @return [ByteArray] A [ByteArray] containing the complete cached content, or `null` if the content is not found or the cache does not exist.
-     */
-    context(context: Context)
-    fun CacheKey.keyContents(key: String) = synchronized(cacheLock) {
-        cacheMap[this@keyContents]?.run {
-            val spans = getCachedSpans(key)
-            val cacheKeyBytes = ByteArrayOutputStream()
-
-            spans.forEach { span ->
-                val spanFile = span?.file
-                val spanFileBytes = spanFile?.readBytes() ?: return@forEach
-
-                when {
-                    span.isCached -> cacheKeyBytes.write(spanFileBytes)
-                    else          -> Timber.error("Span is not cached or span file is null")
-                }
             }
 
-            if (cacheKeyBytes.size() == 0) return null
+            if (bytesWritten == 0L) return@synchronized 0L.also { destinationFile.delete() }
 
-            cacheKeyBytes.toByteArray()
+            delete()
+            Timber.debug("Content of Cache for key '${this@moveContentsTo.value}' (${destinationFile.length().asHumanReadableSize}) moved to '$destinationFile'")
+            bytesWritten
         } ?: run {
-            Timber.warn("Cache for key '${this@keyContents.value}' not found!")
-            null
+            Timber.warn("Cache for key '${this@moveContentsTo.value}' not found!")
+            0L
         }
     }
 
@@ -426,45 +387,5 @@ object QuranCacheDataSource {
             cacheDir.deleteRecursively()
             Timber.debug("Cache for key '${this@delete.value}' deleted!")
         } ?: Timber.warn("Cache for key '${this@delete.value}' not found!")
-    }
-
-    /**
-     * Deletes all cached content associated with a specific key string within this cache instance.
-     *
-     * This function targets and removes all cached files [CacheSpan] for a particular content key
-     * inside the cache directory managed by the receiver [CacheKey]. It iterates through all the
-     * [CacheSpan]s associated with the given [key], deletes their corresponding files, and then
-     * proceeds to delete the entire cache directory for the receiver [CacheKey].
-     *
-     * **FIX**: fix this method to delete only the files for the specific [key] string, not the entire cache.
-     *
-     * This method appears to have a side effect of deleting the entire cache for the receiver [CacheKey],
-     * not just the files for the specific [key] string, due to [cacheDir.deleteRecursively()][File.deleteRecursively].
-     * Use with caution.
-     *
-     * If the cache for the receiver [CacheKey] is not found in the internal map, a warning is logged,
-     * and the function does nothing.
-     *
-     * Access is synchronized to ensure thread safety during the deletion process.
-     *
-     * **WARNING**: This is a destructive operation that permanently removes cached data.
-     * Due to its current implementation, it may delete more data than intended.
-     *
-     * @receiver [CacheKey] The context of the [CacheKey] instance to delete from.
-     *
-     * @param key [String] The specific [String] key of the content to be deleted.
-     */
-    context(context: Context)
-    fun CacheKey.deleteKey(key: String) = synchronized(cacheLock) {
-        cacheMap[this@deleteKey]?.run {
-            val spans = getCachedSpans(key)
-            val cacheDir = File(context.cacheDir, "exoplayer_cache/$value")
-
-            if (!cacheDir.exists()) return@run
-
-            spans.forEach { span -> span?.file?.delete() }
-            cacheDir.deleteRecursively()
-            Timber.debug("Cache for key '${key}' deleted!")
-        } ?: Timber.warn("Cache for key '${this@deleteKey.value}' not found!")
     }
 }

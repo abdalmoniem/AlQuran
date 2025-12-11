@@ -60,8 +60,8 @@ import androidx.compose.ui.window.Dialog
 import com.hifnawy.alquran.QuranDownloadServiceObserver
 import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.QuranApplication
-import com.hifnawy.alquran.shared.domain.QuranDownloadService
-import com.hifnawy.alquran.shared.domain.QuranDownloadService.DownloadState
+import com.hifnawy.alquran.shared.domain.QuranDownloadService.QuranDownloadManager
+import com.hifnawy.alquran.shared.domain.QuranDownloadService.QuranDownloadManager.DownloadState
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.ReciterId
@@ -581,8 +581,8 @@ private fun DownloadProgressDialog(
 
     LaunchedEffect(areDownloadsPaused) {
         when {
-            areDownloadsPaused -> QuranDownloadService.resumeDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
-            else               -> QuranDownloadService.queueDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
+            areDownloadsPaused -> QuranDownloadManager.resumeDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
+            else               -> QuranDownloadManager.queueDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
         }
     }
 
@@ -602,7 +602,7 @@ private fun DownloadProgressDialog(
     val totalSize = downloadState.total.asLocalizedHumanReadableSize
     val downloadPercentage = downloadState.percentage
 
-    if (downloadedSurahsCount >= reciterSurahs.size) QuranDownloadService.removeDownloads(context = context)
+    if (downloadedSurahsCount >= reciterSurahs.size) QuranDownloadManager.removeDownloads(context = context)
 
     Dialog(onDismissRequest = onDismissRequest) {
         Column(
@@ -672,7 +672,7 @@ private fun DownloadProgressDialog(
 
             Button(
                     onClick = {
-                        QuranDownloadService.pauseDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
+                        QuranDownloadManager.pauseDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
                         onDownloadsPaused()
                         onDismissRequest()
                     },

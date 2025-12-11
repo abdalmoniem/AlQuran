@@ -5,8 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import com.hifnawy.alquran.shared.domain.QuranDownloadService
-import com.hifnawy.alquran.shared.domain.QuranDownloadService.DownloadState
-import com.hifnawy.alquran.shared.domain.QuranDownloadService.DownloadStatusObserver
+import com.hifnawy.alquran.shared.domain.QuranDownloadService.QuranDownloadManager.DownloadState
+import com.hifnawy.alquran.shared.domain.QuranDownloadService.QuranDownloadManager.DownloadStatusObserver
 
 @Composable
 @SuppressLint("UnsafeOptInUsageError")

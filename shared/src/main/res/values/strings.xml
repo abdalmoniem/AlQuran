@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="notification_channel_name">القرآن الكريم</string>
     <string name="gb_unit">جب</string>
     <string name="mb_unit">مب</string>
     <string name="kb_unit">كب</string>
     <string name="b_unit">ب</string>
+
+    <string name="playback_channel_name">مُشَغِل القرآن الكريم</string>
+    <string name="playback_channel_description">يعرض عناصر التحكم فى مُشَغِل القرآن الكريم الحالى</string>
+    <string name="download_channel_name">تحميلات القرآن الكريم</string>
+    <string name="download_channel_description">يُظهِر التقدم في تحميلات القرآن الكريم الحالية</string>
+    <string name="downloading_surah_detailed">جارٍ تحميل سورة %1$d: %2$s للقارئ %3$s بمصحف %4$s (%5$06.2f٪)</string>
+    <string name="preparing_surah">جارٍ تحضير سورة %1$d: %2$s (%3$d في قائمة الانتظار)…</string>
+    <string name="preparing_downloads_count">جارٍ تحضير التحميلات (%1$d فى قائمة الانتظار)…</string>
+    <string name="preparing_downloads">جارٍ تحضير التحميلات…</string>
 
     <string translatable="false" name="unit_format">%1$.2f %2$s</string>
     <string translatable="false" name="API_SURAHS">suwar</string>
