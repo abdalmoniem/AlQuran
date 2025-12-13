@@ -19,11 +19,13 @@ import com.hifnawy.alquran.shared.R
 import com.hifnawy.alquran.shared.domain.QuranCacheDataSource.CacheKey.Companion.asCacheKey
 import com.hifnawy.alquran.shared.domain.QuranCacheDataSource.cacheDataSourceFactory
 import com.hifnawy.alquran.shared.domain.QuranCacheDataSource.moveContentsTo
+import com.hifnawy.alquran.shared.domain.QuranDownloadService.QuranDownloadManager.DownloadState.State.Companion.isTerminal
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
 import com.hifnawy.alquran.shared.model.Surah
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.error
+import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.warn
 import com.hifnawy.alquran.shared.utils.LongEx.asHumanReadableSize
 import com.hifnawy.alquran.shared.utils.SerializableExt.Companion.asJsonString
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import java.io.Serializable
@@ -45,8 +48,7 @@ class QuranDownloadService : DownloadService(
         R.string.download_channel_name,
         R.string.download_channel_description
 ), DownloadManager.Listener {
-    private val serviceScope by lazy { CoroutineScope(Dispatchers.Main + Job()) }
-    private var downloadMonitorJob: Job? = null
+
     private lateinit var notificationHelper: DownloadNotificationHelper
 
     override fun onCreate() {
@@ -134,14 +136,15 @@ class QuranDownloadService : DownloadService(
     private fun startDownloadMonitor() = downloadMonitorJob.let { job ->
         job?.cancel()
 
-        serviceScope.launch {
+        ioCoroutineScope.launch {
             do {
-                downloadManager.currentDownloads.forEach { download ->
-                    if (download.state == DownloadState.State.QUEUED.code || download.state == DownloadState.State.REMOVING.code) return@forEach
-                    updateDownloadState(download)
-                }
+                downloadManager.currentDownloads.run {
+                    val activeDownloads = filter { it.state == DownloadState.State.DOWNLOADING.code }
+                    val terminalDownloads = filter { DownloadState.State.fromCode(it.state).isTerminal }
+                    val downloads = activeDownloads + terminalDownloads
 
-                delay(UPDATE_PROGRESS_INTERVAL.milliseconds)
+                    withContext(Dispatchers.Main) { downloads.forEach { updateDownloadState(it) } }
+                }
             } while (true)
         }.also { downloadMonitorJob = it }
     }
@@ -150,17 +153,17 @@ class QuranDownloadService : DownloadService(
         null if (download.state == Download.STATE_COMPLETED) -> download.request.serializedData.let { serializedData ->
             val downloadRequestId = DownloadRequestId(serializedData.reciter, serializedData.moshaf)
 
-            updateDownloadState(download)
             moveCompletedDownload(download)
 
-            completedDownloads[downloadRequestId]?.add(download) ?: run {
+            completedDownloads[downloadRequestId]?.run {
+                add(size, download)
+            } ?: run {
                 completedDownloads[downloadRequestId] = mutableListOf(download)
             }
-            Unit
         }
 
         null                                                 -> Unit
-        else                                                 -> Timber.error("Download failed for ${download.request.id}: ${finalException.message}")
+        else                                                 -> Timber.error("Download failed for '${download.request.id}': ${finalException.message}")
     }
 
     override fun onDownloadRemoved(downloadManager: DownloadManager, download: Download) = download.run {
@@ -169,7 +172,7 @@ class QuranDownloadService : DownloadService(
 
         completedDownloads[downloadRequestId]?.remove(this@run)
 
-        Timber.debug("Download removed: ${request.id}")
+        Timber.debug("Download '${request.id}' removed!")
     }
 
     private fun moveCompletedDownload(download: Download) = download.run {
@@ -186,14 +189,15 @@ class QuranDownloadService : DownloadService(
 
     companion object QuranDownloadManager {
 
-        val downloadServiceObservers = mutableListOf<DownloadStatusObserver>()
+        val downloadStatusObservers = mutableListOf<DownloadStatusObserver>()
 
         private const val FOREGROUND_NOTIFICATION_ID = 1
         private const val DOWNLOAD_NOTIFICATION_CHANNEL_ID = "Quran Downloads"
         private const val UPDATE_PROGRESS_INTERVAL = 100L
 
+        private val ioCoroutineScope by lazy { CoroutineScope(Dispatchers.IO + Job()) }
+        private val mainCoroutineScope by lazy { CoroutineScope(Dispatchers.Main + Job()) }
         private val completedDownloads = mutableMapOf<DownloadRequestId, MutableList<Download>>()
-        private var downloadManagerInstance: DownloadManager? = null
 
         private val ByteArray.asUTF8String
             get() = String(this@asUTF8String, Charsets.UTF_8)
@@ -213,6 +217,22 @@ class QuranDownloadService : DownloadService(
         private val DownloadRequest.serializedData
             get() = Gson().fromJson(data.asUTF8String, DownloadRequestData::class.java)
 
+        context(downloadRequest: DownloadRequest)
+        private val File.completedDownload
+            get() = Download(
+                    downloadRequest,
+                    DownloadState.State.COMPLETED.code,
+                    System.currentTimeMillis(),
+                    System.currentTimeMillis(),
+                    length(),
+                    DownloadState.State.STOPPED.code,
+                    Download.FAILURE_REASON_NONE,
+                    DownloadProgress().apply {
+                        bytesDownloaded = length()
+                        percentDownloaded = 100f
+                    }
+            )
+
         context(context: Context)
         private val DownloadRequest.downloadPath
             get() = serializedData.let { (reciter, moshaf, surah) ->
@@ -222,29 +242,45 @@ class QuranDownloadService : DownloadService(
                 File(baseDestination, "reciter_#${reciter.id.value}/moshaf_#${moshaf.id}/surah_#$surahNum.mp3")
             }
 
+        private var downloadJob: Job? = null
+        private var downloadMonitorJob: Job? = null
+        private var downloadManagerInstance: DownloadManager? = null
+
         fun interface DownloadStatusObserver : IObservable {
 
-            fun onDownloadStateChanged(downloadState: DownloadState)
+            suspend fun onDownloadStateChanged(downloadState: DownloadState)
+        }
+
+        data class BulkDownloadRequest(val reciter: Reciter, val moshaf: Moshaf, val surahs: List<Surah>) : Serializable {
+
+            override fun toString() = "${this::class.java.simpleName}(" +
+                                      "${::reciter.name}=(${reciter.id.value}: ${reciter.name}), " +
+                                      "${::moshaf.name}=(${moshaf.id}: ${moshaf.name}), " +
+                                      "${::surahs.name}=<${surahs.size}>" +
+                                      surahs.joinToString(prefix = "[", postfix = "]", separator = ", ") { "(${it.id}: ${it.name})" } +
+                                      ")"
         }
 
         data class DownloadState(
-                val data: DownloadRequestData,
-                val state: State,
-                val percentage: Float,
-                val downloaded: Long,
-                val total: Long,
+                val data: DownloadRequestData? = null,
+                val state: State = State.STOPPED,
+                val percentage: Float = 0f,
+                val downloaded: Long = 0L,
+                val total: Long = 0L,
                 val failureReason: FailureReason = FailureReason.fromCode(Download.FAILURE_REASON_NONE)
         ) : Serializable {
 
             enum class State(val code: Int) : Serializable {
-                DOWNLOADING(Download.STATE_DOWNLOADING),
+                QUEUED(Download.STATE_QUEUED),
+                STOPPED(Download.STATE_STOPPED),
                 COMPLETED(Download.STATE_COMPLETED),
                 FAILED(Download.STATE_FAILED),
-                QUEUED(Download.STATE_QUEUED),
-                REMOVING(Download.STATE_REMOVING),
-                STOPPED(Download.STATE_STOPPED);
+                DOWNLOADING(Download.STATE_DOWNLOADING),
+                REMOVING(Download.STATE_REMOVING);
 
                 companion object {
+
+                    val State.isTerminal get() = this == COMPLETED || this == FAILED
 
                     fun fromCode(code: Int) = entries.first { it.code == code }
                 }
@@ -272,143 +308,195 @@ class QuranDownloadService : DownloadService(
 
         data class DownloadRequestData(val reciter: Reciter, val moshaf: Moshaf, val surah: Surah) : Serializable {
 
-            override fun toString(): String {
-                return "${this::class.java.simpleName}(" +
-                       "${::reciter.name}=(${reciter.id.value}: ${reciter.name}), " +
-                       "${::moshaf.name}=(${moshaf.id}: ${moshaf.name}), " +
-                       "${::surah.name}=(${surah.id}: ${surah.name})" +
-                       ")"
-            }
+            override fun toString() = "${this::class.java.simpleName}(" +
+                                      "${::reciter.name}=(${reciter.id.value}: ${reciter.name}), " +
+                                      "${::moshaf.name}=(${moshaf.id}: ${moshaf.name}), " +
+                                      "${::surah.name}=(${surah.id}: ${surah.name})" +
+                                      ")"
         }
 
         private data class DownloadRequestId(val reciter: Reciter, val moshaf: Moshaf) : Serializable {
 
-            override fun toString(): String {
-                return "${this::class.java.simpleName}(" +
-                       "${::reciter.name}=(${reciter.id.value}: ${reciter.name}), " +
-                       "${::moshaf.name}=(${moshaf.id}: ${moshaf.name})" +
-                       ")"
-            }
+            override fun toString() = "${this::class.java.simpleName}(" +
+                                      "${::reciter.name}=(${reciter.id.value}: ${reciter.name}), " +
+                                      "${::moshaf.name}=(${moshaf.id}: ${moshaf.name})" +
+                                      ")"
         }
 
-        fun queueDownloads(context: Context, reciter: Reciter, moshaf: Moshaf, surahs: List<Surah>) = surahs.forEach { surah ->
-            val downloadRequest = DownloadRequestData(reciter, moshaf, surah).downloadRequest ?: return@forEach
-            val downloadRequestId = DownloadRequestId(reciter, moshaf)
-
-            val surahPath = with(context) { downloadRequest.downloadPath }
+        fun queueDownloads(context: Context, bulkDownloadRequest: BulkDownloadRequest) = bulkDownloadRequest.surahs.map { surah ->
+            val downloadRequest = with(bulkDownloadRequest) { DownloadRequestData(reciter, moshaf, surah).downloadRequest } ?: return
+            val downloadPath = with(context) { downloadRequest.downloadPath }
 
             when {
-                surahPath.exists() -> {
-                    Timber.debug("Surah (${surah.id}: ${surah.name}) already downloaded.")
+                downloadPath.exists() -> downloadRequest to downloadPath
+                else                  -> downloadRequest to null
+            }
+        }.run {
+            val queuedDownloads = filter { (_, downloadPath) -> downloadPath == null }
 
-                    val download = Download(
-                            downloadRequest,
-                            DownloadState.State.COMPLETED.code,
-                            System.currentTimeMillis(),
-                            System.currentTimeMillis(),
-                            surahPath.length(),
-                            DownloadState.State.STOPPED.code,
-                            Download.FAILURE_REASON_NONE,
-                            DownloadProgress().apply {
-                                bytesDownloaded = surahPath.length()
-                                percentDownloaded = 100f
-                            }
-                    )
+            @Suppress("UNCHECKED_CAST")
+            val finishedDownloads = filter { (_, downloadPath) -> downloadPath != null } as List<Pair<DownloadRequest, File>>
 
-                    completedDownloads[downloadRequestId]?.add(download) ?: run {
+            mainCoroutineScope.launch {
+                finishedDownloads.forEach { (downloadRequest, downloadPath) ->
+                    val surah = downloadRequest.serializedData.surah
+                    val download = with(downloadRequest) { downloadPath.completedDownload }
+                    val downloadRequestId = with(bulkDownloadRequest) { DownloadRequestId(reciter, moshaf) }
+
+                    Timber.debug("Queued Download '${downloadRequest.id}': (${surah.id}: ${surah.name}) is already ${DownloadState.State.COMPLETED}!")
+
+                    completedDownloads[downloadRequestId]?.run {
+                        add(size, download)
+                    } ?: run {
                         completedDownloads[downloadRequestId] = mutableListOf(download)
                     }
 
                     updateDownloadState(download)
                 }
 
-                else               -> {
-                    Timber.debug("Queueing ${downloadRequest.serializedData}...")
+                queuedDownloads.forEach { (downloadRequest, _) -> queueDownload(context, downloadRequest) }
 
-                    addDownload(context, downloadRequest)
+                Timber.debug("${queuedDownloads.size} Downloads Queued!")
+            }.also { downloadJob = it }.run { Timber.debug("Queueing ${queuedDownloads.size} Downloads...") }
+        }
+
+        fun resumeDownloads(context: Context, bulkDownloadRequest: BulkDownloadRequest) = bulkDownloadRequest.surahs.map { surah ->
+            val downloadRequest = with(bulkDownloadRequest) { DownloadRequestData(reciter, moshaf, surah).downloadRequest } ?: return
+            val downloadPath = with(context) { downloadRequest.downloadPath }
+
+            when {
+                downloadPath.exists() -> downloadRequest to downloadPath
+                else                  -> downloadRequest to null
+            }
+        }.run {
+            val queuedDownloads = filter { (_, downloadPath) -> downloadPath == null }
+
+            @Suppress("UNCHECKED_CAST")
+            val finishedDownloads = filter { (_, downloadPath) -> downloadPath != null } as List<Pair<DownloadRequest, File>>
+
+            mainCoroutineScope.launch {
+                finishedDownloads.forEach { (downloadRequest, downloadPath) ->
+                    val surah = downloadRequest.serializedData.surah
+                    val download = with(downloadRequest) { downloadPath.completedDownload }
+                    val downloadRequestId = with(bulkDownloadRequest) { DownloadRequestId(reciter, moshaf) }
+
+                    Timber.debug("Resumed Download '$downloadRequestId': (${surah.id}: ${surah.name}) is already ${DownloadState.State.COMPLETED}!")
+
+                    updateDownloadState(download)
+                }
+
+                queuedDownloads.forEach { (downloadRequest, _) -> resumeDownload(context, downloadRequest) }
+
+                Timber.debug("${queuedDownloads.size} Downloads Resumed!")
+            }.also { downloadJob = it }.run { Timber.debug("Resuming ${queuedDownloads.size} Downloads...") }
+        }
+
+        fun pauseDownloads(context: Context, bulkDownloadRequest: BulkDownloadRequest) = bulkDownloadRequest.run {
+            downloadJob?.cancel()
+            downloadMonitorJob?.cancel()
+
+            val downloadRequestId = DownloadRequestId(reciter, moshaf)
+
+            ioCoroutineScope.launch {
+                surahs.forEach { surah ->
+                    val download = downloadManagerInstance?.currentDownloads?.find { it.request.serializedData.surah.id == surah.id }
+
+                    download?.let {
+                        Timber.debug("Download '$downloadRequestId': (${surah.id}: ${surah.name}) is ${DownloadState.State.fromCode(it.state)}!")
+
+                        pauseDownload(context, it.request)
+                    } ?: Timber.warn("Download '$downloadRequestId': (${surah.id}: ${surah.name}) is non-existent!!!")
                 }
             }
         }
 
-        fun addDownload(context: Context, downloadRequest: DownloadRequest) = sendAddDownload(
-                context,
-                QuranDownloadService::class.java,
-                downloadRequest,
-                true
-        )
+        fun removeDownloads(context: Context, bulkDownloadRequest: BulkDownloadRequest) = bulkDownloadRequest.run {
+            downloadJob?.cancel()
+            downloadMonitorJob?.cancel()
 
-        fun pauseDownloads(context: Context, reciter: Reciter, moshaf: Moshaf, surahs: List<Surah>) = surahs.forEach { surah ->
-            val downloadRequest = DownloadRequestData(reciter, moshaf, surah).downloadRequest ?: return@forEach
-
-            pauseDownload(context, downloadRequest)
-        }
-
-        fun pauseDownload(context: Context, downloadRequest: DownloadRequest) = sendSetStopReason(
-                context,
-                QuranDownloadService::class.java,
-                downloadRequest.id,
-                Download.STOP_REASON_NONE + 1, // Any non-zero value pauses the download
-                true
-        )
-
-        fun resumeDownloads(context: Context, reciter: Reciter, moshaf: Moshaf, surahs: List<Surah>) = surahs.forEach { surah ->
-            val downloadRequest = DownloadRequestData(reciter, moshaf, surah).downloadRequest ?: return@forEach
             val downloadRequestId = DownloadRequestId(reciter, moshaf)
 
-            Timber.debug("Resuming ${downloadRequest.id}...")
-            val surahDownload = completedDownloads[downloadRequestId]?.find { it.request.serializedData.surah.id == surah.id }
+            ioCoroutineScope.launch {
+                surahs.forEach { surah ->
+                    val download = downloadManagerInstance?.currentDownloads?.find { it.request.serializedData.surah.id == surah.id }
 
-            surahDownload?.let {
-                Timber.debug("Download ${it.request.id} already completed, updating state...")
-                updateDownloadState(it)
+                    download?.let {
+                        Timber.debug("Download '$downloadRequestId': (${surah.id}: ${surah.name}) is ${DownloadState.State.fromCode(it.state)}!")
+
+                        completedDownloads[downloadRequestId]?.remove(it)
+
+                        removeDownload(context, it.request)
+                    } ?: Timber.warn("Download '$downloadRequestId': (${surah.id}: ${surah.name}) is non-existent!!!")
+                }
             }
-
-            resumeDownload(context, downloadRequest)
         }
 
-        fun resumeDownload(context: Context, downloadRequest: DownloadRequest) = sendSetStopReason(
-                context,
-                QuranDownloadService::class.java,
-                downloadRequest.id,
-                Download.STOP_REASON_NONE, // Zero value resumes the download
-                true
-        )
+        fun queueDownload(context: Context, downloadRequest: DownloadRequest) = downloadRequest.run {
+            val serializedData = downloadRequest.serializedData
+            Timber.debug("Queueing download '$id': (${serializedData.surah.id}: ${serializedData.surah.name})...")
 
-        fun removeDownloads(context: Context) = sendRemoveAllDownloads(
-                context,
-                QuranDownloadService::class.java,
-                true
-        ).also { completedDownloads.clear() }
-
-        private fun updateDownloadState(download: Download) = DownloadState(
-                data = download.request.serializedData,
-                state = DownloadState.State.fromCode(download.state),
-                percentage = download.percentDownloaded.coerceIn(0f, 100f),
-                downloaded = download.bytesDownloaded.coerceIn(0L, Long.MAX_VALUE),
-                total = download.contentLength.coerceIn(0L, Long.MAX_VALUE),
-                failureReason = DownloadState.FailureReason.fromCode(download.failureReason)
-        ).run {
-            notifyDownloadServiceObservers(this@run)
-
-            Timber.debug("${this@run}")
+            sendAddDownload(
+                    context,
+                    QuranDownloadService::class.java,
+                    this@run,
+                    true
+            )
         }
 
-        private fun notifyDownloadServiceObservers(state: DownloadState) = downloadServiceObservers.run {
-            Timber.debug("notifying observers with status $state...")
+        fun resumeDownload(context: Context, downloadRequest: DownloadRequest) = downloadRequest.run {
+            val serializedData = downloadRequest.serializedData
+            Timber.debug("Resuming download '$id': (${serializedData.surah.id}: ${serializedData.surah.name})...")
 
-            forEach { observer ->
-                val iObservableClassName = IObservable::class.simpleName
-                val observerClassName = observer::class.simpleName
-                val observerClassHashCode = observer.hashCode().toString(16).uppercase()
-
-                Timber.debug("notifying $iObservableClassName<$observerClassName@$observerClassHashCode>...")
-
-                observer.onDownloadStateChanged(state)
-
-                Timber.debug("$iObservableClassName<$observerClassName@$observerClassHashCode> notified!")
-            }
-
-            Timber.debug("observers notified!")
+            sendSetStopReason(
+                    context,
+                    QuranDownloadService::class.java,
+                    downloadRequest.id,
+                    Download.STOP_REASON_NONE, // Zero value resumes the download
+                    true
+            )
         }
+
+        fun pauseDownload(context: Context, downloadRequest: DownloadRequest) = downloadRequest.run {
+            val serializedData = downloadRequest.serializedData
+            Timber.debug("Pausing download '$id': (${serializedData.surah.id}: ${serializedData.surah.name})...")
+
+            sendSetStopReason(
+                    context,
+                    QuranDownloadService::class.java,
+                    downloadRequest.id,
+                    Download.STOP_REASON_NONE + 1, // Any non-zero value pauses the download
+                    true
+            )
+        }
+
+        fun removeDownload(context: Context, downloadRequest: DownloadRequest) = downloadRequest.run {
+            val serializedData = downloadRequest.serializedData
+            Timber.debug("Removing download '$id': (${serializedData.surah.id}: ${serializedData.surah.name})...")
+
+            sendRemoveDownload(
+                    context,
+                    QuranDownloadService::class.java,
+                    downloadRequest.id,
+                    true
+            )
+        }
+
+        private suspend fun updateDownloadState(download: Download) = download.run {
+            val state = DownloadState(
+                    data = request.serializedData,
+                    state = DownloadState.State.fromCode(state),
+                    percentage = percentDownloaded.coerceIn(0f, 100f),
+                    downloaded = bytesDownloaded.coerceIn(0L, Long.MAX_VALUE),
+                    total = contentLength.coerceIn(0L, Long.MAX_VALUE),
+                    failureReason = DownloadState.FailureReason.fromCode(failureReason)
+            )
+
+            Timber.debug("$state")
+
+            notifyDownloadStatusObservers(state = state)
+            delay(UPDATE_PROGRESS_INTERVAL.milliseconds)
+        }
+
+        private suspend fun notifyDownloadStatusObservers(state: DownloadState) = downloadStatusObservers.forEach { observer -> observer.onDownloadStateChanged(state) }
     }
 }

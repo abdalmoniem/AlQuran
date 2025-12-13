@@ -834,7 +834,7 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
             .setContentTitle(getString(R.string.playback_channel_name))
             .setContentText(surah?.name)
             .setSubText(reciter?.name)
-            .setSmallIcon(R.drawable.play_arrow_24px)
+            .setSmallIcon(R.drawable.quran_icon_monochrome_white_64)
             .setStyle(MediaStyle().setMediaSession(mediaSession.sessionToken).setShowActionsInCompactView(0))
             .build()
     }

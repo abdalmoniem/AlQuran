@@ -226,7 +226,7 @@ object QuranCacheDataSource {
     context(context: Context)
     val CacheKey.cacheDataSourceFactory
         get() = synchronized(cacheLock) {
-            cacheFactoryMap.getOrPut(this@cacheDataSourceFactory) {
+            cacheFactoryMap[this@cacheDataSourceFactory] ?: run {
                 val cache = simpleCache
                 val upstreamFactory = DefaultDataSource.Factory(context, DefaultHttpDataSource.Factory())
 
@@ -236,7 +236,7 @@ object QuranCacheDataSource {
                     setCacheWriteDataSinkFactory(CacheDataSink.Factory().setCache(cache))
                     setCacheReadDataSourceFactory(FileDataSource.Factory())
                     setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR or CacheDataSource.FLAG_BLOCK_ON_CACHE)
-                }
+                }.also { cacheFactoryMap[this@cacheDataSourceFactory] = it }
             }
         }
 

@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +62,7 @@ import com.hifnawy.alquran.QuranDownloadServiceObserver
 import com.hifnawy.alquran.R
 import com.hifnawy.alquran.shared.QuranApplication
 import com.hifnawy.alquran.shared.domain.QuranDownloadService.QuranDownloadManager
+import com.hifnawy.alquran.shared.domain.QuranDownloadService.QuranDownloadManager.BulkDownloadRequest
 import com.hifnawy.alquran.shared.domain.QuranDownloadService.QuranDownloadManager.DownloadState
 import com.hifnawy.alquran.shared.model.Moshaf
 import com.hifnawy.alquran.shared.model.Reciter
@@ -218,9 +220,8 @@ fun SurahsGrid(
                     reciterSurahs = reciterSurahs,
                     areDownloadsPaused = areDownloadsPaused,
                     onDownloadsPaused = { areDownloadsPaused = true },
-            ) {
-                isDownloadProgressDialogShown = false
-            }
+                    onDismissRequest = { isDownloadProgressDialogShown = false }
+            )
         }
     }
 }
@@ -571,40 +572,47 @@ private fun DownloadProgressDialog(
         onDownloadsPaused: () -> Unit = {},
         onDismissRequest: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-    var downloadStatus by rememberSaveable { mutableStateOf<DownloadState?>(null) }
-    var downloadedSurahsCount by rememberSaveable { mutableIntStateOf(0) }
-    var downloadSurah by rememberSaveable { mutableStateOf<Surah?>(null) }
-
-    val progressIndicatorHeight = 25.dp
     val fontSize = 25.sp
+    val progressIndicatorHeight = 25.dp
 
-    LaunchedEffect(areDownloadsPaused) {
-        when {
-            areDownloadsPaused -> QuranDownloadManager.resumeDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
-            else               -> QuranDownloadManager.queueDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
-        }
-    }
+    val context = LocalContext.current
+    val bulkDownloadRequest = BulkDownloadRequest(reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
 
-    QuranDownloadServiceObserver { downloadState ->
-        downloadStatus = downloadState
+    var downloadedSize by remember { mutableStateOf("") }
+    var downloadTotalSize by remember { mutableStateOf("") }
+    var downloadedSurahsCount by remember { mutableIntStateOf(0) }
+    var downloadPercentage by remember { mutableFloatStateOf(0f) }
+    var downloadSurah by remember { mutableStateOf<Surah?>(null) }
+    var downloadState by remember { mutableStateOf(DownloadState()) }
 
-        downloadSurah = downloadState.data.surah
-
-        if (downloadState.state == DownloadState.State.COMPLETED) downloadedSurahsCount++
-
+    QuranDownloadServiceObserver { state ->
+        downloadState = state
         Timber.debug("$downloadState")
     }
 
-    val downloadState = downloadStatus ?: return
-    val surah = downloadSurah ?: return
-    val downloadedSize = downloadState.downloaded.asLocalizedHumanReadableSize
-    val totalSize = downloadState.total.asLocalizedHumanReadableSize
-    val downloadPercentage = downloadState.percentage
+    LaunchedEffect(Unit) {
+        Timber.debug("$bulkDownloadRequest")
+    }
 
-    if (downloadedSurahsCount >= reciterSurahs.size) QuranDownloadManager.removeDownloads(context = context)
+    LaunchedEffect(areDownloadsPaused) {
+        when {
+            !areDownloadsPaused -> QuranDownloadManager.queueDownloads(context = context, bulkDownloadRequest = bulkDownloadRequest)
+            else                -> QuranDownloadManager.resumeDownloads(context = context, bulkDownloadRequest = bulkDownloadRequest)
+        }
+    }
 
-    Dialog(onDismissRequest = onDismissRequest) {
+    LaunchedEffect(downloadState) {
+        if (downloadState.state == DownloadState.State.COMPLETED) downloadedSurahsCount++
+
+        downloadSurah = downloadState.data?.surah
+        downloadPercentage = downloadState.percentage
+        downloadedSize = downloadState.downloaded.asLocalizedHumanReadableSize
+        downloadTotalSize = downloadState.total.asLocalizedHumanReadableSize
+
+        if (downloadedSurahsCount >= reciterSurahs.size) QuranDownloadManager.removeDownloads(context = context, bulkDownloadRequest = bulkDownloadRequest)
+    }
+
+    Dialog(onDismissRequest = { }) {
         Column(
                 modifier = Modifier
                     .fillMaxWidth(0.85f)
@@ -638,18 +646,20 @@ private fun DownloadProgressDialog(
                     progress = { downloadedSurahsCount / reciterSurahs.size.toFloat() }
             )
 
-            Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.downloading_surah, surah.id, surah.name),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = fontSize,
-                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
-            )
+            downloadSurah?.run {
+                Text(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.downloading_surah, id, name),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = fontSize,
+                        fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+                )
+            }
 
             Text(
                     modifier = Modifier.fillMaxWidth(),
-                    text = "${stringResource(R.string.download_progress, downloadedSize, totalSize)} " +
+                    text = "${stringResource(R.string.download_progress, downloadedSize, downloadTotalSize)} " +
                            "(${stringResource(R.string.download_percentage, downloadPercentage)})",
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -672,7 +682,7 @@ private fun DownloadProgressDialog(
 
             Button(
                     onClick = {
-                        QuranDownloadManager.pauseDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
+                        QuranDownloadManager.pauseDownloads(context = context, bulkDownloadRequest = bulkDownloadRequest)
                         onDownloadsPaused()
                         onDismissRequest()
                     },

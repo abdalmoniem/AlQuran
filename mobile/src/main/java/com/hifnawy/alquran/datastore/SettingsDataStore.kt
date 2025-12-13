@@ -485,20 +485,10 @@ object SettingsDataStore {
     fun SettingsObserver(observer: SettingsDataObserver) {
         val settingsDataStore = remember { SettingsDataStore }
 
-        val observer = remember {
-            object : SettingsDataObserver {
-                override fun onSettingsDataUpdated(data: SettingsData) {
-                    observer.onSettingsDataUpdated(data)
-                }
-            }
-        }
-
         DisposableEffect(settingsDataStore) {
             settingsDataStore.settingsDataObservers.add(observer)
 
-            onDispose {
-                settingsDataStore.settingsDataObservers.remove(observer)
-            }
+            onDispose { settingsDataStore.settingsDataObservers.remove(observer) }
         }
     }
 }
