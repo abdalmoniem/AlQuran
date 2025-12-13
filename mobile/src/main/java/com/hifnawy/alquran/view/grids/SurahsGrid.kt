@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -101,16 +103,16 @@ import com.hifnawy.alquran.shared.R as Rs
  */
 @Composable
 fun SurahsGrid(
-        modifier: Modifier = Modifier,
-        reciter: Reciter,
-        moshaf: Moshaf,
-        reciterSurahs: List<Surah>,
-        isSkeleton: Boolean = false,
-        isPlaying: Boolean = false,
-        playingSurahId: Int? = null,
-        playingMoshafId: Int? = null,
-        playingReciterId: ReciterId? = null,
-        onSurahCardClick: (surah: Surah) -> Unit
+    modifier: Modifier = Modifier,
+    reciter: Reciter,
+    moshaf: Moshaf,
+    reciterSurahs: List<Surah>,
+    isSkeleton: Boolean = false,
+    isPlaying: Boolean = false,
+    playingSurahId: Int? = null,
+    playingMoshafId: Int? = null,
+    playingReciterId: ReciterId? = null,
+    onSurahCardClick: (surah: Surah) -> Unit
 ) {
     var lazyGridHeight by remember { mutableIntStateOf(0) }
     var surahCardHeight by remember { mutableIntStateOf(0) }
@@ -123,30 +125,42 @@ fun SurahsGrid(
     val listState = rememberSurahsGridState()
     val filteredSurahs = rememberSaveable(reciterSurahs, searchQuery) {
         reciterSurahs.filter { surah ->
-            surah.name.stripFormattingChars.trim().lowercase().contains(searchQuery.stripFormattingChars.trim().lowercase())
+            surah.name.stripFormattingChars.trim().lowercase()
+                .contains(searchQuery.stripFormattingChars.trim().lowercase())
         }
     }
 
     SurahsGridContainer(isSkeleton = isSkeleton) { brush ->
         Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(start = 10.dp, top = 10.dp, end = 10.dp)
+            modifier = modifier
+                .fillMaxSize()
+                .padding(start = 10.dp, top = 20.dp, end = 10.dp)
         ) {
-            TitleBar(
+
+            Column(
+                modifier = Modifier
+                    .background(
+                        color = Color.Black.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                TitleBar(
                     isSkeleton = isSkeleton,
                     brush = brush,
                     reciter = reciter,
                     moshaf = moshaf
-            )
+                )
 
-            Spacer(modifier = Modifier.size(5.dp))
 
-            Row(
+                Spacer(modifier = Modifier.size(5.dp))
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
-            ) {
-                SearchBar(
+                ) {
+                    SearchBar(
                         modifier = Modifier.weight(1f),
                         isSkeleton = isSkeleton,
                         brush = brush,
@@ -155,45 +169,54 @@ fun SurahsGrid(
                         label = stringResource(R.string.search_surahs),
                         onQueryChange = { newQuery -> searchQuery = newQuery },
                         onClearQuery = { searchQuery = "" }
-                )
+                    )
 
-                Spacer(modifier = Modifier.size(5.dp))
+                    Spacer(modifier = Modifier.size(5.dp))
 
-                DownloadButton(
+                    DownloadButton(
                         modifier = Modifier.fillMaxSize(),
                         isSkeleton = isSkeleton,
                         brush = brush,
                         onClick = { isDownloadProgressDialogShown = true }
-                )
+                    )
+                }
             }
+
+
 
             Spacer(modifier = Modifier.height(10.dp))
 
             LazyVerticalGrid(
-                    modifier = modifier.onSizeChanged { size -> lazyGridHeight = size.height },
-                    state = listState,
-                    columns = GridCells.Adaptive(minSize = 150.dp),
-                    contentPadding = PaddingValues(vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(5.dp),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+//                modifier = modifier
+//                    .fillMaxWidth(),
+                state = listState,
+//                columns = GridCells.Adaptive(minSize = 150.dp),
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                gridItems(isSkeleton = isSkeleton, mockCount = 114, items = filteredSurahs) { index, surah ->
+                gridItems(
+                    isSkeleton = isSkeleton,
+                    mockCount = 114,
+                    items = filteredSurahs
+                ) { index, surah ->
                     val isScrollingDown = index > lastAnimatedIndex
                     val animationType = when {
                         isScrollingDown -> AnimationType.FallDown
-                        else            -> AnimationType.RiseUp
+                        else -> AnimationType.RiseUp
                     }
 
                     SurahCard(
-                            modifier = Modifier
-                                .animateItemPosition(durationMs = 300, animationType = animationType)
-                                .onSizeChanged { size -> surahCardHeight = size.height },
-                            surah = surah,
-                            isSkeleton = isSkeleton,
-                            isPlaying = isPlaying && playingSurahId == surah?.id && playingMoshafId == moshaf.id && playingReciterId == reciter.id,
-                            searchQuery = searchQuery,
-                            brush = brush,
-                            onClick = onSurahCardClick
+                        modifier = Modifier
+                            .animateItemPosition(durationMs = 300, animationType = animationType)
+                            .onSizeChanged { size -> surahCardHeight = size.height },
+                        surah = surah,
+                        isSkeleton = isSkeleton,
+                        isPlaying = isPlaying && playingSurahId == surah?.id && playingMoshafId == moshaf.id && playingReciterId == reciter.id,
+                        searchQuery = searchQuery,
+                        brush = brush,
+                        onClick = onSurahCardClick
                     )
 
                     lastAnimatedIndex = index
@@ -201,23 +224,23 @@ fun SurahsGrid(
             }
 
             ScrollToPlayingSurah(
-                    listState = listState,
-                    isPlaying = isPlaying,
-                    reciter = reciter,
-                    filteredSurahs = filteredSurahs,
-                    playingSurahId = playingSurahId,
-                    playingReciterId = playingReciterId,
-                    lazyGridHeight = lazyGridHeight,
-                    surahCardHeight = surahCardHeight
+                listState = listState,
+                isPlaying = isPlaying,
+                reciter = reciter,
+                filteredSurahs = filteredSurahs,
+                playingSurahId = playingSurahId,
+                playingReciterId = playingReciterId,
+                lazyGridHeight = lazyGridHeight,
+                surahCardHeight = surahCardHeight
             )
 
             if (!isDownloadProgressDialogShown) return@Column
             DownloadProgressDialog(
-                    reciter = reciter,
-                    moshaf = moshaf,
-                    reciterSurahs = reciterSurahs,
-                    areDownloadsPaused = areDownloadsPaused,
-                    onDownloadsPaused = { areDownloadsPaused = true },
+                reciter = reciter,
+                moshaf = moshaf,
+                reciterSurahs = reciterSurahs,
+                areDownloadsPaused = areDownloadsPaused,
+                onDownloadsPaused = { areDownloadsPaused = true },
             ) {
                 isDownloadProgressDialogShown = false
             }
@@ -237,10 +260,13 @@ fun SurahsGrid(
  */
 @Composable
 private fun rememberSurahsGridState(
-        firstVisibleItemIndex: Int = 0,
-        firstVisibleItemScrollOffset: Int = 0
+    firstVisibleItemIndex: Int = 0,
+    firstVisibleItemScrollOffset: Int = 0
 ) = rememberSaveable(saver = LazyGridState.Saver) {
-    LazyGridState(firstVisibleItemIndex = firstVisibleItemIndex, firstVisibleItemScrollOffset = firstVisibleItemScrollOffset)
+    LazyGridState(
+        firstVisibleItemIndex = firstVisibleItemIndex,
+        firstVisibleItemScrollOffset = firstVisibleItemScrollOffset
+    )
 }
 
 /**
@@ -257,11 +283,11 @@ private fun rememberSurahsGridState(
  */
 @Composable
 private fun SurahsGridContainer(
-        isSkeleton: Boolean,
-        content: @Composable (brush: Brush?) -> Unit
+    isSkeleton: Boolean,
+    content: @Composable (brush: Brush?) -> Unit
 ) = when {
     isSkeleton -> ShimmerAnimation { brush -> content(brush) }
-    else       -> content(null)
+    else -> content(null)
 }
 
 /**
@@ -287,14 +313,14 @@ private fun SurahsGridContainer(
  */
 @Composable
 private fun ScrollToPlayingSurah(
-        listState: LazyGridState,
-        isPlaying: Boolean,
-        reciter: Reciter,
-        filteredSurahs: List<Surah>,
-        playingSurahId: Int?,
-        playingReciterId: ReciterId?,
-        lazyGridHeight: Int,
-        surahCardHeight: Int
+    listState: LazyGridState,
+    isPlaying: Boolean,
+    reciter: Reciter,
+    filteredSurahs: List<Surah>,
+    playingSurahId: Int?,
+    playingReciterId: ReciterId?,
+    lazyGridHeight: Int,
+    surahCardHeight: Int
 ) {
     val density = LocalDensity.current
     val miniPlayerHeight = with(density) { 90.dp.toPx() }
@@ -313,21 +339,27 @@ private fun ScrollToPlayingSurah(
         val itemInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
         val miniPlayerTopEdge = lazyGridHeight - miniPlayerHeight - miniPlayerBottomPadding
 
-        val availableViewportHeight = lazyGridHeight - miniPlayerHeight - (miniPlayerBottomPadding * 2.1f)
+        val availableViewportHeight =
+            lazyGridHeight - miniPlayerHeight - (miniPlayerBottomPadding * 2.1f)
         val scrollDistance = getScrollDistance(
-                itemInfo = itemInfo,
-                surahCardHeight = surahCardHeight,
-                availableViewportHeight = availableViewportHeight
+            itemInfo = itemInfo,
+            surahCardHeight = surahCardHeight,
+            availableViewportHeight = availableViewportHeight
         )
 
-        if (!shouldScroll(itemInfo = itemInfo, miniPlayerTopEdge = miniPlayerTopEdge, scrollDistance = scrollDistance)) return@LaunchedEffect
-        executeScroll(
-                index = index,
+        if (!shouldScroll(
                 itemInfo = itemInfo,
-                listState = listState,
-                scrollDistance = scrollDistance,
-                surahCardHeight = surahCardHeight,
-                availableViewportHeight = availableViewportHeight
+                miniPlayerTopEdge = miniPlayerTopEdge,
+                scrollDistance = scrollDistance
+            )
+        ) return@LaunchedEffect
+        executeScroll(
+            index = index,
+            itemInfo = itemInfo,
+            listState = listState,
+            scrollDistance = scrollDistance,
+            surahCardHeight = surahCardHeight,
+            availableViewportHeight = availableViewportHeight
         )
     }
 }
@@ -347,9 +379,13 @@ private fun ScrollToPlayingSurah(
  *
  * @return [Float] The calculated scroll distance in pixels. A positive value means scrolling down, a negative value means scrolling up.
  */
-private fun getScrollDistance(surahCardHeight: Int, itemInfo: LazyGridItemInfo?, availableViewportHeight: Float) = when {
+private fun getScrollDistance(
+    surahCardHeight: Int,
+    itemInfo: LazyGridItemInfo?,
+    availableViewportHeight: Float
+) = when {
     itemInfo != null -> (itemInfo.offset.y + surahCardHeight / 2f) - (availableViewportHeight / 2f)
-    else             -> 0f
+    else -> 0f
 }
 
 /**
@@ -366,7 +402,11 @@ private fun getScrollDistance(surahCardHeight: Int, itemInfo: LazyGridItemInfo?,
  *
  * @return [Boolean] `true` if a scroll should be executed, `false` otherwise.
  */
-private fun shouldScroll(scrollDistance: Float, miniPlayerTopEdge: Float, itemInfo: LazyGridItemInfo?) = when {
+private fun shouldScroll(
+    scrollDistance: Float,
+    miniPlayerTopEdge: Float,
+    itemInfo: LazyGridItemInfo?
+) = when {
     itemInfo == null -> true
     itemInfo.offset.y + itemInfo.size.height > miniPlayerTopEdge -> true
     abs(scrollDistance) > 1f -> true
@@ -396,12 +436,12 @@ private fun shouldScroll(scrollDistance: Float, miniPlayerTopEdge: Float, itemIn
  * @return [Float] The amount of scrolled distance in pixels.
  */
 private suspend fun executeScroll(
-        index: Int,
-        surahCardHeight: Int,
-        scrollDistance: Float,
-        listState: LazyGridState,
-        itemInfo: LazyGridItemInfo?,
-        availableViewportHeight: Float
+    index: Int,
+    surahCardHeight: Int,
+    scrollDistance: Float,
+    listState: LazyGridState,
+    itemInfo: LazyGridItemInfo?,
+    availableViewportHeight: Float
 ): Float = listState.run {
     val animationDuration = 700
 
@@ -410,28 +450,34 @@ private suspend fun executeScroll(
             val scrollDirection = sign((index - firstVisibleItemIndex).toFloat())
 
             val initialScrollDistance = animateScrollBy(
-                    value = scrollDirection * surahCardHeight,
-                    animationSpec = tween(durationMillis = 50, easing = FastOutLinearInEasing)
+                value = scrollDirection * surahCardHeight,
+                animationSpec = tween(durationMillis = 50, easing = FastOutLinearInEasing)
             )
 
             val newItemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
             val scrollDistance = getScrollDistance(
-                    itemInfo = newItemInfo,
-                    surahCardHeight = surahCardHeight,
-                    availableViewportHeight = availableViewportHeight
+                itemInfo = newItemInfo,
+                surahCardHeight = surahCardHeight,
+                availableViewportHeight = availableViewportHeight
             )
 
             initialScrollDistance + executeScroll(
-                    index = index,
-                    surahCardHeight = surahCardHeight,
-                    scrollDistance = scrollDistance,
-                    listState = this,
-                    itemInfo = newItemInfo,
-                    availableViewportHeight = availableViewportHeight
+                index = index,
+                surahCardHeight = surahCardHeight,
+                scrollDistance = scrollDistance,
+                listState = this,
+                itemInfo = newItemInfo,
+                availableViewportHeight = availableViewportHeight
             )
         }
 
-        else -> animateScrollBy(value = scrollDistance, animationSpec = tween(durationMillis = animationDuration, easing = FastOutLinearInEasing))
+        else -> animateScrollBy(
+            value = scrollDistance,
+            animationSpec = tween(
+                durationMillis = animationDuration,
+                easing = FastOutLinearInEasing
+            )
+        )
     }
 }
 
@@ -451,42 +497,43 @@ private suspend fun executeScroll(
  */
 @Composable
 private fun TitleBar(
-        isSkeleton: Boolean,
-        brush: Brush?,
-        reciter: Reciter,
-        moshaf: Moshaf
+    isSkeleton: Boolean,
+    brush: Brush?,
+    reciter: Reciter,
+    moshaf: Moshaf
 ) {
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
 
     val reciterText = reciter.name
     val reciterStyle = TextStyle(
-            fontSize = 50.sp,
-            fontFamily = when {
-                QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
-                else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
-            }
+        fontSize = 50.sp,
+        fontFamily = when {
+            QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+            else -> FontFamily(Font(Rs.font.aref_ruqaa))
+        }
     )
 
-    val moshafText = "${moshaf.name} - ${arabicPluralStringResource(R.plurals.surah_count, moshaf.surahsCount)}"
+    val moshafText =
+        "${moshaf.name} - ${arabicPluralStringResource(R.plurals.surah_count, moshaf.surahsCount)}"
     val moshafStyle = TextStyle(
-            fontSize = 25.sp,
-            fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+        fontSize = 25.sp,
+        fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
     )
 
     val reciterLayoutResult: TextLayoutResult = remember(reciterText, reciterStyle) {
         textMeasurer.measure(
-                text = AnnotatedString(reciterText),
-                style = reciterStyle,
-                constraints = Constraints(maxWidth = Int.MAX_VALUE)
+            text = AnnotatedString(reciterText),
+            style = reciterStyle,
+            constraints = Constraints(maxWidth = Int.MAX_VALUE)
         )
     }
 
     val moshafLayoutResult: TextLayoutResult = remember(moshafText, moshafStyle) {
         textMeasurer.measure(
-                text = AnnotatedString(moshafText),
-                style = moshafStyle,
-                constraints = Constraints(maxWidth = Int.MAX_VALUE)
+            text = AnnotatedString(moshafText),
+            style = moshafStyle,
+            constraints = Constraints(maxWidth = Int.MAX_VALUE)
         )
     }
 
@@ -496,42 +543,43 @@ private fun TitleBar(
     val moshafWidth = with(density) { moshafLayoutResult.size.width.toDp() }
 
     when {
-        isSkeleton -> Column {
+        isSkeleton -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (brush == null) return
+
             Spacer(
-                    modifier = Modifier
-                        .width(reciterWidth)
-                        .height(reciterHeight)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(brush)
+                modifier = Modifier
+                    .width(reciterWidth)
+                    .height(reciterHeight)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(brush)
             )
             Spacer(modifier = Modifier.height(5.dp))
             Spacer(
-                    modifier = Modifier
-                        .width(moshafWidth)
-                        .height(moshafHeight)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(brush)
+                modifier = Modifier
+                    .width(moshafWidth)
+                    .height(moshafHeight)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(brush)
             )
         }
 
-        else       -> Column {
+        else -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(),
-                    text = reciterText,
-                    style = reciterStyle,
-                    color = MaterialTheme.colorScheme.onSurface
+                modifier = Modifier
+//                        .fillMaxWidth()
+                    .basicMarquee(),
+                text = reciterText,
+                style = reciterStyle,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(),
-                    text = moshafText,
-                    style = moshafStyle,
-                    color = MaterialTheme.colorScheme.onSurface
+                modifier = Modifier
+//                        .fillMaxWidth()
+                    .basicMarquee(),
+                text = moshafText,
+                style = moshafStyle,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
         }
@@ -540,10 +588,10 @@ private fun TitleBar(
 
 @Composable
 private fun DownloadButton(
-        modifier: Modifier = Modifier,
-        isSkeleton: Boolean,
-        brush: Brush?,
-        onClick: () -> Unit = {}
+    modifier: Modifier = Modifier,
+    isSkeleton: Boolean,
+    brush: Brush?,
+    onClick: () -> Unit = {}
 ) = IconButton(onClick = if (!isSkeleton) onClick else { -> }) {
     when {
         isSkeleton -> {
@@ -551,12 +599,12 @@ private fun DownloadButton(
             Spacer(modifier = modifier.background(brush))
         }
 
-        else       ->
+        else ->
             Icon(
-                    modifier = modifier,
-                    painter = painterResource(id = R.drawable.download_24px),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    contentDescription = null
+                modifier = modifier,
+                painter = painterResource(id = R.drawable.download_24px),
+                tint = MaterialTheme.colorScheme.onSurface,
+                contentDescription = null
             )
     }
 }
@@ -564,12 +612,12 @@ private fun DownloadButton(
 @Composable
 @SuppressLint("UnsafeOptInUsageError")
 private fun DownloadProgressDialog(
-        reciter: Reciter,
-        moshaf: Moshaf,
-        reciterSurahs: List<Surah>,
-        areDownloadsPaused: Boolean,
-        onDownloadsPaused: () -> Unit = {},
-        onDismissRequest: () -> Unit = {}
+    reciter: Reciter,
+    moshaf: Moshaf,
+    reciterSurahs: List<Surah>,
+    areDownloadsPaused: Boolean,
+    onDownloadsPaused: () -> Unit = {},
+    onDismissRequest: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var downloadStatus by rememberSaveable { mutableStateOf<DownloadState?>(null) }
@@ -581,8 +629,19 @@ private fun DownloadProgressDialog(
 
     LaunchedEffect(areDownloadsPaused) {
         when {
-            areDownloadsPaused -> QuranDownloadManager.resumeDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
-            else               -> QuranDownloadManager.queueDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
+            areDownloadsPaused -> QuranDownloadManager.resumeDownloads(
+                context = context,
+                reciter = reciter,
+                moshaf = moshaf,
+                surahs = reciterSurahs
+            )
+
+            else -> QuranDownloadManager.queueDownloads(
+                context = context,
+                reciter = reciter,
+                moshaf = moshaf,
+                surahs = reciterSurahs
+            )
         }
     }
 
@@ -606,90 +665,99 @@ private fun DownloadProgressDialog(
 
     Dialog(onDismissRequest = onDismissRequest) {
         Column(
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(25.dp))
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(25.dp))
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.downloading_surahs),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = fontSize,
-                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+                modifier = Modifier.fillMaxWidth(),
+                text = stringResource(R.string.downloading_surahs),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = fontSize,
+                fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
             )
 
             Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.download_count, downloadedSurahsCount, reciterSurahs.size),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = fontSize,
-                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+                modifier = Modifier.fillMaxWidth(),
+                text = stringResource(
+                    R.string.download_count,
+                    downloadedSurahsCount,
+                    reciterSurahs.size
+                ),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = fontSize,
+                fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
             )
 
             LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(progressIndicatorHeight),
-                    progress = { downloadedSurahsCount / reciterSurahs.size.toFloat() }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(progressIndicatorHeight),
+                progress = { downloadedSurahsCount / reciterSurahs.size.toFloat() }
             )
 
             Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.downloading_surah, surah.id, surah.name),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = fontSize,
-                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+                modifier = Modifier.fillMaxWidth(),
+                text = stringResource(R.string.downloading_surah, surah.id, surah.name),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = fontSize,
+                fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
             )
 
             Text(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = "${stringResource(R.string.download_progress, downloadedSize, totalSize)} " +
-                           "(${stringResource(R.string.download_percentage, downloadPercentage)})",
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = fontSize,
-                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+                modifier = Modifier.fillMaxWidth(),
+                text = "${stringResource(R.string.download_progress, downloadedSize, totalSize)} " +
+                        "(${stringResource(R.string.download_percentage, downloadPercentage)})",
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = fontSize,
+                fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
             )
 
             LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(progressIndicatorHeight),
-                    progress = {
-                        if (downloadState.total == 0L) return@LinearProgressIndicator 0f
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(progressIndicatorHeight),
+                progress = {
+                    if (downloadState.total == 0L) return@LinearProgressIndicator 0f
 
-                        downloadState.downloaded.toFloat() / downloadState.total.toFloat()
-                    }
+                    downloadState.downloaded.toFloat() / downloadState.total.toFloat()
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                    onClick = {
-                        QuranDownloadManager.pauseDownloads(context = context, reciter = reciter, moshaf = moshaf, surahs = reciterSurahs)
-                        onDownloadsPaused()
-                        onDismissRequest()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
+                onClick = {
+                    QuranDownloadManager.pauseDownloads(
+                        context = context,
+                        reciter = reciter,
+                        moshaf = moshaf,
+                        surahs = reciterSurahs
                     )
+                    onDownloadsPaused()
+                    onDismissRequest()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Text(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 10.dp),
-                        text = stringResource(R.string.download_cancel),
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontSize = fontSize,
-                        fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                    text = stringResource(R.string.download_cancel),
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = fontSize,
+                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
                 )
             }
         }

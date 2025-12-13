@@ -76,7 +76,7 @@ fun SurahCard(
     val intSizeAnimationSpec = tween<IntSize>(durationMillis = animationDurationMillis)
 
     Card(
-            modifier = modifier.aspectRatio(1f),
+            modifier = modifier.aspectRatio(20/9f),
             shape = RoundedCornerShape(20.dp),
             elevation = CardDefaults.elevatedCardElevation(20.dp),
             onClick = { if (surah != null) onClick(surah) },
