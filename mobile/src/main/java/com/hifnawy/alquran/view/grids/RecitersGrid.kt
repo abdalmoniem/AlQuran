@@ -250,31 +250,32 @@ private fun TitleBar(
     val titleHeight = with(density) { titleLayoutResult.size.height.toDp() }
     val titleWidth = with(density) { titleLayoutResult.size.width.toDp() }
 
-    if (isSkeleton) {
-        if (brush == null) return
-        Row(
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(25.dp))
-                        .background(brush)
-            )
+    when {
+        isSkeleton -> brush?.let {
+            Row(
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(RoundedCornerShape(25.dp))
+                            .background(it)
+                )
 
-            Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
-            Spacer(
-                    modifier = Modifier
-                        .width(titleWidth)
-                        .height(titleHeight)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(brush)
-            )
+                Spacer(
+                        modifier = Modifier
+                            .width(titleWidth)
+                            .height(titleHeight)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(it)
+                )
+            }
         }
-    } else {
-        Row(
+
+        else       -> Row(
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
         ) {

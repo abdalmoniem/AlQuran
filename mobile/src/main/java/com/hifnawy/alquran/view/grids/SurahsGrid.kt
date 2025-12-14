@@ -502,23 +502,24 @@ private fun TitleBar(
     val moshafWidth = with(density) { moshafLayoutResult.size.width.toDp() }
 
     when {
-        isSkeleton -> Column {
-            if (brush == null) return
-            Spacer(
-                    modifier = Modifier
-                        .width(reciterWidth)
-                        .height(reciterHeight)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(brush)
-            )
-            Spacer(modifier = Modifier.height(5.dp))
-            Spacer(
-                    modifier = Modifier
-                        .width(moshafWidth)
-                        .height(moshafHeight)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(brush)
-            )
+        isSkeleton -> brush?.let {
+            Column {
+                Spacer(
+                        modifier = Modifier
+                            .width(reciterWidth)
+                            .height(reciterHeight)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(it)
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(
+                        modifier = Modifier
+                            .width(moshafWidth)
+                            .height(moshafHeight)
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(it)
+                )
+            }
         }
 
         else       -> Column {
@@ -568,10 +569,7 @@ private fun DownloadButton(
         onClick: () -> Unit = {}
 ) = IconButton(onClick = if (!isSkeleton) onClick else { -> }) {
     when {
-        isSkeleton -> {
-            if (brush == null) return@IconButton
-            Spacer(modifier = modifier.background(brush))
-        }
+        isSkeleton -> brush?.let { Spacer(modifier = modifier.background(it)) }
 
         else       ->
             Icon(

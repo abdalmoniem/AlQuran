@@ -190,33 +190,29 @@ private fun Chevron(
         brush: Brush?,
         reciter: Reciter?,
         isExpanded: Boolean
-) {
-    when {
-        isSkeleton -> {
-            if (brush == null) return
-            Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(brush)
-            )
+) = when {
+    isSkeleton -> brush?.let {
+        Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(it)
+        )
+    }
+
+    else       -> reciter?.let {
+        if (it.moshafList.isEmpty()) return@let
+
+        val iconDrawableId = when {
+            isExpanded -> R.drawable.arrow_up_24px
+            else       -> R.drawable.arrow_down_24px
         }
 
-        else       -> {
-            if (reciter == null) return
-            if (reciter.moshafList.isEmpty()) return
-
-            val iconDrawableId = when {
-                isExpanded -> R.drawable.arrow_up_24px
-                else       -> R.drawable.arrow_down_24px
-            }
-
-            Icon(
-                    modifier = Modifier.size(32.dp),
-                    painter = painterResource(id = iconDrawableId),
-                    contentDescription = "Show Moshafs"
-            )
-        }
+        Icon(
+                modifier = Modifier.size(32.dp),
+                painter = painterResource(id = iconDrawableId),
+                contentDescription = "Show Moshafs"
+        )
     }
 }
 
@@ -238,39 +234,35 @@ private fun ReciterName(
         brush: Brush?,
         reciter: Reciter?,
         searchQuery: String
-) {
-    when {
-        isSkeleton -> {
-            if (brush == null) return
-            Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(60.dp)
-                        .padding(vertical = 10.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(brush)
-            )
-        }
+) = when {
+    isSkeleton -> brush?.let {
+        Spacer(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(60.dp)
+                    .padding(vertical = 10.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(it)
+        )
+    }
 
-        else       -> {
-            if (reciter == null) return
-            Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(),
-                    text = highlightMatchingText(
-                            fullText = reciter.name,
-                            query = searchQuery,
-                            highlightColor = MaterialTheme.colorScheme.primary,
-                            defaultColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    fontSize = 40.sp,
-                    fontFamily = when {
-                        QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
-                        else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
-                    }
-            )
-        }
+    else       -> reciter?.let {
+        Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .basicMarquee(),
+                text = highlightMatchingText(
+                        fullText = it.name,
+                        query = searchQuery,
+                        highlightColor = MaterialTheme.colorScheme.primary,
+                        defaultColor = MaterialTheme.colorScheme.onSurface
+                ),
+                fontSize = 40.sp,
+                fontFamily = when {
+                    QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+                    else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
+                }
+        )
     }
 }
 
@@ -287,31 +279,27 @@ private fun MoshafCount(
         isSkeleton: Boolean,
         brush: Brush?,
         moshafCount: Int?
-) {
-    when {
-        isSkeleton -> {
-            if (brush == null) return
-            Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth(0.35f)
-                        .height(50.dp)
-                        .padding(vertical = 10.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(brush)
-            )
-        }
+) = when {
+    isSkeleton -> brush?.let {
+        Spacer(
+                modifier = Modifier
+                    .fillMaxWidth(0.35f)
+                    .height(50.dp)
+                    .padding(vertical = 10.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(it)
+        )
+    }
 
-        else       -> {
-            if (moshafCount == null) return
-            Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(),
-                    text = arabicPluralStringResource(R.plurals.moshaf_count, moshafCount),
-                    fontSize = 30.sp,
-                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
-            )
-        }
+    else       -> moshafCount?.let {
+        Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .basicMarquee(),
+                text = arabicPluralStringResource(R.plurals.moshaf_count, it),
+                fontSize = 30.sp,
+                fontFamily = FontFamily(Font(Rs.font.aref_ruqaa))
+        )
     }
 }
 

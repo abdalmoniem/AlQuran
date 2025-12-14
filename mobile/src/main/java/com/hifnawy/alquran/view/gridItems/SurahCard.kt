@@ -150,42 +150,39 @@ private fun SurahName(
         brush: Brush?,
         surah: Surah?,
         searchQuery: String
-) {
-    when {
-        isSkeleton -> {
-            if (brush == null) return
-            Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(brush)
-            )
-        }
+) = when {
+    isSkeleton -> brush?.let {
+        Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(vertical = 10.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(it)
+        )
+    }
 
-        else       -> {
-            if (surah == null) return
-            Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(),
-                    text = highlightMatchingText(
-                            fullText = surah.name,
-                            query = searchQuery,
-                            highlightColor = MaterialTheme.colorScheme.primary,
-                            defaultColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    textAlign = TextAlign.Center,
-                    fontSize = when {
-                        QuranApplication.currentLocaleInfo.isRTL -> 45.sp
-                        else                                     -> 30.sp
-                    },
-                    fontFamily = when {
-                        QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
-                        else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
-                    },
-            )
-        }
+    else       -> surah?.let {
+        Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .basicMarquee(),
+                text = highlightMatchingText(
+                        fullText = it.name,
+                        query = searchQuery,
+                        highlightColor = MaterialTheme.colorScheme.primary,
+                        defaultColor = MaterialTheme.colorScheme.onSurface
+                ),
+                textAlign = TextAlign.Center,
+                fontSize = when {
+                    QuranApplication.currentLocaleInfo.isRTL -> 45.sp
+                    else                                     -> 30.sp
+                },
+                fontFamily = when {
+                    QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
+                    else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
+                },
+        )
     }
 }
 
@@ -202,34 +199,31 @@ private fun SurahType(
         isSkeleton: Boolean,
         brush: Brush?,
         surah: Surah?
-) {
-    when {
-        isSkeleton -> {
-            if (brush == null) return
-            Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(30.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(brush)
-            )
-        }
+) = when {
+    isSkeleton -> brush?.let {
+        Spacer(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(50.dp)
+                    .padding(vertical = 10.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(it)
+        )
+    }
 
-        else       -> {
-            if (surah == null) return
-            Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .basicMarquee(),
-                    text = when (surah.makkia) {
-                        1 -> stringResource(R.string.surah_meccan)
-                        else -> stringResource(R.string.surah_medinan)
-                    },
-                    textAlign = TextAlign.Center,
-                    fontSize = 25.sp,
-                    fontFamily = FontFamily(Font(Rs.font.aref_ruqaa)),
-            )
-        }
+    else       -> surah?.let {
+        Text(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .basicMarquee(),
+                text = when (it.makkia) {
+                    1 -> stringResource(R.string.surah_meccan)
+                    else -> stringResource(R.string.surah_medinan)
+                },
+                textAlign = TextAlign.Center,
+                fontSize = 25.sp,
+                fontFamily = FontFamily(Font(Rs.font.aref_ruqaa)),
+        )
     }
 }
 

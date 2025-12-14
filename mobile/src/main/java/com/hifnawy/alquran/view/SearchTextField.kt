@@ -76,27 +76,24 @@ fun SearchBar(
         label: String = "",
         onQueryChange: (query: String) -> Unit = {},
         onClearQuery: () -> Unit = {}
-) {
-    when {
-        isSkeleton -> {
-            if (brush == null) return
-            Spacer(
-                    modifier = modifier
-                        .height(50.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(brush)
-            )
-        }
-
-        else       -> SearchTextField(
-                modifier = modifier,
-                query = query,
-                placeholder = placeholder,
-                label = label,
-                onQueryChange = onQueryChange,
-                onClearQuery = onClearQuery
+) = when {
+    isSkeleton -> brush?.let {
+        Spacer(
+                modifier = modifier
+                    .height(50.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(it)
         )
     }
+
+    else       -> SearchTextField(
+            modifier = modifier,
+            query = query,
+            placeholder = placeholder,
+            label = label,
+            onQueryChange = onQueryChange,
+            onClearQuery = onClearQuery
+    )
 }
 
 /**
