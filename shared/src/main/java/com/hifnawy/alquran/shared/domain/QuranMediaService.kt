@@ -886,32 +886,35 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
         val previousState = lastMediaSessionState
         lastMediaSessionState = mediaSessionState
 
-        val playbackStateBuilder = when (mediaSessionState) {
-            MediaSessionState.PLAYING              -> PlaybackStateCompat.Builder().setActions(
-                    PlaybackStateCompat.ACTION_PAUSE or
-                            PlaybackStateCompat.ACTION_PLAY or
-                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
-                            PlaybackStateCompat.ACTION_SEEK_TO
-            )
+        if ((mediaSessionState == MediaSessionState.BUFFERING) && (previousState == MediaSessionState.BUFFERING)) return
 
-            MediaSessionState.PAUSED               -> PlaybackStateCompat.Builder().setActions(
-                    PlaybackStateCompat.ACTION_PAUSE or
-                            PlaybackStateCompat.ACTION_PLAY or
-                            PlaybackStateCompat.ACTION_SEEK_TO
-            )
+        val readyActions = PlaybackStateCompat.ACTION_PAUSE or
+                PlaybackStateCompat.ACTION_PLAY or
+                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                PlaybackStateCompat.ACTION_SEEK_TO
 
-            MediaSessionState.SKIPPING_TO_NEXT,
-            MediaSessionState.SKIPPING_TO_PREVIOUS -> PlaybackStateCompat.Builder().setActions(PlaybackStateCompat.ACTION_STOP)
+        val skipActions = PlaybackStateCompat.ACTION_PAUSE // PlaybackStateCompat.ACTION_STOP
 
-            MediaSessionState.CONNECTING,
-            MediaSessionState.BUFFERING            -> PlaybackStateCompat.Builder().setActions(
-                    PlaybackStateCompat.ACTION_STOP or
-                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
-                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-            )
+        val bufferingActions = PlaybackStateCompat.ACTION_STOP or
+                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
 
-            MediaSessionState.STOPPED              -> PlaybackStateCompat.Builder().setActions(PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID)
+        val stoppedActions = PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID // PlaybackStateCompat.ACTION_PLAY
+
+        val playbackStateBuilder = PlaybackStateCompat.Builder().apply {
+            when (mediaSessionState) {
+                MediaSessionState.PLAYING,
+                MediaSessionState.PAUSED               -> setActions(readyActions)
+
+                MediaSessionState.SKIPPING_TO_NEXT,
+                MediaSessionState.SKIPPING_TO_PREVIOUS -> setActions(skipActions)
+
+                MediaSessionState.CONNECTING,
+                MediaSessionState.BUFFERING            -> setActions(bufferingActions)
+
+                MediaSessionState.STOPPED              -> setActions(stoppedActions)
+            }
         }
 
         val playBackSpeed = when (mediaSessionState) {
@@ -920,11 +923,11 @@ class QuranMediaService : AndroidAutoMediaBrowser(),
         }
 
         if (mediaSessionState != MediaSessionState.STOPPED) playbackStateBuilder.setBufferedPosition(player.bufferedPosition)
-        if ((mediaSessionState == MediaSessionState.BUFFERING) && (previousState == MediaSessionState.BUFFERING)) return
 
-        playbackStateBuilder.setState(mediaSessionState.state, player.currentPosition, playBackSpeed)
-
-        mediaSession.setPlaybackState(playbackStateBuilder.build())
+        playbackStateBuilder.run {
+            setState(mediaSessionState.state, player.currentPosition, playBackSpeed)
+            mediaSession.setPlaybackState(build())
+        }
     }
 
     /**

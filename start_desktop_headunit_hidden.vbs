@@ -1,5 +1,14 @@
-Set WshShell = CreateObject("WScript.Shell")
+Set wshShell = CreateObject("WScript.Shell")
+Set objArgs = WScript.Arguments
 
-WshShell.Run "pwsh -NoProfile -File ""start_desktop_headunit.ps1""", 0, False
+psCommand = "pwsh -NoProfile -File ""start_desktop_headunit.ps1"""
 
-Set WshShell = Nothing
+If objArgs.Count > 0 Then
+    deviceParam = objArgs(0)
+    psCommand = psCommand & " -device """ & deviceParam & """"
+End If
+
+wshShell.Run psCommand, 0, False
+
+Set wshShell = Nothing
+Set objArgs = Nothing
