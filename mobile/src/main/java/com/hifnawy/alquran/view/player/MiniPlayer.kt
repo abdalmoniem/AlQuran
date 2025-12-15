@@ -75,10 +75,7 @@ fun MiniPlayer(
                 .background(Color.Black),
             contentAlignment = Alignment.Center
     ) {
-        MiniPlayerBackground(
-                isVisible = state.isVisible,
-                surahDrawableId = surahDrawableId
-        )
+        MiniPlayerBackground(surahDrawableId = surahDrawableId)
 
         Column(
                 modifier = Modifier
@@ -107,22 +104,15 @@ fun MiniPlayer(
 }
 
 @Composable
-private fun MiniPlayerBackground(
-        isVisible: Boolean,
-        surahDrawableId: Int,
-) {
-    if (isVisible) {
-        Image(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(radiusX = 15.dp, radiusY = 15.dp)
-                    .alpha(0.5f),
-                painter = painterResource(id = surahDrawableId),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-        )
-    }
-}
+private fun MiniPlayerBackground(surahDrawableId: Int) = Image(
+        modifier = Modifier
+            .fillMaxSize()
+            .blur(radiusX = 15.dp, radiusY = 15.dp)
+            .alpha(0.5f),
+        painter = painterResource(id = surahDrawableId),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+)
 
 @Composable
 private fun MiniPlayerProgress(state: PlayerState) {
@@ -147,7 +137,7 @@ private fun MiniPlayerContent(
     Row(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(horizontal = 15.dp, vertical = 10.dp),
+                .padding(horizontal = 10.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
     ) {
 
@@ -174,25 +164,25 @@ private fun MiniPlayerSurahInfo(
             modifier = modifier,
             contentAlignment = Alignment.CenterStart
     ) {
-        val textSize = (maxHeight.value * 0.5f).sp
+        val textSize = (maxHeight.value * 0.35f).sp
         val surahImageSize = (maxHeight.value * 0.8f).dp
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (state.isVisible) {
-                Image(
-                        modifier = Modifier
-                            .size(surahImageSize)
-                            .clip(RoundedCornerShape(15.dp)),
-                        painter = painterResource(id = surahDrawableId),
-                        contentDescription = "Surah Image",
-                )
-            }
+            Image(
+                    modifier = Modifier
+                        .size(surahImageSize)
+                        .clip(RoundedCornerShape(15.dp)),
+                    painter = painterResource(id = surahDrawableId),
+                    contentDescription = "Surah Image",
+            )
 
-            Spacer(modifier = Modifier.width(15.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
             Column {
                 Text(
-                        modifier = Modifier.basicMarquee(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .basicMarquee(),
                         text = state.surah?.name ?: stringResource(R.string.loading),
                         fontSize = textSize,
                         fontFamily = when {
@@ -205,13 +195,12 @@ private fun MiniPlayerSurahInfo(
                 Spacer(modifier = Modifier.size(2.dp))
 
                 Text(
-                        modifier = Modifier.basicMarquee(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .basicMarquee(),
                         text = state.reciter?.name ?: stringResource(R.string.loading),
                         fontSize = textSize * 0.5f,
-                        fontFamily = when {
-                            QuranApplication.currentLocaleInfo.isRTL -> FontFamily(Font(Rs.font.decotype_thuluth_2))
-                            else                                     -> FontFamily(Font(Rs.font.aref_ruqaa))
-                        },
+                        fontFamily = FontFamily(Font(Rs.font.aref_ruqaa)),
                         color = Color.White.copy(alpha = 0.8f)
                 )
             }
@@ -234,6 +223,7 @@ private fun OverlayPlayerControls(
                 state.isPlaying -> Rs.drawable.pause_24px
                 else            -> Rs.drawable.play_arrow_24px
             }
+
             Icon(
                     modifier = Modifier.fillMaxSize(),
                     painter = painterResource(id = icon),
@@ -242,7 +232,7 @@ private fun OverlayPlayerControls(
             )
         }
 
-        Spacer(modifier = Modifier.width(15.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
         IconButton(
                 modifier = Modifier.size(32.dp),

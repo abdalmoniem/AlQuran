@@ -85,7 +85,7 @@ fun SurahCard(
         Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(15.dp),
+                    .padding(10.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
         ) {

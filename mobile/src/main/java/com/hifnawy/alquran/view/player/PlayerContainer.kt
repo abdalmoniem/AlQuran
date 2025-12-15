@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import com.hifnawy.alquran.PredictiveBackHandler
 import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.critical
+import com.hifnawy.alquran.shared.utils.LogDebugTree.Companion.debug
 import com.hifnawy.alquran.utils.ModifierEx.verticalDraggable
 import com.hifnawy.alquran.utils.sampleReciters
 import com.hifnawy.alquran.utils.sampleSurahs
@@ -107,7 +108,7 @@ fun BoxScope.PlayerContainer(
 
     var lastSurahSelectionTimeStamp by rememberSaveable { mutableStateOf(state.surahSelectionTimeStamp) }
 
-    // Timber.debug(state.toString())
+    Timber.debug("$state")
 
     LaunchedEffect(state.surahSelectionTimeStamp, state.isVisible) {
         if (!state.isVisible) return@LaunchedEffect
