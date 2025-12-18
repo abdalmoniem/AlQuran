@@ -33,6 +33,8 @@
     <string name="settings_about_section">About</string>
     <string name="settings_notifications_label">Notifications</string>
     <string name="settings_notifications_description">Change notifications settings</string>
+    <string name="settings_internal_files_label">Open %s Folder</string>
+    <string name="settings_internal_files_description">Manage %s\'s internal files</string>
     <string name="settings_translation_label">Translations</string>
     <string name="settings_translation_description">Help translate the application on Crowdin</string>
     <string name="settings_privacy_policy_label">Privacy Policy</string>
