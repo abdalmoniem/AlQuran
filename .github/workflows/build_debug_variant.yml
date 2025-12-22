@@ -6,8 +6,6 @@ on:
   workflow_dispatch:
   push:
     branches: [ "**" ]
-  pull_request:
-    branches: [ "**" ]
   schedule:
     - cron: '00 00 * * 5'
 
@@ -44,7 +42,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'adopt'
-          java-version: 21 
+          java-version: 21
 
       - name: Setup X Virtual Framebuffer
         run: sudo apt-get install -y libxext6 libxrender1 libxtst6 xvfb
