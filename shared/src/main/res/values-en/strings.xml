@@ -4,13 +4,12 @@
     <string name="mb_unit">MB</string>
     <string name="kb_unit">KB</string>
     <string name="b_unit">Bytes</string>
-
     <string name="playback_channel_name">The Holy Quran Playback</string>
     <string name="playback_channel_description">Shows controls for the current The Holy Quran playback</string>
     <string name="download_channel_name">The Holy Quran Downloads</string>
     <string name="download_channel_description">Shows progress for current Quran downloads</string>
     <string name="downloading_surah_detailed">Downloading Surah %1$d: %2$s by %3$s moshaf %4$s (%5$06.2f%%)</string>
-    <string name="preparing_surah">Preparing Surah %1$d: %2$s (%3$d in queue)</string>
-    <string name="preparing_downloads_count">Preparing downloads (%1$d in queue)</string>
+    <string name="preparing_surah">Preparing Surah %1$d: %2$s (%3$d in queue)…</string>
+    <string name="preparing_downloads_count">Preparing downloads (%1$d in queue)…</string>
     <string name="preparing_downloads">Preparing downloads…</string>
 </resources>
