@@ -85,8 +85,8 @@ android {
 
         minSdk = 28
         targetSdk = 36
-        versionCode = 12
-        versionName = "1.0.0"
+        versionCode = 13
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -200,12 +200,12 @@ dependencies {
     implementation(libs.material)
     implementation(libs.hoko.blur)
     implementation(project(":shared"))
+    implementation(libs.kotlin.reflect)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.core.ktx)
     implementation(libs.google.gson.extras)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.tools.core)
     implementation(libs.androidx.glance.preview)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.activity.compose)

@@ -1,0 +1,183 @@
+- ### Chore(deps): Remove unused `androidx.privacysandbox.tools:tools-core` dependency
+   >
+------------------------------
+- ### New Crowdin updates (#11)
+   > Commit: 108c12e
+   > 
+   > * New translations strings.xml (English)
+   > * New translations strings.xml (English)
+------------------------------
+- ### Chore(ci): Remove pull_request triggers from workflows
+   > Commit: 392a178
+   > 
+   > This commit streamlines the CI process by removing the `pull_request` trigger from several GitHub Actions workflows. This change prevents these workflows from running on every pull request, optimizing resource usage.
+   > The affected workflows are:
+   > - `build_debug_variant.yml`
+   > - `codacy_security_scan.yml`
+   > - `codeql_security_scan.yml`
+   > Workflows will now only run on pushes to any branch and on their scheduled cron times.
+------------------------------
+- ### Refactor(logging, download): Improve logging and download management
+   > Commit: 137f587
+   > 
+   > This commit introduces significant enhancements to the logging infrastructure and refactors the download management system for better clarity, robustness, and maintainability. It also includes minor improvements to the `AnimatedAudioBars` composable.
+   > - `LogDebugTree.kt`
+   >   - **Refactored Logging API:**
+   >     - Replaced `try-finally` blocks with more idiomatic Kotlin `run` blocks for managing the `ThreadLocal` state.
+   >     - Implemented logic using `let` and `when` for more concise and readable code.
+   >     - Added comprehensive KDoc documentation to explain the new logging API, the use of `ThreadLocal` for thread safety, and the purpose of each function.
+   > - `QuranDownloadManager.kt`
+   >   - **Type-Safety & Enum Conversion:**
+   >     - Replaced raw integer constants for download states (`Download.STATE_*`) and failure reasons with type-safe enums (`DownloadState.State` and `DownloadState.FailureReason`).
+   >     - Introduced extension properties (`Int.asDownloadState`, `Int.asFailureReason`) for clean and idiomatic conversion from integer codes to enums.
+   >   - **Code Refinements:**
+   >     - Added counters for paused and removed downloads to provide more accurate logging feedback.
+   >     - Enhanced logging messages to be more descriptive.
+   >   - **Extensive Documentation:**
+   >     - Added comprehensive KDoc documentation for the entire object, its public functions (`queueDownloads`, `pauseDownloads`, etc.), data classes (`DownloadState`, `BulkDownloadRequest`), and internal properties. This clarifies the role of the manager, its components, and how to use them.
+   > - `QuranDownloadService.kt`
+   >   - Added detailed KDoc to the class and its methods (`getDownloadManager`, `getForegroundNotification`, `onDownloadChanged`, etc.), explaining the service's responsibilities, lifecycle, and interaction with `QuranDownloadManager`.
+   > - `AnimatedAudioBars.kt`
+   >   - **Animation & Readability Improvements:**
+   >     - Refactored `RandomHeightBar` to simplify animation logic. It now uses a single `animateTo` call within a `while(true)` loop.
+   >     - Introduced private extension properties (`randomFloat`, `IntRange.randomInt`) to make random value generation more concise and readable.
+   >     - Added KDoc to the composable and its helper functions to clarify their purpose and parameters.
+------------------------------
+- ### Docs: Overhauled README.md and Added CONTRIBUTING.md
+   > Commit: 63ffafb
+   > 
+   > This commit significantly overhauls the `README.md` to provide a more comprehensive, structured, and professional presentation of the project.
+   > - **Project Renaming:** The project name has been updated from "AlQuran" to "The Holy Quran" throughout the document for better clarity.
+   > - **New Sections Added:**
+   >   - **About:** Expanded with a more detailed description of the app's purpose and features.
+   >   - **Features:** A detailed, categorized list of features, including Audio, Android Auto, UI, and Technical aspects.
+   >   - **Project Structure:** A visual tree diagram explaining the directory layout.
+   >   - **Tech Stack:** Details on core technologies, architecture, and key libraries.
+   >   - **Contributing:** Provides a brief, welcoming statement and directs contributors to the new `CONTRIBUTING.md` for detailed instructions.
+   >   - **License, Acknowledgments, Contact & Support:** Formalized sections to provide clarity on licensing, give credit, and offer support channels.
+   > - **Restructuring and Formatting:**
+   >   - The entire document has been reorganized with a logical flow, using clear headings and Markdown formatting for improved readability.
+   >   - Screenshots are now formatted with proper alt text.
+   >   - The "Getting Started" and "Translations" sections have been refined and clarified.
+   > - **`CONTRIBUTING.md`:**
+   >   - A new file has been created to house all contribution-related information.
+   >   - An in-depth guide for contributors, including workflow instructions, how to set up repository secrets for GitHub Actions, and code style guidelines.
+   > - **`helper-scripts/README.md`:**
+   >   - Minor updates to improve clarity and formatting in the setup instructions.
+------------------------------
+- ### Refactor(player): Improve player state management and readability
+   > Commit: 6c0ff73
+   > 
+   > This commit refactors player state handling in `QuranMediaService` and introduces a dedicated `PlayerState` enum to improve code clarity, type safety, and maintainability.
+   > - **`PlayerState` Enum (`ExoPlayerEx.kt`):**
+   >   - A new enum class `PlayerState` has been created to represent ExoPlayer's playback states (`IDLE`, `BUFFERING`, `READY`, `ENDED`).
+   >   - It replaces raw integer constants from `Player` with type-safe enum values.
+   >   - An extension property `Int.asPlayerState` is introduced for clean conversion from `Player` state integers to the `PlayerState` enum.
+   >   - Added convenience properties like `isIdle`, `isBuffering`, `isReady`, and `isEnded`.
+   > - **`MediaSessionState` Enum (`QuranMediaService.kt`):**
+   >   - The `fromState(state: Int)` function has been replaced with a more idiomatic Kotlin extension property, `Int.asMediaSessionState`.
+   >   - Convenience properties (`isPlaying`, `isPaused`, `isBuffering`, etc.) have been added to the enum for clearer and more readable conditional checks, replacing direct enum comparisons.
+   > - **`QuranMediaService.kt` Refactoring:**
+   >   - All logic that previously checked `player.playbackState` against integer constants (e.g., `Player.STATE_READY`) now uses the new `PlayerState` enum and its properties (e.g., `player.playbackState.asPlayerState.isReady`).
+   >   - Conditional logic in `onPlaybackStateChanged`, `updateMetadata`, and state update loops has been simplified using the new boolean properties on `MediaSessionState` (e.g., `mediaSessionState.isBuffering`).
+   >   - Redundant buffering checks have been improved to prevent unnecessary state updates when the state is already `BUFFERING`.
+------------------------------
+- ### Refactor(playback): Improve playback state handling and developer scripts
+   > Commit: a403d28
+   > 
+   > This commit introduces improvements to playback state management and enhances the developer script for launching the Android Auto desktop head unit.
+   > - **`QuranMediaService.kt`:**
+   >   - Refactored the `updatePlaybackState` function to reduce redundant state updates.
+   >   - It now prevents re-issuing a `setPlaybackState` call if the state is already `BUFFERING` and was `BUFFERING` in the previous update, optimizing performance.
+   >   - The code has been restructured for better readability by defining action sets (`readyActions`, `skipActions`, etc.) and using a `run` block to build and set the playback state.
+   > - **`start_desktop_headunit.ps1`:**
+   >   - The script now accepts an optional `-device` parameter, allowing developers to target a specific device serial for port forwarding with `adb`.
+   >   - Added logging capabilities: The standard output and standard error of the desktop head unit process are now redirected to timestamped log files in the user's temporary directory (`$env:TEMP`), making debugging easier and preventing the console from being cluttered.
+   >   - **`start_desktop_headunit_hidden.vbs`:**
+   >     - The VBScript wrapper has been updated to pass command-line arguments to the underlying PowerShell script, enabling device selection even when running the hidden-window version.
+------------------------------
+- ### Fix(player): Center surah and reciter names in FullScreenPlayer
+   > Commit: e652c1f
+   > 
+   > This commit updates the `FullScreenPlayer` UI to ensure that the surah and reciter names are properly centered horizontally.
+   > - In `FullScreenPlayer.kt`, the `Text` composables for displaying the surah and reciter names now use `fillMaxWidth()` and `textAlign = TextAlign.Center`.
+   > - This ensures that the text, which also has a marquee effect, is always centered within its container, improving the visual balance of the player screen.
+------------------------------
+- ### Fix(UI): Fix mini-player components and layout
+   > Commit: d95dcde
+   > 
+   > This commit refines the user interface for the player components, focusing on improving layout, typography, and code clarity.
+   > - **`MiniPlayer.kt`:**
+   >   - Reduced horizontal padding from `15.dp` to `10.dp` for a more compact layout.
+   >   - Adjusted the text size for the surah and reciter names to be proportional to the player's height (`35%`), preventing oversized text and allowing text to be fully visible on all display DPIs.
+   >   - Ensured the scrolling marquee text (`basicMarquee`) expands to the full width of its container for consistent behavior.
+   >   - Simplified the `MiniPlayerBackground` composable by removing an unnecessary visibility check, as its parent already handles visibility.
+   >   - Standardized the font for the reciter name to `Aref Ruqaa` across all locales.
+   > - **`SurahCard.kt`:**
+   >   - Decreased the internal padding from `15.dp` to `10.dp` to tighten the content arrangement within the card.
+   > - **`PlayerContainer.kt`:**
+   >   - Updated a debug log to directly print the state object, improving log readability during development.
+------------------------------
+- ### refactor(UI): Simplify skeleton loading logic in Composables
+   > Commit: 271295b
+   > 
+   > This commit refactors the skeleton loading logic across several Composable functions to improve code conciseness and readability. The changes primarily involve using `brush?.let { ... }` and `when` expressions as statements instead of having separate null checks and branching logic.
+   > - **`RecitersGrid.kt` & `SurahsGrid.kt`:**
+   >   - The skeleton rendering logic for the main grid titles and action buttons is simplified by replacing `if (isSkeleton) { if (brush == null) return ... }` with a more idiomatic `when { isSkeleton -> brush?.let { ... } ... }`.
+   > - **`ReciterCard.kt` & `SurahCard.kt`:**
+   >   - Multiple composables within these files (`ReciterCardTitle`, `ReciterCardSubTitle`, `SurahCardTitle`, `SurahCardSubTitle`, etc.) have been refactored.
+   >   - The pattern of checking for `isSkeleton` and then checking if `brush` is null is replaced with a chained `brush?.let`.
+   >   - The logic for rendering actual content is streamlined using `reciter?.let` or `surah?.let` to avoid explicit null checks.
+   > - **`SearchTextField.kt`:**
+   >   - The skeleton implementation for the search bar is updated to use the same concise `brush?.let` pattern.
+   > Overall, this refactoring removes redundant null checks and nested `if` statements, making the code cleaner and more aligned with idiomatic Kotlin practices for handling nullables and conditional UI rendering.
+------------------------------
+- ### Refactor(Download): Isolate download logic into QuranDownloadManager
+   > Commit: 1f9c02a
+   > 
+   > This commit refactors the download management logic by extracting it from `QuranDownloadService` into a new, dedicated `QuranDownloadManager` object. This improves separation of concerns, making the download logic more modular, testable, and easier to manage.
+   > - **`QuranDownloadManager` Extraction:**
+   >   - All download-related business logic, state management, and public APIs (`queueDownloads`, `pauseDownloads`, etc.) have been moved from the `QuranDownloadService` companion object to the new `QuranDownloadManager` object.
+   >   - Data classes like `BulkDownloadRequest`, `DownloadState`, and `DownloadRequestData` are now part of `QuranDownloadManager`.
+   >   - `QuranDownloadService` is now a leaner service, focused solely on its ExoPlayer `DownloadService` lifecycle, managing the `DownloadManager` instance, and handling download callbacks.
+   > - **Model and API Refinements:**
+   >   - Renamed `Surah.url` to `Surah.uri` for consistency with Android's `Uri` class as it can now hold either a remote `http(s)://` uri or a local `file://` uri.
+   >   - Data models (`Reciter`, `Moshaf`, `Surah`) now have default empty constructors, improving their robustness, especially when used in state management.
+   >   - The `DownloadState` class now has non-nullable data, initialized with default values, making it more resilient.
+   > - **UI & UX Enhancements:**
+   >   - **`SurahsGrid.kt`:**
+   >     - The `DownloadProgressDialog` has been split into a stateful composable that handles download logic and a stateless composable for UI rendering.
+   >     - Renamed `DownloadProgressDialog` to `DownloadDialog` and refactored it into two composables: `DownloadDialog` for state and logic, and `DownloadDialogContent` for pure UI presentation.
+   >     - Improved the download progress display with more descriptive, localized strings.
+   >   - **Card Layouts (`ReciterCard.kt`, `MoshafCard.kt`, `SurahCard.kt`):**
+   >     - Refined padding, spacing, and component weights for a cleaner and more balanced layout.
+   >     - Updated the `AnimatedVisibility` animations for the "Now Playing" audio bars to scale from the center (`TransformOrigin(0.5f, 0.5f)`), creating a smoother visual effect.
+   >   - **`AnimatedAudioBars.kt`:** The color of the bars is now `MaterialTheme.colorScheme.primary` for better brand consistency.
+   > - **Code Cleanup:**
+   >   - **`QuranDownloadServiceObserver.kt`:** Updated documentation to reflect the new `QuranDownloadManager`.
+   >   - `shared/src/main/AndroidManifest.xml`: Minor cleanup and re-org.
+------------------------------
+- ### Refactor(Download): Improve download management and state handling
+   > Commit: 7c764bb
+   > 
+   > This commit refactors the download management logic to be more robust, efficient, and maintainable. It introduces a `BulkDownloadRequest` to manage group operations, enhances state tracking, and improves concurrency handling.
+   > - **Download Management (`QuranDownloadService.kt`):**
+   >   - Introduced `BulkDownloadRequest`, a serializable data class to encapsulate all information needed for a download operation (reciter, moshaf, surahs), simplifying the download manager's API.
+   >   - Public functions like `queueDownloads`, `resumeDownloads`, `pauseDownloads`, and `removeDownloads` now accept a `BulkDownloadRequest` object.
+   >   - Download operations (queue, resume, pause, remove) are now more robust, correctly handling already-downloaded files by treating them as `COMPLETED` and updating the UI state immediately, rather than re-queueing them.
+   >   - Implemented separate `CoroutineScope`s for I/O and Main thread operations to improve concurrency and prevent blocking the UI thread.
+   >   - Refined the download monitoring logic to update state more efficiently, focusing on active and terminal state downloads.
+   >   - The `DownloadState` data class is now initialized with default values, making it more resilient.
+   > - **UI & State Handling (`SurahsGrid.kt` & `QuranDownloadServiceObserver.kt`):**
+   >   - The `DownloadProgressDialog` now uses the new `BulkDownloadRequest` to manage download sessions.
+   >   - Local state management within the dialog has been refined to correctly reflect download progress, including the count of downloaded surahs and individual surah details.
+   >   - The `QuranDownloadServiceObserver` composable has been simplified, removing redundant object creation and directly using the `QuranDownloadManager`'s observer list.
+   >   - Fixed a bug where the `DownloadProgressDialog` could be dismissed while downloading. It is now only dismissable by pausing the downloads.
+   >   - Updated the playback notification icon for better brand consistency.
+   > - **Cache & Script Fixes:**
+   >   - **`QuranCacheDataSource.kt`:** Optimized the `cacheDataSourceFactory` logic by using `[ ]` instead of `getOrPut` and adding the new instance with `.also`, ensuring a single creation.
+   >   - **`SettingsDataStore.kt`:** Simplified the `SettingsObserver` by removing an unnecessary intermediate observer object.
+   >   - **`generateSurahDrawables.py`:** Corrected Arabic text for several surah names, ensuring accurate rendering of diacritics.
+------------------------------
+
+**Full Changelog**: https://github.com/abdalmoniem/AlQuran/compare/v1.0.0...v1.0.1
