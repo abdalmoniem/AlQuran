@@ -8,20 +8,12 @@
     <string name="surah_name">Sure ismi</string>
     <string name="reciter_name">Okuyucu ismi</string>
     <plurals name="moshaf_count">
-        <item quantity="one">Mushaf yok
-Bir Mushaf
-İki Mushaf</item>
-        <item quantity="other">%d Nadir Mushaflar
-Birçok Mushaf
-Diğer Mushaflar</item>
+        <item quantity="one">Mushaf yok</item>
+        <item quantity="other">%d Nadir Mushaflar</item>
     </plurals>
     <plurals name="surah_count">
-        <item quantity="one">Sure yok
-Bir Sure
-İki Sure</item>
-        <item quantity="other">%dBirkaç Sure
-Birçok Sure
-Diğer Sureler</item>
+        <item quantity="one">Sure yok</item>
+        <item quantity="other">%dBirkaç Sure</item>
     </plurals>
     <string name="surah_meccan">Mekke</string>
     <string name="surah_medinan">Medine</string>
