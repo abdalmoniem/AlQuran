@@ -39,7 +39,8 @@
     <string name="settings_translation_description">Help translate the application on Crowdin</string>
     <string name="settings_privacy_policy_label">Privacy Policy</string>
     <string name="settings_privacy_policy_description">Tap here to view the privacy policy</string>
-    <string name="settings_privacy_policy_content">&lt;!DOCTYPE html&gt;
+    <string name="settings_privacy_policy_content">
+&lt;!DOCTYPE html&gt;
     &lt;html lang=&quot;ar&quot;&gt;
       &lt;head&gt;
         &lt;title&gt;The Holy Quran Privacy Notice&lt;/title&gt;
