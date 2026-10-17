@@ -13,6 +13,8 @@ jobs:
   build-release-variant:
     name: Build Release Variant
     runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.13"
     steps:
       - uses: actions/checkout@v4
 
@@ -33,7 +35,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Setup Python
-        run: uv python install
+        run: uv python install 3.13
 
       - name: Setup Java
         uses: actions/setup-java@v4

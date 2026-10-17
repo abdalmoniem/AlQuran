@@ -27,6 +27,8 @@ jobs:
   publish-release-by-tag:
     name: Publish Release By Tag
     runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.13"
     steps:
       - name: Checkout Tag ${{ inputs.releaseTag }}
         uses: actions/checkout@v4
@@ -60,7 +62,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
       - name: Setup Python
-        run: uv python install
+        run: uv python install 3.13
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
