@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gb_unit">GB</string>
+    <string name="mb_unit">MB</string>
+    <string name="kb_unit">KB</string>
+    <string name="b_unit">P</string>
+    <string name="playback_channel_name">Kuranı Kerim Oynatıcısı</string>
+    <string name="playback_channel_description">Mevcut Kuranı Kerim oynatıcı kontrollerini görüntüler</string>
+    <string name="download_channel_name">Kuran indir</string>
+    <string name="download_channel_description">Mevcut Kuranı Kerim indirmelerinin ilerleme durumunu göster</string>
+    <string name="downloading_surah_detailed">Sure indirme %1$d: %2$s okuyucu %3$s cüz %4$s (%5$06.2f٪)</string>
+    <string name="preparing_surah">Sure hazırlanıyor %1$d: %2$s (%3$d beklemede)…</string>
+    <string name="preparing_downloads_count">İndirmeler hazırlanıyor (%1$d beklemede)…</string>
+    <string name="preparing_downloads">İndirmeler hazırlanıyor…</string>
+</resources>
