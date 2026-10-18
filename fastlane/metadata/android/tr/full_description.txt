@@ -1,0 +1,14 @@
+<h1>Kuranı Kerim</h1>
+<p>
+  Kuranı Kerim uygulaması Kuranı Kerim'deki sureleri sesli dinlemenizi sağlayan bir uygulamadır
+  Farklı okuyucular. Android sistemini (Android Auto) destekler.
+</p>
+<h1>Özellikler</h1>
+<ul>
+  <li>Farklı okuyuculardan sureleri dinle.</li>
+  <li>Google işletim araç sistemini (Android Auto) destekler.</li>
+  <li>İnternet bağlantısı olmadan dinle.</li>
+  <li>Duraklat ve oynat.</li>
+  <li>Surede belli bir konuma atla.</li>
+  <li>En sevdiğiniz okuyucuyu seçin.</li>
+</ul>
