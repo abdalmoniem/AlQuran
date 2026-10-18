@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kuranı Kerim</string>
+    <string name="search_reciters">Okur ara…</string>
+    <string name="search_surahs">Sure ara…</string>
+    <string name="loading">Yükleniyor…</string>
+    <string name="player_widget_description">Kuranı Kerim oynatıcısı</string>
+    <string name="surah_name">Sure ismi</string>
+    <string name="reciter_name">Okuyucu ismi</string>
+    <plurals name="moshaf_count">
+        <item quantity="one">Mushaf yok</item>
+        <item quantity="other">%d Nadir Mushaflar</item>
+    </plurals>
+    <plurals name="surah_count">
+        <item quantity="one">Sure yok</item>
+        <item quantity="other">%dBirkaç Sure</item>
+    </plurals>
+    <string name="surah_meccan">Mekke</string>
+    <string name="surah_medinan">Medine</string>
+    <string name="reciters_loading_error">Okuyucu indirilirken hata oluştu, 
+lütfen tekrar deneyiniz.</string>
+    <string name="surahs_loading_error">Sure indirilirken hata oluştu,
+lütfen tekrar deneyiniz.</string>
+    <string name="navbar_reciters">Okuyucu</string>
+    <string name="navbar_surahs">Sureler</string>
+    <string name="navbar_favorites">Favori</string>
+    <string name="navbar_settings">Ayarlar</string>
+    <string name="settings_appearance_section">Görünüm</string>
+    <string name="settings_language_label">Dil</string>
+    <string name="settings_language_description">Uygulama Dili</string>
+    <string name="settings_theme_label">SIM</string>
+    <string name="settings_theme_description">Kolay okunuş</string>
+    <string name="settings_dynamic_colors_label">Dinamik Renkler</string>
+    <string name="settings_dynamic_colors_description">Duvar kağıdı esintili renkler</string>
+    <string name="settings_about_section">Uygulama hakkında</string>
+    <string name="settings_notifications_label">Bildirimler</string>
+    <string name="settings_notifications_description">Bildirim ayarlarını değiştir</string>
+    <string name="settings_internal_files_label">Klasörü %s açın</string>
+    <string name="settings_internal_files_description">Dahili dosyaları %s yönetin</string>
+    <string name="settings_translation_label">Çeviri</string>
+    <string name="settings_translation_description"> Crowdin üzerinden uygulamayı çevirmeye yardım edin</string>
+    <string name="settings_privacy_policy_label">Gizlilik Politikası</string>
+    <string name="settings_privacy_policy_description">Gizlilik politikasını görüntülemek için buraya tıklayınız</string>
+    <string name="settings_privacy_policy_content">
+        &lt;!DOCTYPE html&gt;
+        &lt;html lang=&quot;ar&quot;&gt;
+            &lt;head&gt;
+                &lt;title&gt;Kuranı Kerim Gizlilik Bildirimi&lt;/title&gt;
+                &lt;style&gt;
+                    h1 {
+                        margin-top: 20px;
+                    }
+                    h2 {
+                        margin-top: 15px;
+                    }
+                    h3 {
+                        margin-top: 10px;
+                    }
+                    p {
+                        margin-bottom: 5px;
+                    }
+                &lt;/style&gt;
+            &lt;/head&gt;
+
+            &lt;body&gt;
+                &lt;h1&gt;Giriş&lt;/h1&gt;
+                &lt;p&gt;
+                    Kuranı Kerim\'e Hoşgeldiniz! Bu Gizlilik Politikası kişisel bilgilerinizi nasıl topladığını, kullandığını ve koruduğunu açıklar
+                    Kuranı Kerim uygulamasını kullanarak, bu bildirimde belirtilen şartları kabul etmiş olursunuz.
+                &lt;/p&gt;
+
+                &lt;h1&gt;Veri Toplama&lt;/h1&gt;
+                &lt;p&gt;
+                    Bildirimlere Erişim:Kuranı Kerim uygulaması, kalan sürede kişiselleştirilmiş güncellemeler sağlamak için bildirimlere erişim ister.
+                    Kuran uygulaması, hiçbir bildirim içeriğini veya kişisel veriyi (PII) cihazınızın dışında saklamaz.
+                &lt;/p&gt;
+
+                &lt;h1&gt;Verilerin Kullanımı&lt;/h1&gt;
+                &lt;h2&gt;Kişisel Veriler&lt;/h2&gt;
+                &lt;p&gt;
+                    Kuranı Kerim uygulaması isim, elektronik posta adresi, telefon numarası gibi kişisel verileri toplamaz veya saklamaz.
+                &lt;/p&gt;
+
+                &lt;h1&gt;Kullanım Analizi&lt;/h1&gt;
+                &lt;p&gt;Kuranı Kerim uygulaması kullanım verilerini izlemez veya analitik verileri toplamaz&lt;/p&gt;
+
+                &lt;h1&gt;Veri Güvenliği&lt;/h1&gt;
+                &lt;h2&gt;Uygulama verilerini depolama&lt;/h2&gt;
+                &lt;p&gt;
+                    Kuranı Kerim tarafından kullanılan tüm bilgiler cihazınızda kalır.  Kuranı Kerim, herhangi bir veriyi dışarıya iletmez veya dışarıdan depolamaz.
+                &lt;/p&gt;
+
+                &lt;h1&gt;Harici Hizmetler&lt;/h1&gt;
+                &lt;h2&gt;Reklamlar&lt;/h2&gt;
+                &lt;p&gt;Kuranı Kerim uygulaması, üçüncü taraf reklamları göstermez.&lt;/p&gt;
+
+                &lt;h2&gt;Harici Bağlantılar&lt;/h2&gt;
+                &lt;p&gt;
+                    Kuranı Kerim uygulaması, harici web sitelerinin bağlantılarını içerir. Bu sitelerin gizlilik uygulamalarından Kuranı Kerim uygulaması sorumlu değildir.
+                &lt;/p&gt;
+
+                &lt;h1&gt;Çocukların Gizliliği&lt;/h1&gt;
+                &lt;p&gt;
+                    Kuranı Kerim uygulaması 13 yaş altındaki çocuklara uygun değildir. Kuranı Kerim uygulaması çocuklar hakkında herhangi bir veri depolamaz.
+                &lt;/p&gt;
+
+                &lt;h1&gt;Bu Bildirimde Yapılan Değişiklikler&lt;/h1&gt;
+                &lt;p&gt;
+                    Kuranı Kerim, bu Gizlilik Bildirimini zaman zaman güncelleyebilir. Yapılan tüm değişiklikler uygulamada ve web sitemizde yayınlanacaktır.
+                &lt;/p&gt;
+
+                &lt;h1&gt;Bizimle İletişime Geçin&lt;/h1&gt;
+                &lt;p&gt;
+                    Eğer bu Gizlilik Politikasıyla ilgili herhangi bir sorunuz veya endişeniz olursa lütfen benimle elektronik elektronik posta aracılığıyla iletişime geçiniz.
+                    üzerinden &lt;a href=&quot;mailto:hifnawy_moniem@hotmail.com&quot;&gt;hifnawy_moniem@hotmail.com&lt;/a&gt;
+                &lt;/p&gt;
+
+                &lt;h1&gt;Android İzinler&lt;/h1&gt;
+                &lt;p&gt;
+                    Kuranı Kerim uygulaması herhangi bir izin talep etmez.
+                &lt;/p&gt;
+            &lt;/body&gt;
+        &lt;/html&gt;
+
+    </string>
+    <string name="settings_contact_label">İletişim</string>
+    <string name="settings_contact_description">Yazılımcıyla elektronik posta aracılığıyla iletişime geçin</string>
+    <string name="settings_contact_android_version">Android Sürümü: %s</string>
+    <string name="settings_contact_android_sdk">SDK Sürümü: %s</string>
+    <string name="settings_contact_device_info">Cihaz Tipi: %s</string>
+    <string name="settings_about_version_code">Sürüm Kodu:\t\t\t%d</string>
+    <string name="settings_about_version_name">Sürüm Adı:\t\t\t%s</string>
+    <string name="settings_about_developer_name">Abdulmunim El Hafnawi</string>
+    <string name="downloading_surahs">Sureler indiriliyor…</string>
+    <string name="downloading_surah">Sure indirme %1$d: %2$s…</string>
+    <string name="download_cancel">İndirmeyi iptal et</string>
+    <string name="download_percentage">%1$06.2f٪</string>
+</resources>
